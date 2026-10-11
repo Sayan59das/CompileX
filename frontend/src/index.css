@@ -6,7 +6,8 @@
 
 /* ─── Design Tokens ─────────────────────────────────────────────────────── */
 :root {
-  /* Dark theme (default) */
+  color-scheme: dark;
+  /* The interface is designed dark-only. */
   --bg:          #05050A;
   --bg-1:        #0A0A10;
   --bg-2:        #101018;
@@ -34,34 +35,8 @@
 }
 
 /* Light theme */
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg:          #ffffff;
-    --bg-1:        #f8fafc;
-    --bg-2:        #f1f5f9;
-    --bg-3:        #e2e8f0;
-    --border:      rgba(0,0,0,0.08);
-    --border-md:   rgba(0,0,0,0.12);
-    --text:        #0f172a;
-    --text-2:      #475569;
-    --text-3:      #94a3b8;
-    --shadow-sm:   0 1px 3px rgba(0,0,0,0.1);
-    --shadow-md:   0 4px 16px rgba(0,0,0,0.08);
-    --shadow-lg:   0 8px 32px rgba(0,0,0,0.12);
-    --shadow-glow: 0 0 24px rgba(99,102,241,0.15);
-  }
-}
-
 /* ─── Base ───────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
-
-/* Remove default focus outlines and white lines */
-button:focus,
-button:focus-visible,
-button:active {
-  outline: none !important;
-  box-shadow: none !important;
-}
 
 html { scroll-behavior: smooth; }
 
@@ -136,23 +111,11 @@ body {
   border-radius: var(--radius);
 }
 
-@media (prefers-color-scheme: light) {
-  .glass {
-    background: rgba(255,255,255,0.95);
-  }
-}
-
 .glass-panel {
   background: rgba(22,27,39,0.96);
   border: 1px solid var(--border-md);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
-}
-
-@media (prefers-color-scheme: light) {
-  .glass-panel {
-    background: rgba(255,255,255,0.9);
-  }
 }
 
 /* ─── Buttons ────────────────────────────────────────────────────────────── */
@@ -327,12 +290,6 @@ input:-webkit-autofill:active{
   border-bottom: 1px solid var(--border);
 }
 
-@media (prefers-color-scheme: light) {
-  .navbar {
-    background: rgba(255,255,255,0.85);
-  }
-}
-
 /* ─── Animations - OPTIMIZED ────────────────────────────────────────────── */
 @keyframes fadeIn    { from { opacity:0 } to { opacity:1 } }
 @keyframes slideUp   { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
@@ -390,24 +347,9 @@ input:-webkit-autofill:active{
   box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
 }
 
-@media (prefers-color-scheme: light) {
-  .code-card {
-    background: #1e293b;
-    border: 1px solid rgba(0,0,0,0.1);
-    box-shadow: 0 24px 64px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
-  }
-}
-
 .code-header {
   background: #161b22;
   border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-
-@media (prefers-color-scheme: light) {
-  .code-header {
-    background: #0f172a;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-  }
 }
 
 .code-dot {
@@ -464,12 +406,6 @@ input:-webkit-autofill:active{
   padding: 1.5rem;
 }
 
-@media (prefers-color-scheme: light) {
-  .glass-card {
-    background: rgba(255,255,255,0.7);
-  }
-}
-
 .testimonial-card {
   background: rgba(22,27,39,0.95);
   border: 1px solid var(--border);
@@ -478,12 +414,6 @@ input:-webkit-autofill:active{
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-}
-
-@media (prefers-color-scheme: light) {
-  .testimonial-card {
-    background: rgba(255,255,255,0.7);
-  }
 }
 
 /* ─── Switch ─────────────────────────────────────────────────────────────── */
@@ -534,22 +464,8 @@ input:-webkit-autofill:active{
               var(--bg);
 }
 
-@media (prefers-color-scheme: light) {
-  .gradient-bg {
-    background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.08) 0%, transparent 70%),
-                radial-gradient(ellipse 60% 40% at 80% 80%, rgba(124,58,237,0.05) 0%, transparent 60%),
-                var(--bg);
-  }
-}
-
 .hero-glow {
   background: radial-gradient(ellipse 100% 80% at 50% -20%, rgba(99,102,241,0.15) 0%, transparent 65%);
-}
-
-@media (prefers-color-scheme: light) {
-  .hero-glow {
-    background: radial-gradient(ellipse 100% 80% at 50% -20%, rgba(99,102,241,0.1) 0%, transparent 65%);
-  }
 }
 
 /* ─── Performance ────────────────────────────────────────────────────────── */
