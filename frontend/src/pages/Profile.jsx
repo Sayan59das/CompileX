@@ -48,7 +48,7 @@ export default function Profile() {
     try { const { data } = await api.get('/users/me/stats'); setStats(data) } catch {}
   }
   async function fetchAchievements() {
-    try { const { data } = await api.get('/achievements'); setAchievements(data) } catch {}
+    try { const { data } = await api.get('/achievements'); setAchievements(Array.isArray(data) ? data : []) } catch {}
   }
   async function seedAchievements() {
     try { await api.post('/achievements/seed') } catch {}
@@ -56,7 +56,7 @@ export default function Profile() {
   async function fetchLeaderboard() {
     try {
       const { data } = await api.get('/leaderboard')
-      setLeaderboard(data.map((p, i) => ({ ...p, rank: i + 1 })).slice(0, 3))
+      setLeaderboard((Array.isArray(data) ? data : []).map((p, i) => ({ ...p, rank: i + 1 })).slice(0, 3))
     } catch { setLeaderboard([]) }
   }
 
@@ -119,6 +119,7 @@ export default function Profile() {
           </div>
           
           <div className="hidden md:flex items-center gap-2">
+            <button onClick={() => nav('/practice')} className="text-xs sm:text-sm text-slate-400 hover:text-white transition-colors px-2 sm:px-3 py-2">Practice</button>
             <button onClick={() => nav('/tournaments')} className="text-xs sm:text-sm text-slate-400 hover:text-white transition-colors px-2 sm:px-3 py-2">Tournaments</button>
             <button onClick={() => nav('/history')} className="text-xs sm:text-sm text-slate-400 hover:text-white transition-colors px-2 sm:px-3 py-2">History</button>
           </div>
@@ -271,9 +272,9 @@ export default function Profile() {
                             type="number" min="2" max="20" value={maxPlayers} onChange={e => setMaxPlayers(e.target.value)} />
                         </div>
                         <div>
-                          <label className="block text-xs sm:text-[10px] font-bold mb-2 text-slate-400 ml-1">Time (s)</label>
+                          <label className="block text-xs sm:text-[10px] font-bold mb-2 text-slate-400 ml-1">Time (min)</label>
                           <input className="w-full px-4 py-3 bg-[#101018]/80 border border-white/[0.07] rounded-2xl text-base text-white text-center focus:outline-none focus:border-blue-500/50 transition-colors" 
-                            type="number" value={duration} onChange={e => setDuration(e.target.value)} />
+                            type="number" min="1" value={Math.round(duration / 60)} onChange={e => setDuration(Math.max(1, Number(e.target.value) || 1) * 60)} />
                         </div>
                         <div>
                           <label className="block text-xs sm:text-[10px] font-bold mb-2 text-slate-400 ml-1">Questions</label>
@@ -384,7 +385,7 @@ export default function Profile() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 justify-items-center">
               {achievements.map((a, i) => (
                 <div key={a.id} 
-                  className={`relative group transition-all duration-300 w-full max-w-sm ${a.unlocked ? 'opacity-100' : 'opacity-50 grayscale'}`}>
+                  className={`relative group transition-all duration-300 w-full max-w-sm ${a.unlocked ? 'opacity-100' : 'opacity-60'}`}>
                   <div className={`absolute -inset-1 bg-gradient-to-r from-blue-600/30 to-cyan-600/30 rounded-3xl blur-xl transition-opacity duration-500 ${a.unlocked ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`} />
                   <div className={`relative bg-[#0A0A10]/80 backdrop-blur-md border rounded-3xl p-6 sm:p-8 text-center transition-all duration-300 h-full flex flex-col items-center justify-center ${
  a.unlocked 
