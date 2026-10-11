@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
-import AppHeader from '../components/AppHeader'
-import Icon from '../components/Icons'
 
-const MODE_LABEL = { multiplayer: 'Arena match', '1v1': '1v1 duel', tournament: 'Tournament', solo: 'Solo practice' }
+const modeIcon = {
+  multiplayer: '👥',
+  '1v1': '⚔️',
+  tournament: '🏆',
+  solo: '🧠',
+}
+
+import AnimatedBackgroundCSS from '../components/AnimatedBackgroundCSS'
 
 export default function MatchHistory() {
+  const { user } = useAuth()
   const nav = useNavigate()
 
   const [matches, setMatches] = useState([])
@@ -30,72 +37,133 @@ export default function MatchHistory() {
   const totalPages = Math.ceil(total / limit)
 
   return (
-    <div className="min-h-screen bg-paper">
-      <AppHeader />
+    <div className="min-h-screen relative overflow-hidden bg-[#0a0f1c]">
+      <AnimatedBackgroundCSS />
 
-      <main className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <h1 className="display text-[clamp(2.4rem,5vw,3.75rem)]">Match history</h1>
-          {total > 0 && <p className="tnum text-ink-2">{total} {total === 1 ? 'match' : 'matches'} played</p>}
+      <nav className="relative border-b border-white/10 backdrop-blur-xl bg-slate-900/50 px-6 py-4">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={() => nav('/profile')} className="text-slate-400 hover:text-white transition-colors duration-300 flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Profile
+            </button>
+            <div className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Match History</div>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/50 backdrop-blur-sm border border-white/10">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-sm text-slate-300">{user?.username}</span>
+          </div>
+        </div>
+      </nav>
+
+      <div className="relative max-w-4xl mx-auto px-6 py-10 animate-fade-in">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent mb-2">Your Battles</h1>
+          <p className="text-slate-400 text-sm">{total} matches played</p>
         </div>
 
         {loading ? (
-          <p className="py-12 text-ink-2" role="status">Loading your matches…</p>
+          <div className="text-center py-12 text-slate-500 animate-pulse">Loading matches...</div>
         ) : matches.length === 0 ? (
-          <div className="py-16">
-            <p className="stretch-narrow text-3xl font-extrabold tracking-tight">You have not played a match yet</p>
-            <p className="measure mt-2 text-ink-2">Create a room from the dashboard, or join one with a code, and it will be listed here.</p>
-            <button onClick={() => nav('/dashboard')} className="btn btn-primary mt-6">Go to the dashboard</button>
+          <div className="relative overflow-hidden rounded-3xl bg-[#0a0f1c]/60 backdrop-blur-xl border border-white/[0.05] p-12 sm:p-16 text-center shadow-2xl">
+            {/* Glowing background effects inside the card */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[200px] bg-gradient-to-b from-blue-500/10 to-transparent pointer-events-none" />
+            <div className="absolute -bottom-[50px] -right-[50px] w-[200px] h-[200px] bg-cyan-500/10 blur-[80px] pointer-events-none rounded-full" />
+            <div className="absolute -top-[50px] -left-[50px] w-[200px] h-[200px] bg-blue-600/10 blur-[80px] pointer-events-none rounded-full" />
+            
+            <div className="relative z-10 flex flex-col items-center">
+              {/* Animated Radar/Matchmaking Icon */}
+              <div className="relative flex items-center justify-center w-24 h-24 mb-6">
+                <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-ping" style={{ animationDuration: '3s' }} />
+                <div className="absolute inset-2 rounded-full border border-cyan-400/20 animate-ping" style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
+                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.5)]">
+                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+              </div>
+              
+              <h2 className="text-2xl font-black text-white mb-3 tracking-tight">No Battles Yet</h2>
+              <p className="text-slate-400 max-w-md mx-auto mb-8 leading-relaxed">
+                Your match history is currently empty. Step into the arena, compete against others, and start building your legacy!
+              </p>
+              
+              <button 
+                onClick={() => nav('/home')} 
+                className="group relative px-8 py-3.5 rounded-xl bg-blue-500 text-white font-bold tracking-wide overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.4)]"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 bg-[length:200%_auto] animate-[shine_3s_linear_infinite]" />
+                <div className="absolute inset-0 bg-white/0 group-hover:bg-white/20 transition-colors" />
+                <span className="relative z-10 flex items-center gap-2">
+                  Find a Match
+                  <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </span>
+              </button>
+            </div>
           </div>
         ) : (
           <>
-            <div className="panel mt-8 overflow-hidden">
-              <div className="hidden grid-cols-[7rem_minmax(0,1fr)_6rem_8rem_5rem] gap-4 border-b border-line bg-sunken px-5 py-2.5 text-sm font-medium text-ink-3 md:grid">
-                <span>Result</span>
-                <span>Room</span>
-                <span>Solved</span>
-                <span>Played</span>
-                <span className="text-right">Points</span>
-              </div>
-              <ul className="divide-y divide-line">
-                {matches.map((m, i) => {
-                  const isWin = m.player_rank === 1 && m.total_players > 1
-                  return (
-                    <li
-                      key={i}
-                      className="grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-1 px-5 py-4 md:grid-cols-[7rem_minmax(0,1fr)_6rem_8rem_5rem]"
-                    >
-                      <span className="flex items-center gap-2 font-semibold md:order-none">
-                        <span className="dot" style={{ background: isWin ? 'rgb(var(--grass))' : 'rgb(var(--line-strong))' }} />
-                        {isWin ? 'Won' : `Rank ${m.player_rank} of ${m.total_players}`}
-                      </span>
-                      <span className="col-span-2 min-w-0 md:col-span-1">
-                        <span className="block truncate font-semibold">{m.lobby_name}</span>
-                        <span className="text-sm text-ink-3">{MODE_LABEL[m.game_mode] || m.game_mode}</span>
-                      </span>
-                      <span className="tnum text-ink-2">{m.questions_solved} solved</span>
-                      <span className="tnum text-ink-2">{new Date(m.played_at).toLocaleDateString()}</span>
-                      <span className="numeral text-right text-2xl md:order-none">{m.player_score}</span>
-                    </li>
-                  )
-                })}
-              </ul>
+            <div className="space-y-2">
+              {matches.map((m, i) => {
+                const isWin = m.player_rank === 1 && m.total_players > 1
+                return (
+                  <div
+                    key={i}
+                    className={`bg-white/5 backdrop-blur-sm border rounded-xl p-4 flex items-center gap-4 transition-all duration-300 hover:bg-white/10 hover:border-blue-500/30 group ${
+                      isWin ? 'border-emerald-500/50 shadow-lg shadow-emerald-500/10' : 'border-white/10'
+                    }`}
+                  >
+                    <div className="text-2xl w-10 text-center shrink-0 transition-transform duration-300 group-hover:scale-110">
+                      {modeIcon[m.game_mode] || '🎮'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="font-semibold text-white text-sm truncate group-hover:text-blue-300 transition-colors duration-300">{m.lobby_name}</span>
+                        <span className="text-[10px] text-slate-400 bg-white/5 border border-white/10 rounded-full px-2 py-0.5 shrink-0">{m.game_mode}</span>
+                        {isWin && <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-2 py-0.5 shrink-0 font-medium">WIN</span>}
+                      </div>
+                      <div className="text-xs text-slate-400">
+                        {m.questions_solved} solved &middot; Rank #{m.player_rank} of {m.total_players} &middot; {new Date(m.played_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-lg font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">{m.player_score}</div>
+                      <div className="text-[10px] text-slate-500 uppercase tracking-wider">pts</div>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
 
+            {/* Pagination */}
             {totalPages > 1 && (
-              <nav className="mt-6 flex items-center justify-between" aria-label="Pagination">
-                <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="btn btn-secondary btn-sm">
-                  <Icon name="arrow-left" size={14} /> Newer
+              <div className="flex justify-center gap-2 mt-6">
+                <button
+                  onClick={() => setPage(p => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  className="text-xs px-3 py-1.5 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-30 transition-all duration-300"
+                >
+                  Prev
                 </button>
-                <span className="tnum text-sm text-ink-2">Page {page + 1} of {totalPages}</span>
-                <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1} className="btn btn-secondary btn-sm">
-                  Older <Icon name="arrow-right" size={14} />
+                <span className="text-xs text-slate-400 px-3 py-1.5 bg-white/5 backdrop-blur-sm border border-white/10 rounded-lg">
+                  Page {page + 1} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                  disabled={page >= totalPages - 1}
+                  className="text-xs px-3 py-1.5 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 disabled:opacity-30 transition-all duration-300"
+                >
+                  Next
                 </button>
-              </nav>
+              </div>
             )}
           </>
         )}
-      </main>
+      </div>
     </div>
   )
 }
