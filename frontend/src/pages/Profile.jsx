@@ -78,7 +78,7 @@ export default function Profile() {
     try { const { data } = await api.get('/users/me/stats'); setStats(data) } catch {}
   }
   async function fetchAchievements() {
-    try { const { data } = await api.get('/achievements'); setAchievements(data) } catch {}
+    try { const { data } = await api.get('/achievements'); setAchievements(Array.isArray(data) ? data : []) } catch {}
   }
   async function seedAchievements() {
     try { await api.post('/achievements/seed') } catch {}
@@ -86,7 +86,7 @@ export default function Profile() {
   async function fetchLeaderboard() {
     try {
       const { data } = await api.get('/leaderboard')
-      setLeaderboard(data.map((p, i) => ({ ...p, rank: i + 1 })).slice(0, 3))
+      setLeaderboard((Array.isArray(data) ? data : []).map((p, i) => ({ ...p, rank: i + 1 })).slice(0, 3))
     } catch { setLeaderboard([]) }
   }
 
