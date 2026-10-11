@@ -1,146 +1,32 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useEditorTheme, ThemeToggle } from '../context/ThemeContext'
 import api from '../services/api'
 import Editor from '@monaco-editor/react'
-import MathText from '../components/MathText'
-import AnimatedBackgroundCSS from '../components/AnimatedBackgroundCSS'
+import Logo from '../components/Logo'
+import Icon from '../components/Icons'
+import { DifficultyTag } from '../components/Avatar'
+import ProblemStatement from '../components/ProblemStatement'
+import CoachChat from '../components/CoachChat'
+import { LogicReport, ComplexityReport, TestCaseViewer, Spinner, PanelNote } from '../components/Analysis'
 import { attachProtectedRegion } from '../utils/protectedRegion'
+import { registerEditorThemes, EDITOR_FONT } from '../utils/monacoTheme'
+import { parseTestCases, parseStarterCode, caseIO } from '../utils/problem'
+import { balloonFill } from '../utils/balloons'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
 const LANGUAGES = [
-  { value: 'python',     label: 'Python',     icon: '🐍', monaco: 'python'     },
-  { value: 'cpp',        label: 'C++',        icon: '⚡', monaco: 'cpp'        },
-  { value: 'java',       label: 'Java',       icon: '☕', monaco: 'java'       },
-  { value: 'javascript', label: 'JavaScript', icon: '💛', monaco: 'javascript' },
-  { value: 'c',          label: 'C',          icon: '🔵', monaco: 'c'          },
+  { value: 'python', label: 'Python', monaco: 'python' },
+  { value: 'cpp', label: 'C++', monaco: 'cpp' },
+  { value: 'java', label: 'Java', monaco: 'java' },
+  { value: 'javascript', label: 'JavaScript', monaco: 'javascript' },
+  { value: 'c', label: 'C', monaco: 'c' },
 ]
 
-const DIFF = {
-  easy:   { text: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/25', dot: 'bg-emerald-400' },
-  medium: { text: 'text-amber-400',   bg: 'bg-amber-500/10',   border: 'border-amber-500/25',   dot: 'bg-amber-400'   },
-  hard:   { text: 'text-rose-400',    bg: 'bg-rose-500/10',    border: 'border-rose-500/25',    dot: 'bg-rose-400'    },
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
-function parseTestCases(raw) {
-  try { const a = typeof raw === 'string' ? JSON.parse(raw) : raw; return Array.isArray(a) ? a : [] }
-  catch { return [] }
-}
-function parseStarterCode(raw, lang) {
-  try { const m = typeof raw === 'string' ? JSON.parse(raw) : raw; return m[lang] || '' }
-  catch { return '' }
-}
-function parseQuestionSections(description) {
-  if (!description) return { body: '', sections: [] }
-  const SKIP = new Set(['Sample Input', 'Sample Output'])
-  const ALL  = ['Input Format', 'Output Format', 'Constraints', 'Note', 'Explanation', 'Sample Input', 'Sample Output']
-  const parts = description.split(new RegExp(`\\*\\*(${ALL.join('|')})\\*\\*`, 'gi'))
-  const body = parts[0].trim()
-  const sections = []
-  for (let i = 1; i < parts.length; i += 2) {
-    const name = parts[i], content = (parts[i + 1] || '').trim()
-    if (name && content && !SKIP.has(name)) sections.push({ name, content })
-  }
-  return { body, sections }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// SUB-COMPONENTS
-// ─────────────────────────────────────────────────────────────────────────────
-
-function HighlightedText({ text }) {
-  if (!text) return null
-  const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\$\$[\s\S]+?\$\$|\$[^$\n]+?\$)/g)
-  return (
-    <>
-      {parts.map((p, i) => {
-        if (p.startsWith('`') && p.endsWith('`'))
-          return <code key={i} className="px-1.5 py-0.5 rounded-md bg-white/[0.07] text-sky-300 font-mono text-[0.82em] border border-white/[0.06]">{p.slice(1,-1)}</code>
-        if (p.startsWith('**') && p.endsWith('**'))
-          return <strong key={i} className="text-white font-semibold"><MathText text={p.slice(2,-2)} /></strong>
-        if ((p.startsWith('$$') && p.endsWith('$$')) || (p.startsWith('$') && p.endsWith('$')))
-          return <MathText key={i} text={p} />
-        return <span key={i}>{p}</span>
-      })}
-    </>
-  )
-}
-
-function SectionBlock({ name, content }) {
-  const STYLES = {
-    'Input Format':  { label: 'text-sky-400',     bar: 'bg-sky-400',     code: true  },
-    'Output Format': { label: 'text-blue-400',  bar: 'bg-blue-400',  code: true  },
-    'Constraints':   { label: 'text-amber-400',   bar: 'bg-amber-400',   code: false },
-    'Note':          { label: 'text-slate-400',   bar: 'bg-slate-400',   code: false },
-    'Explanation':   { label: 'text-cyan-400',    bar: 'bg-cyan-400',    code: false },
-  }
-  const s = STYLES[name] || { label: 'text-slate-400', bar: 'bg-slate-500', code: false }
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <div className={`w-0.5 h-3.5 rounded-full ${s.bar}`} />
-        <span className={`text-[10px] font-black uppercase tracking-[0.12em] ${s.label}`}>{name}</span>
-      </div>
-      {s.code ? (
-        <pre className="bg-[#0A0A10] border border-white/[0.06] rounded-xl px-4 py-3 text-[12px] font-mono text-slate-200 whitespace-pre-wrap leading-relaxed">
-          {content}
-        </pre>
-      ) : (
-        <div className="space-y-1 text-[12.5px] text-slate-300 leading-relaxed pl-2.5">
-          {content.split('\n').map((l, i) => <p key={i}><HighlightedText text={l} /></p>)}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function ScoreRing({ value, size = 56 }) {
-  const sw = 5, r = (size - sw) / 2
-  const circ = 2 * Math.PI * r
-  const color = value >= 80 ? '#10b981' : value >= 50 ? '#f59e0b' : '#ef4444'
-  return (
-    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#1e2535" strokeWidth={sw} />
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={sw}
-        strokeDasharray={`${(value/100)*circ} ${circ}`} strokeLinecap="round"
-        style={{ transition: 'stroke-dasharray 0.8s ease' }} />
-      <text x="50%" y="50%" dominantBaseline="middle" textAnchor="middle"
-        style={{ transform:'rotate(90deg)', transformOrigin:'50% 50%', fill:'#fff', fontSize: size*0.2, fontWeight: 800 }}>
-        {value}%
-      </text>
-    </svg>
-  )
-}
-
-function Spinner({ color = 'border-blue-500' }) {
-  return (
-    <div className={`w-5 h-5 rounded-full border-2 border-white/10 ${color} border-t-transparent animate-spin`} />
-  )
-}
-
-// Right-side icon tab button
-function IconTab({ icon, label, active, onClick, badge }) {
-  return (
-    <button onClick={onClick} title={label}
-      className={`relative flex flex-col items-center gap-1 py-3 w-full transition-all duration-200 group ${
-        active ? 'text-blue-300' : 'text-slate-600 hover:text-slate-300'
-      }`}>
-      {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-8 bg-blue-500 rounded-r-full" />}
-      <span className="text-base">{icon}</span>
-      <span className="text-[9px] font-bold uppercase tracking-wider leading-none">{label}</span>
-      {badge != null && (
-        <span className={`absolute top-1.5 right-1.5 text-[8px] font-black min-w-[14px] h-3.5 flex items-center justify-center rounded-full px-0.5 ${
-          active ? 'bg-blue-500 text-white' : 'bg-white/10 text-slate-400'
-        }`}>{badge}</span>
-      )}
-    </button>
-  )
-}
+const DIFF_COLOR = { easy: 'grass', medium: 'sun', hard: 'tomato' }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAIN COMPONENT
@@ -148,42 +34,43 @@ function IconTab({ icon, label, active, onClick, badge }) {
 export default function OfflinePractice() {
   const { user } = useAuth()
   const nav = useNavigate()
+  const editorTheme = useEditorTheme()
 
   // Right panel: null | 'questions' | 'ai' | 'complexity'
-  const [rightPanel, setRightPanel] = useState('questions')
+  const [rightPanel, setRightPanel] = useState(null)
 
   // Generator
-  const [inputMode,       setInputMode]       = useState('type')
-  const [typedTopic,      setTypedTopic]       = useState('')
-  const [difficulty,      setDifficulty]       = useState(() => {
+  const [inputMode, setInputMode] = useState('type')
+  const [typedTopic, setTypedTopic] = useState('')
+  const [difficulty, setDifficulty] = useState(() => {
     const r = user?.rating || 1000
     return r < 900 ? 'easy' : r < 1300 ? 'medium' : 'hard'
   })
-  const [numQuestions,    setNumQuestions]     = useState(3)
-  const [file,            setFile]             = useState(null)
-  const [loading,         setLoading]          = useState(false)
-  const [genError,        setGenError]         = useState('')
-  const [availableTopics, setAvailableTopics]  = useState([])
+  const [numQuestions, setNumQuestions] = useState(3)
+  const [file, setFile] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [genError, setGenError] = useState('')
+  const [availableTopics, setAvailableTopics] = useState([])
 
   // Questions
   const [questions, setQuestions] = useState([])
-  const [activeQ,   setActiveQ]   = useState(0)
+  const [activeQ, setActiveQ] = useState(0)
   const [submissionStatus, setSubmissionStatus] = useState({})
   const [showCompletionModal, setShowCompletionModal] = useState(false)
 
   // Editor
   const [language, setLanguage] = useState('python')
-  const [code,     setCode]     = useState('')
+  const [code, setCode] = useState('')
   const editorRef = useRef(null)
   const protectedRef = useRef(null)
 
   // Problem panel width
-  const [problemW,  setProblemW]  = useState(380)
+  const [problemW, setProblemW] = useState(420)
   const probResizing = useRef(false)
-  const probStartX   = useRef(0)
-  const probStartW   = useRef(0)
+  const probStartX = useRef(0)
+  const probStartW = useRef(0)
 
-  // Session dedup
+  // Questions already seen this session, so a new batch never repeats
   const sessionUsedTitles = useRef((() => {
     try { return new Set(JSON.parse(localStorage.getItem('compilex_used_titles') || '[]')) }
     catch { return new Set() }
@@ -195,44 +82,39 @@ export default function OfflinePractice() {
   }, [])
 
   // Bottom panel
-  const [bottomTab,  setBottomTab]  = useState('testcases')
-  const [bottomH,    setBottomH]    = useState(220)
+  const [bottomTab, setBottomTab] = useState('testcases')
+  const [bottomH, setBottomH] = useState(260)
   const [bottomOpen, setBottomOpen] = useState(true)
   const btmResizing = useRef(false)
-  const btmStartY   = useRef(0)
-  const btmStartH   = useRef(0)
+  const btmStartY = useRef(0)
+  const btmStartH = useRef(0)
 
   // Test cases
-  const [testCases,  setTestCases]  = useState([])
+  const [testCases, setTestCases] = useState([])
   const [selectedTC, setSelectedTC] = useState(0)
-  const [tcResults,  setTcResults]  = useState([])
+  const [tcResults, setTcResults] = useState([])
 
   // Run / submit
-  const [submitting,   setSubmitting]   = useState(false)
+  const [submitting, setSubmitting] = useState(false)
   const [submitResult, setSubmitResult] = useState(null)
 
   // Custom input
-  const [customInput,  setCustomInput]  = useState('')
+  const [customInput, setCustomInput] = useState('')
   const [customOutput, setCustomOutput] = useState(null)
   const [runningCustom, setRunningCustom] = useState(false)
 
   // AI feedback
   const [aiFeedback, setAiFeedback] = useState(null)
-  const [loadingAI,  setLoadingAI]  = useState(false)
+  const [loadingAI, setLoadingAI] = useState(false)
 
-  // Grok AI feedback chat
-  const [grokMessages, setGrokMessages] = useState([])
-  const [grokInput, setGrokInput] = useState('')
-  const [grokLoading, setGrokLoading] = useState(false)
-  const grokChatEndRef = useRef(null)
-
-  useEffect(() => {
-    grokChatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [grokMessages, grokLoading])
+  // Coach chat
+  const [coachMessages, setCoachMessages] = useState([])
+  const [coachInput, setCoachInput] = useState('')
+  const [coachLoading, setCoachLoading] = useState(false)
 
   // Complexity
   const [complexity, setComplexity] = useState(null)
-  const [loadingCx,  setLoadingCx]  = useState(false)
+  const [loadingCx, setLoadingCx] = useState(false)
 
   // Toast
   const [toast, setToast] = useState({ msg: '', type: 'info', visible: false })
@@ -240,7 +122,7 @@ export default function OfflinePractice() {
   const showToast = useCallback((msg, type = 'info') => {
     if (toastTimer.current) clearTimeout(toastTimer.current)
     setToast({ msg, type, visible: true })
-    toastTimer.current = setTimeout(() => setToast(t => ({ ...t, visible: false })), 2800)
+    toastTimer.current = setTimeout(() => setToast((t) => ({ ...t, visible: false })), 2800)
   }, [])
 
   const triggerLayout = useCallback(() => {
@@ -259,9 +141,9 @@ export default function OfflinePractice() {
     api.get('/questions/topics').then(({ data }) => {
       if (data?.topics) setAvailableTopics(data.topics)
     }).catch(() => setAvailableTopics([
-      'arrays','strings','graphs','trees','dynamic programming',
-      'sorting','hashing','stacks','queues','greedy',
-      'backtracking','recursion','linked lists','math','two pointers',
+      'arrays', 'strings', 'graphs', 'trees', 'dynamic programming',
+      'sorting', 'hashing', 'stacks', 'queues', 'greedy',
+      'backtracking', 'recursion', 'linked lists', 'math', 'two pointers',
     ]))
   }, [])
 
@@ -269,7 +151,7 @@ export default function OfflinePractice() {
     const q = questions[activeQ]; if (!q) return
     setTestCases(parseTestCases(q.test_cases).map((tc, i) => ({ ...tc, hidden: i > 0 })))
     setTcResults([]); setSelectedTC(0); setSubmitResult(null)
-    setAiFeedback(null); setComplexity(null); setGrokMessages([]); setGrokInput('')
+    setAiFeedback(null); setComplexity(null); setCoachMessages([]); setCoachInput('')
     setCode(parseStarterCode(q.starter_code, language))
   }, [activeQ, questions])
 
@@ -280,9 +162,9 @@ export default function OfflinePractice() {
 
   // Problem panel resize
   useEffect(() => {
-    const onMove = e => {
+    const onMove = (e) => {
       if (!probResizing.current) return
-      setProblemW(Math.min(600, Math.max(280, probStartW.current + e.clientX - probStartX.current)))
+      setProblemW(Math.min(640, Math.max(300, probStartW.current + e.clientX - probStartX.current)))
       triggerLayout()
     }
     const onUp = () => { if (probResizing.current) { probResizing.current = false; document.body.style.cursor = ''; triggerLayout() } }
@@ -293,9 +175,9 @@ export default function OfflinePractice() {
 
   // Bottom panel resize
   useEffect(() => {
-    const onMove = e => {
+    const onMove = (e) => {
       if (!btmResizing.current) return
-      setBottomH(Math.min(520, Math.max(140, btmStartH.current + btmStartY.current - e.clientY)))
+      setBottomH(Math.min(520, Math.max(160, btmStartH.current + btmStartY.current - e.clientY)))
       triggerLayout()
     }
     const onUp = () => { if (btmResizing.current) { btmResizing.current = false; document.body.style.cursor = ''; triggerLayout() } }
@@ -318,9 +200,9 @@ export default function OfflinePractice() {
       } else {
         if (!typedTopic.trim()) return
         const generated = []
-        questions.forEach(q => q.title && addUsedTitle(q.title))
+        questions.forEach((q) => q.title && addUsedTitle(q.title))
         for (let i = 0; i < numQuestions; i++) {
-          const used = [...sessionUsedTitles.current, ...generated.map(q => q.title?.toLowerCase()).filter(Boolean)]
+          const used = [...sessionUsedTitles.current, ...generated.map((q) => q.title?.toLowerCase()).filter(Boolean)]
           const { data } = await api.post('/questions/generate', { difficulty, topic: typedTopic.trim(), num_test_cases: 5, exclude_titles: used })
           const { data: saved } = await api.post('/questions', data)
           generated.push({ ...data, id: saved.id })
@@ -330,7 +212,7 @@ export default function OfflinePractice() {
       }
       setRightPanel('questions')
     } catch (err) {
-      setGenError(err.response?.data?.detail || 'Failed to generate questions.')
+      setGenError(err.response?.data?.detail || 'Could not generate questions. Try again.')
     } finally { setLoading(false) }
   }
 
@@ -344,7 +226,7 @@ export default function OfflinePractice() {
       const { data: sub } = await api.post('/submissions', { code, language, question_id: dbQ.id })
       setSubmitResult(sub)
       if (sub.test_case_details) setTcResults(sub.test_case_details)
-      setSubmissionStatus(prev => ({ ...prev, [activeQ]: sub.status === 'passed' ? 'passed' : 'failed' }))
+      setSubmissionStatus((prev) => ({ ...prev, [activeQ]: sub.status === 'passed' ? 'passed' : 'failed' }))
       fetchAI(sub)
     } catch (err) { showToast(err.response?.data?.detail || 'Submission failed', 'error') }
     finally { setSubmitting(false) }
@@ -365,7 +247,7 @@ export default function OfflinePractice() {
   const handleRunCustom = async () => {
     setRunningCustom(true); setCustomOutput(null)
     try {
-      const inputs = customInput.split('\n---').map(s => s.trim()).filter(Boolean)
+      const inputs = customInput.split('\n---').map((s) => s.trim()).filter(Boolean)
       const { data } = await api.post('/execute', { code, language, inputs: inputs.length ? inputs : [customInput] })
       setCustomOutput(data.results || [])
     } catch (err) { setCustomOutput([{ error: err.response?.data?.detail || 'Execution failed' }]) }
@@ -376,7 +258,7 @@ export default function OfflinePractice() {
     const q = questions[activeQ]; if (!q) return
     setLoadingAI(true); setRightPanel('ai')
     try {
-      const { data } = await api.post('/analyze-code', { code, language, problem_statement: `${q.title}\n\n${q.description||''}`, test_results: sub?.test_case_details||[], passed_tests: sub?.passed_tests??0, total_tests: sub?.total_tests??0 })
+      const { data } = await api.post('/analyze-code', { code, language, problem_statement: `${q.title}\n\n${q.description || ''}`, test_results: sub?.test_case_details || [], passed_tests: sub?.passed_tests ?? 0, total_tests: sub?.total_tests ?? 0 })
       setAiFeedback(data)
     } catch { setAiFeedback(null) }
     finally { setLoadingAI(false) }
@@ -386,356 +268,335 @@ export default function OfflinePractice() {
     const q = questions[activeQ]; if (!q) return
     setLoadingCx(true); setRightPanel('complexity')
     try {
-      const { data } = await api.post('/analyze-complexity', { code, language, problem_statement: `${q.title}\n\n${q.description||''}` })
+      const { data } = await api.post('/analyze-complexity', { code, language, problem_statement: `${q.title}\n\n${q.description || ''}` })
       setComplexity(data)
     } catch { setComplexity(null) }
     finally { setLoadingCx(false) }
   }
 
-  async function sendGrokMessage(messageText) {
-    const text = (messageText || grokInput).trim()
-    if (!text || grokLoading) return
+  async function sendCoachMessage(messageText) {
+    const text = (messageText || coachInput).trim()
+    if (!text || coachLoading) return
 
     const userMsg = { role: 'user', content: text }
-    const updatedHistory = [...grokMessages, userMsg]
-    setGrokMessages(updatedHistory)
-    setGrokInput('')
-    setGrokLoading(true)
+    setCoachMessages((prev) => [...prev, userMsg])
+    setCoachInput('')
+    setCoachLoading(true)
 
     const qItem = questions[activeQ]
     try {
       const { data } = await api.post('/ai-feedback', {
         message: text,
         code: code || '',
-        language: language,
-        problem_statement: qItem ? `${qItem.title}\n\n${qItem.description||''}` : '',
-        history: grokMessages,
+        language,
+        problem_statement: qItem ? `${qItem.title}\n\n${qItem.description || ''}` : '',
+        history: coachMessages,
       })
-      setGrokMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
+      setCoachMessages((prev) => [...prev, { role: 'assistant', content: data.reply }])
     } catch (err) {
-      const errMsg = err.response?.data?.detail || 'Failed to get AI response. Please try again.'
-      setGrokMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${errMsg}` }])
+      const errMsg = err.response?.data?.detail || 'Could not get a reply from the coach. Try again.'
+      setCoachMessages((prev) => [...prev, { role: 'assistant', content: errMsg }])
     } finally {
-      setGrokLoading(false)
+      setCoachLoading(false)
     }
   }
 
-  const q           = questions[activeQ]
-  const ds          = DIFF[q?.difficulty] || DIFF.medium
-  const passedCount = tcResults.filter(r => r.passed).length
-  const totalCount  = tcResults.length
-  const isRunning   = bottomTab === 'custom' ? runningCustom : submitting
+  const q = questions[activeQ]
+  const passedCount = tcResults.filter((r) => r.passed).length
+  const totalCount = tcResults.length
+  const isRunning = bottomTab === 'custom' ? runningCustom : submitting
+
+  const caseViews = testCases.map((tc, i) => {
+    const { input, output } = caseIO(tc)
+    const r = tcResults[i]
+    return {
+      input,
+      expected_output: output,
+      actual_output: r?.actual_output ?? null,
+      passed: r ? r.passed : null,
+      error: r?.error ?? null,
+      hidden: tc.hidden,
+    }
+  })
+
+  // ── Pieces reused in more than one place ─────────────────────────────────
+  const generator = (
+    <div className="space-y-4">
+      <div className="seg w-full" role="group" aria-label="Where questions come from">
+        {[['type', 'A topic'], ['upload', 'A syllabus file']].map(([m, l]) => (
+          <button key={m} aria-pressed={inputMode === m} onClick={() => setInputMode(m)} className="flex-1">{l}</button>
+        ))}
+      </div>
+
+      {inputMode === 'type' ? (
+        <>
+          <div>
+            <label htmlFor="topic" className="label">Topic</label>
+            <input
+              id="topic"
+              value={typedTopic}
+              onChange={(e) => setTypedTopic(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+              list="topic-suggestions"
+              placeholder="For example: binary trees, graphs"
+              className="field"
+            />
+            <datalist id="topic-suggestions">{availableTopics.map((t) => <option key={t} value={t} />)}</datalist>
+          </div>
+          <fieldset>
+            <legend className="label">Difficulty</legend>
+            <div className="seg w-full" role="group">
+              {['easy', 'medium', 'hard'].map((d) => (
+                <button key={d} aria-pressed={difficulty === d} onClick={() => setDifficulty(d)} className="flex-1 capitalize">{d}</button>
+              ))}
+            </div>
+          </fieldset>
+        </>
+      ) : (
+        <div>
+          <input type="file" accept=".pdf,.txt,image/*" onChange={(e) => setFile(e.target.files?.[0])} className="sr-only" id="syllabus-file" />
+          <label
+            htmlFor="syllabus-file"
+            className="flex cursor-pointer items-center gap-3 rounded-md border border-dashed border-line-strong bg-sunken p-4 transition-colors hover:border-ink-3"
+          >
+            <Icon name={file ? 'file' : 'upload'} size={22} />
+            <span>
+              <span className="block font-semibold">{file ? file.name : 'Choose a syllabus'}</span>
+              <span className="block text-sm text-ink-3">PDF, text file or image</span>
+            </span>
+          </label>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between">
+        <span className="label !mb-0">How many questions</span>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setNumQuestions((n) => Math.max(1, n - 1))} className="btn btn-secondary btn-icon h-8 w-8" aria-label="Fewer questions">
+            <Icon name="minus" size={14} />
+          </button>
+          <span className="numeral w-9 text-center text-xl">{numQuestions}</span>
+          <button onClick={() => setNumQuestions((n) => Math.min(10, n + 1))} className="btn btn-secondary btn-icon h-8 w-8" aria-label="More questions">
+            <Icon name="plus" size={14} />
+          </button>
+        </div>
+      </div>
+
+      <button
+        onClick={handleGenerate}
+        disabled={loading || (inputMode === 'type' ? !typedTopic.trim() : !file)}
+        className="btn btn-primary w-full"
+      >
+        {loading ? (
+          <>
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-paper/30 border-t-paper" />
+            Writing {numQuestions === 1 ? 'the question' : 'the questions'}…
+          </>
+        ) : (
+          'Generate questions'
+        )}
+      </button>
+      {genError && <p role="alert" className="text-sm font-medium text-tomato-ink">{genError}</p>}
+    </div>
+  )
+
+  const panelTabs = [
+    ['questions', 'Questions'],
+    ['ai', 'Coach'],
+    ['complexity', 'Complexity'],
+  ]
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   return (
-    <div className="h-screen bg-[#0a0f1c] flex flex-col overflow-hidden text-white relative" style={{ fontFamily: 'Inter, sans-serif' }}>
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <AnimatedBackgroundCSS />
-      </div>
-
-      {/* ── TOAST ── */}
-      <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 pointer-events-none ${toast.visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3'}`}>
-        <div className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-semibold backdrop-blur border ${
-          toast.type === 'error' ? 'bg-rose-950/90 border-rose-500/40 text-rose-300' :
-          toast.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300' :
-          'bg-[#1a1f2e]/90 border-white/10 text-slate-300'
-        }`}>
-          <span>{toast.type === 'error' ? '⚠️' : toast.type === 'success' ? '✓' : 'ℹ'}</span>
-          {toast.msg}
-        </div>
-      </div>
-
-      {/* ── TOP BAR ── */}
-      <header className="h-11 flex items-center justify-between px-4 border-b border-white/[0.05] bg-[#060a12]/95 backdrop-blur shrink-0 z-40">
-        <div className="flex items-center gap-3">
-          <button onClick={() => nav('/home')} className="flex items-center gap-1.5 text-slate-500 hover:text-white transition-colors text-xs group">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="group-hover:-translate-x-0.5 transition-transform"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-            Back
-          </button>
-          <div className="w-px h-4 bg-white/[0.08]" />
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-[10px] shadow-lg shadow-blue-500/30">⚡</div>
-            <span className="text-sm font-bold bg-gradient-to-r from-blue-300 to-pink-300 bg-clip-text text-transparent">Practice Arena</span>
+    <div className="flex h-screen flex-col overflow-hidden bg-paper">
+      {toast.visible && (
+        <div className="pointer-events-none fixed left-1/2 top-4 z-50 -translate-x-1/2 animate-fade-in" role="status">
+          <div className={`flex items-center gap-2.5 rounded-md border px-4 py-2.5 text-sm font-semibold shadow-float ${
+            toast.type === 'error' ? 'border-tomato-ink/50 bg-panel text-tomato-ink' : 'border-line-strong bg-panel text-ink'
+          }`}>
+            <Icon name={toast.type === 'error' ? 'alert' : 'info'} size={16} />
+            {toast.msg}
           </div>
         </div>
+      )}
+
+      {/* Top bar */}
+      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-line px-4">
+        <Link to="/dashboard" className="btn btn-quiet btn-sm -ml-2" aria-label="Back to the dashboard">
+          <Icon name="arrow-left" size={16} />
+          <span className="hidden sm:inline">Dashboard</span>
+        </Link>
+        <span className="hidden h-5 w-px bg-line md:block" />
+        <Logo size={24} wordmark={false} className="hidden md:inline-flex" />
+        <span className="hidden font-bold md:block">Practice arena</span>
 
         {q && (
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-            <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide ${ds.text} ${ds.bg} border ${ds.border}`}>{q.difficulty}</span>
-            {q.topic && <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-300">#{q.topic}</span>}
-            <span className="text-sm font-bold text-white max-w-xs truncate">{q.title}</span>
+          <div className="mx-auto flex min-w-0 items-center gap-2.5">
+            <DifficultyTag level={q.difficulty} />
+            <span className="max-w-[26rem] truncate font-semibold">{q.title}</span>
           </div>
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1">
           {user?.rating && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.07] text-[10px] text-slate-400">
-              <span>{user.rating < 800 ? '🌱' : user.rating < 1200 ? '⚡' : user.rating < 1600 ? '🔥' : '💎'}</span>
-              <span className="font-bold text-blue-400">{user.rating}</span>
-            </div>
+            <span className="mr-2 hidden items-baseline gap-1.5 sm:flex">
+              <span className="numeral text-xl">{Math.round(user.rating)}</span>
+              <span className="text-xs text-ink-3">rating</span>
+            </span>
           )}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.07] text-[10px] text-slate-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            {user?.username}
-          </div>
+          <ThemeToggle />
+          <button
+            onClick={() => setRightPanel((p) => (p ? null : 'questions'))}
+            className="btn btn-quiet btn-icon"
+            aria-label={rightPanel ? 'Hide side panel' : 'Show side panel'}
+            aria-pressed={!!rightPanel}
+          >
+            <Icon name="sidebar" size={18} />
+          </button>
         </div>
       </header>
 
-      {/* ── BODY ── */}
-      <div className="flex flex-1 overflow-hidden relative z-10">
-
-        {/* ══ MAIN CONTENT ══ */}
-        <div className="flex-1 flex overflow-hidden min-w-0">
+      {/* Body */}
+      <div className="flex min-h-0 flex-1">
+        <div className="flex min-w-0 flex-1">
           {q ? (
             <>
-              {/* PROBLEM PANEL */}
-              <div style={{ width: problemW }} className="shrink-0 flex flex-col border-r border-white/[0.05] bg-[#080c16] overflow-hidden relative">
-                <div className="flex-1 overflow-y-auto scrollbar-thin">
-                  <div className="px-6 pt-6 pb-4">
-                    <div className="flex items-center gap-2 mb-3 flex-wrap">
-                      <span className={`inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide ${ds.text} ${ds.bg} border ${ds.border}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${ds.dot}`} />{q.difficulty}
-                      </span>
-                      {q.topic && <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-blue-500/8 border border-blue-500/20 text-blue-400">#{q.topic}</span>}
-                    </div>
-                    <h2 className="text-lg font-black text-white leading-tight tracking-tight mb-1">{q.title}</h2>
-                  </div>
+              {/* Problem */}
+              <section style={{ width: problemW }} className="relative shrink-0 overflow-y-auto border-r border-line p-6">
+                <ProblemStatement question={q} exampleCount={2} />
+                <div
+                  className="absolute right-0 top-0 z-10 h-full w-1.5 cursor-col-resize transition-colors hover:bg-sky/40"
+                  onMouseDown={(e) => { probResizing.current = true; probStartX.current = e.clientX; probStartW.current = problemW; document.body.style.cursor = 'col-resize'; e.preventDefault() }}
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label="Resize problem panel"
+                />
+              </section>
 
-                  <div className="px-6 pb-6 space-y-5">
-                    {(() => {
-                      const { body, sections } = parseQuestionSections(q.description || '')
-                      return (
-                        <>
-                          {body && (
-                            <div className="text-[13px] text-slate-300/90 leading-[1.75] space-y-1.5">
-                              {body.split('\n').filter(Boolean).map((line, i) => (
-                                <p key={i}><HighlightedText text={line} /></p>
-                              ))}
-                            </div>
-                          )}
-                          {q.diagram && (
-                            <div className="rounded-xl overflow-hidden border border-white/[0.06]">
-                              <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest px-3 py-2 border-b border-white/[0.05]">Diagram</p>
-                              <img src={q.diagram} alt="diagram" className="w-full" />
-                            </div>
-                          )}
-                          {/* Test case examples (replaces Sample Input/Output) */}
-                          {parseTestCases(q.test_cases).slice(0, 2).map((tc, i) => {
-                            const inp = tc.input || tc.input_data || ''
-                            const out = tc.output || tc.expected_output || ''
-                            return (
-                              <div key={i} className="rounded-xl border border-white/[0.06] bg-[#0A0A10] overflow-hidden">
-                                <div className="px-3 py-1.5 border-b border-white/[0.05] bg-white/[0.02]">
-                                  <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Example {i + 1}</span>
-                                </div>
-                                <div className="p-3 space-y-2 font-mono text-[11.5px]">
-                                  <div><span className="text-slate-500 text-[10px] font-bold">Input</span><pre className="text-sky-300 mt-0.5 whitespace-pre-wrap">{inp}</pre></div>
-                                  <div><span className="text-slate-500 text-[10px] font-bold">Output</span><pre className="text-emerald-300 mt-0.5 whitespace-pre-wrap">{out}</pre></div>
-                                </div>
-                              </div>
-                            )
-                          })}
-                          {sections.map((sec, i) => <SectionBlock key={i} name={sec.name} content={sec.content} />)}
-                        </>
-                      )
-                    })()}
-                  </div>
-                </div>
-                {/* Resize handle */}
-                <div className="absolute top-0 right-0 w-1 h-full cursor-col-resize z-10 group"
-                  onMouseDown={e => { probResizing.current = true; probStartX.current = e.clientX; probStartW.current = problemW; document.body.style.cursor = 'col-resize'; e.preventDefault() }}>
-                  <div className="w-full h-full bg-white/[0.02] group-hover:bg-blue-500/40 transition-colors" />
-                </div>
-              </div>
-
-              {/* EDITOR COLUMN */}
-              <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-                {/* Editor toolbar */}
-                <div className="h-11 flex items-center justify-between px-3 border-b border-white/[0.05] bg-[#060a12] shrink-0">
-                  <div className="flex items-center gap-0.5 overflow-x-auto hide-scrollbar">
-                    {LANGUAGES.map(l => (
-                      <button key={l.value} onClick={() => setLanguage(l.value)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-                          language === l.value
-                            ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
-                            : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
-                        }`}>
-                        <span>{l.icon}</span><span className="hidden sm:inline">{l.label}</span>
-                      </button>
+              {/* Editor column */}
+              <div className="flex min-w-0 flex-1 flex-col">
+                <div className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-line px-3">
+                  <div className="seg" role="group" aria-label="Language">
+                    {LANGUAGES.map((l) => (
+                      <button key={l.value} aria-pressed={language === l.value} onClick={() => setLanguage(l.value)}>{l.label}</button>
                     ))}
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 ml-3">
-                    <button onClick={fetchComplexity} disabled={loadingCx}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-400/80 hover:text-amber-300 hover:bg-amber-500/8 border border-amber-500/15 hover:border-amber-500/30 transition-all disabled:opacity-40">
-                      {loadingCx ? <Spinner color="border-amber-500" /> : '📊'}
+                  <div className="flex items-center gap-2">
+                    <button onClick={fetchComplexity} disabled={loadingCx} className="btn btn-quiet btn-sm">
+                      {loadingCx ? <Spinner /> : <Icon name="gauge" size={16} />}
                       <span className="hidden md:inline">Complexity</span>
                     </button>
-                    <button onClick={bottomTab === 'custom' ? handleRunCustom : handleRunTests} disabled={isRunning || submissionStatus[activeQ]}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white bg-white/[0.05] hover:bg-white/[0.09] border border-white/[0.08] transition-all disabled:opacity-40">
-                      {isRunning ? <Spinner /> : <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>}
-                      Run
+                    <button
+                      onClick={bottomTab === 'custom' ? handleRunCustom : handleRunTests}
+                      disabled={isRunning || submissionStatus[activeQ]}
+                      className="btn btn-secondary btn-sm"
+                    >
+                      {isRunning ? <Spinner /> : <Icon name="play" size={12} />}
+                      Run tests
                     </button>
-                    <button onClick={handleSubmit} disabled={submitting || submissionStatus[activeQ]}
-                      className="relative flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-black text-white overflow-hidden group disabled:opacity-40 transition-all hover:scale-105 active:scale-95">
-                      <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-500 rounded-lg" />
-                      <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-all rounded-lg" />
-                      <span className="relative z-10 flex items-center gap-1.5">
-                        {submitting ? <Spinner color="border-white" /> : <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5"/></svg>}
-                        {submitting ? 'Running…' : 'Submit'}
-                      </span>
+                    <button onClick={handleSubmit} disabled={submitting || submissionStatus[activeQ]} className="btn btn-primary btn-sm">
+                      {submitting ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-paper/30 border-t-paper" /> : <Icon name="check" size={14} strokeWidth={2.4} />}
+                      {submitting ? 'Running…' : 'Submit'}
                     </button>
                   </div>
                 </div>
 
-                {/* Monaco */}
-                <div className="flex-1 min-h-0 overflow-hidden">
-                  <Editor height="100%"
-                    language={LANGUAGES.find(l => l.value === language)?.monaco || language}
-                    theme="vs-dark" value={code}
-                    onChange={v => setCode(v || '')}
+                <div className="min-h-0 flex-1 overflow-hidden">
+                  <Editor
+                    height="100%"
+                    language={LANGUAGES.find((l) => l.value === language)?.monaco || language}
+                    theme={editorTheme}
+                    value={code}
+                    onChange={(v) => setCode(v || '')}
+                    beforeMount={registerEditorThemes}
                     onMount={(e, monaco) => { editorRef.current = e; protectedRef.current = attachProtectedRegion(e, monaco) }}
-                    options={{ minimap: { enabled: false }, fontSize: 13.5, fontFamily: '"JetBrains Mono","Fira Code",monospace', fontLigatures: true, padding: { top: 16, bottom: 16 }, lineNumbers: 'on', scrollBeyondLastLine: false, renderLineHighlight: 'all', bracketPairColorization: { enabled: true }, smoothScrolling: true, cursorBlinking: 'smooth' }}
+                    options={{
+                      minimap: { enabled: false }, fontSize: 14, fontFamily: EDITOR_FONT, fontLigatures: true,
+                      padding: { top: 16, bottom: 16 }, lineNumbers: 'on', scrollBeyondLastLine: false,
+                      renderLineHighlight: 'line', bracketPairColorization: { enabled: true }, automaticLayout: true,
+                    }}
                   />
                 </div>
 
-                {/* Bottom resize handle */}
-                {bottomOpen && (
-                  <div className="h-2 shrink-0 cursor-ns-resize group bg-white/[0.03] hover:bg-blue-500/30 transition-colors flex items-center justify-center relative z-20"
-                    onMouseDown={e => { btmResizing.current = true; btmStartY.current = e.clientY; btmStartH.current = bottomH; document.body.style.cursor = 'ns-resize'; e.preventDefault() }}>
-                    <div className="w-12 h-[2px] rounded-full bg-white/20 group-hover:bg-white/60 transition-colors" />
+                {submitResult && (
+                  <div className={`flex shrink-0 items-center justify-between gap-4 border-t px-5 py-2.5 ${
+                    submitResult.status === 'passed' ? 'border-grass-ink/40 bg-grass/10' : 'border-tomato-ink/40 bg-tomato/10'
+                  }`} role="status">
+                    <div className="flex items-center gap-3">
+                      <Icon name={submitResult.status === 'passed' ? 'check-circle' : 'x-circle'} size={22} className={submitResult.status === 'passed' ? 'text-grass-ink' : 'text-tomato-ink'} />
+                      <div>
+                        <div className="font-bold">
+                          {submitResult.status === 'passed' ? 'All tests passed' : `${submitResult.passed_tests} of ${submitResult.total_tests} tests passed`}
+                        </div>
+                        {submitResult.execution_time_ms && <div className="text-xs text-ink-3">{Math.round(submitResult.execution_time_ms)} ms</div>}
+                      </div>
+                    </div>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="numeral text-3xl">{submitResult.score}</span>
+                      <span className="text-sm text-ink-3">points</span>
+                    </div>
                   </div>
                 )}
 
-                {/* Bottom panel */}
+                {bottomOpen && (
+                  <div
+                    className="h-1.5 shrink-0 cursor-row-resize bg-line transition-colors hover:bg-sky/50"
+                    onMouseDown={(e) => { btmResizing.current = true; btmStartY.current = e.clientY; btmStartH.current = bottomH; document.body.style.cursor = 'row-resize'; e.preventDefault() }}
+                    role="separator"
+                    aria-orientation="horizontal"
+                    aria-label="Resize results panel"
+                  />
+                )}
+
                 {bottomOpen ? (
-                  <div style={{ height: bottomH }} className="shrink-0 flex flex-col border-t border-white/[0.05] bg-[#080c16] overflow-hidden">
-                    <div className="flex items-center justify-between px-4 border-b border-white/[0.05] bg-[#060a12] shrink-0 h-9">
-                      <div className="flex h-full">
-                        {[
-                          { id: 'testcases', label: '🧪 Tests', badge: totalCount > 0 ? `${passedCount}/${totalCount}` : null, badgeOk: passedCount === totalCount && totalCount > 0 },
-                          { id: 'custom',    label: '⌨️ Custom' },
-                        ].map(t => (
-                          <button key={t.id} onClick={() => setBottomTab(t.id)}
-                            className={`flex items-center gap-2 px-4 text-xs font-semibold border-b-2 transition-all h-full ${
-                              bottomTab === t.id ? 'border-blue-500 text-blue-300' : 'border-transparent text-slate-500 hover:text-slate-300'
-                            }`}>
-                            {t.label}
-                            {t.badge && <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${t.badgeOk ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>{t.badge}</span>}
-                          </button>
-                        ))}
+                  <div style={{ height: bottomH }} className="flex shrink-0 flex-col overflow-hidden bg-panel">
+                    <div className="flex shrink-0 items-center justify-between border-b border-line pl-2 pr-2">
+                      <div className="tabs border-b-0" role="tablist">
+                        <button role="tab" aria-selected={bottomTab === 'testcases'} onClick={() => setBottomTab('testcases')} className="tab">
+                          Test cases
+                          {totalCount > 0 && (
+                            <span className="chip h-5 px-2" style={{ color: passedCount === totalCount ? 'rgb(var(--grass-ink))' : 'rgb(var(--tomato-ink))' }}>
+                              {passedCount} of {totalCount}
+                            </span>
+                          )}
+                        </button>
+                        <button role="tab" aria-selected={bottomTab === 'custom'} onClick={() => setBottomTab('custom')} className="tab">Custom input</button>
                       </div>
-                      <button onClick={() => setBottomOpen(false)} className="text-slate-600 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/[0.05]">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                      <button onClick={() => setBottomOpen(false)} className="btn btn-quiet btn-icon h-8 w-8" aria-label="Hide results panel">
+                        <Icon name="chevron-down" size={16} />
                       </button>
                     </div>
 
-                    <div className="flex-1 overflow-hidden">
-                      {/* Test Cases */}
+                    <div className="min-h-0 flex-1">
                       {bottomTab === 'testcases' && (
-                        <div className="flex h-full">
-                          <div className="w-24 shrink-0 border-r border-white/[0.05] overflow-y-auto p-2 space-y-1">
-                            {testCases.map((_, i) => {
-                              const r = tcResults[i]
-                              return (
-                                <button key={i} onClick={() => setSelectedTC(i)}
-                                  className={`w-full flex items-center gap-2 px-2 py-2 rounded-xl text-[11px] font-semibold transition-all ${
-                                    selectedTC === i ? 'bg-blue-500/15 text-blue-300 border border-blue-500/25' : 'text-slate-500 hover:bg-white/[0.04] hover:text-slate-300'
-                                  }`}>
-                                  <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[9px] font-black shrink-0 ${
-                                    !r ? 'bg-white/[0.06] text-slate-600' :
-                                    r.passed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
-                                  }`}>{r ? (r.passed ? '✓' : '✗') : i+1}</span>
-                                  Case {i+1}
-                                </button>
-                              )
-                            })}
-                          </div>
-                          <div className="flex-1 overflow-y-auto p-4 space-y-3 font-mono text-xs">
-                            {testCases[selectedTC] ? (() => {
-                              const tc = testCases[selectedTC]
-                              const r  = tcResults[selectedTC]
-                              return (
-                                <>
-                                  {tc.hidden ? (
-                                    <div className="flex flex-col items-center justify-center py-10 text-slate-500">
-                                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mb-3 opacity-50">
-                                        <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
-                                        <circle cx="12" cy="12" r="3"/>
-                                        <line x1="3" y1="3" x2="21" y2="21"/>
-                                      </svg>
-                                      <div className="font-semibold text-sm mb-1 uppercase tracking-widest text-white/50">Hidden Test Case</div>
-                                      <div className="text-xs text-center opacity-70 mb-4 max-w-[250px]">
-                                        The input and expected output for this test case are hidden.
-                                      </div>
-                                      {r && (
-                                        <div className="w-full bg-black/20 border border-white/5 rounded-lg p-3 text-center">
-                                          <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${r.passed ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                            YOUR OUTPUT — {r.passed ? '✓ PASSED' : '✗ FAILED'}
-                                          </p>
-                                          {!r.passed && r.error && (
-                                            <p className="text-rose-400 text-[9px] mt-2 whitespace-pre-wrap text-left bg-rose-500/10 p-2 rounded">{r.error}</p>
-                                          )}
-                                        </div>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <>
-                                      {[
-                                        { label: 'INPUT',           value: tc.input || tc.input_data || '—', color: 'text-sky-300'    },
-                                    { label: 'EXPECTED OUTPUT', value: tc.output || tc.expected_output || '—', color: 'text-slate-300' },
-                                  ].map(item => (
-                                    <div key={item.label}>
-                                      <p className="text-[9px] text-slate-600 font-black uppercase tracking-widest mb-1.5">{item.label}</p>
-                                      <pre className={`bg-white/[0.03] border border-white/[0.05] rounded-xl px-3 py-2.5 whitespace-pre-wrap break-all leading-relaxed ${item.color}`}>{item.value}</pre>
-                                    </div>
-                                  ))}
-                                  {r && (
-                                    <div>
-                                      <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${r.passed ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                        YOUR OUTPUT — {r.passed ? '✓ PASSED' : '✗ FAILED'}
-                                      </p>
-                                      <pre className={`rounded-xl px-3 py-2.5 whitespace-pre-wrap break-all leading-relaxed border ${
-                                        r.passed ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-300' : 'bg-rose-500/5 border-rose-500/20 text-rose-300'
-                                      }`}>{r.actual_output || r.error || '—'}</pre>
-                                    </div>
-                                  )}
-                                  {!r && submitting && (
-                                    <div className="flex items-center gap-2 text-slate-500 text-xs py-2">
-                                      <Spinner color="border-blue-500" /><span>Running tests…</span>
-                                    </div>
-                                  )}
-                                  </>
-                                )}
-                                </>
-                              )
-                            })() : <p className="text-slate-600 text-xs text-center py-6">Select a test case</p>}
-                          </div>
-                        </div>
+                        <TestCaseViewer cases={caseViews} selected={selectedTC} onSelect={setSelectedTC} />
                       )}
 
-                      {/* Custom Input */}
                       {bottomTab === 'custom' && (
                         <div className="flex h-full">
-                          <div className="flex-1 flex flex-col border-r border-white/[0.05]">
-                            <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.05] shrink-0">
-                              <span className="text-[10px] text-slate-600 font-semibold">Separate cases with <code className="text-slate-400 bg-white/[0.05] px-1 rounded">---</code></span>
-                              <button onClick={handleRunCustom} disabled={runningCustom}
-                                className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold bg-blue-500/10 text-blue-300 border border-blue-500/25 hover:bg-blue-500/20 transition-all disabled:opacity-40">
-                                {runningCustom ? <Spinner color="border-blue-400" /> : '▶'} Run
+                          <div className="flex flex-1 flex-col border-r border-line">
+                            <div className="flex items-center justify-between border-b border-line px-3 py-2">
+                              <span className="text-sm text-ink-3">Separate several inputs with <code className="rounded bg-sunken px-1 font-mono">---</code></span>
+                              <button onClick={handleRunCustom} disabled={runningCustom} className="btn btn-secondary btn-sm">
+                                {runningCustom ? <Spinner /> : <Icon name="play" size={12} />} Run
                               </button>
                             </div>
-                            <textarea value={customInput} onChange={e => setCustomInput(e.target.value)}
-                              placeholder="Enter test input…"
-                              className="flex-1 bg-transparent p-3 text-xs font-mono text-slate-300 placeholder-slate-700 resize-none focus:outline-none" />
+                            <label htmlFor="custom-input" className="sr-only">Custom input</label>
+                            <textarea
+                              id="custom-input"
+                              value={customInput}
+                              onChange={(e) => setCustomInput(e.target.value)}
+                              placeholder="Type the input your program reads"
+                              className="flex-1 resize-none bg-transparent p-3 font-mono text-[13px] text-ink placeholder:text-ink-3 focus:outline-none"
+                            />
                           </div>
-                          <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                            <p className="text-[9px] text-slate-600 font-black uppercase tracking-widest mb-2">OUTPUT</p>
-                            {!runningCustom && !customOutput && <p className="text-xs text-slate-600 text-center py-6">Run to see output</p>}
-                            {runningCustom && <div className="flex justify-center pt-4"><Spinner color="border-blue-500" /></div>}
+                          <div className="flex-1 space-y-2 overflow-y-auto p-3">
+                            <div className="text-sm font-medium text-ink-3">Output</div>
+                            {!runningCustom && !customOutput && <p className="py-4 text-sm text-ink-3">Run your code to see its output here.</p>}
+                            {runningCustom && <Spinner />}
                             {!runningCustom && customOutput?.map((r, i) => (
-                              <div key={i} className={`rounded-xl border p-3 text-xs font-mono ${r.error ? 'bg-rose-500/5 border-rose-500/20' : 'bg-emerald-500/5 border-emerald-500/20'}`}>
-                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${r.error ? 'text-rose-500' : 'text-emerald-500'}`}>Case {i+1}</p>
-                                <pre className={`whitespace-pre-wrap break-all ${r.error ? 'text-rose-300' : 'text-emerald-300'}`}>{r.error || r.output || '(empty)'}</pre>
+                              <div key={i} className={`rounded-md border p-3 ${r.error ? 'border-tomato-ink/40 bg-tomato/10' : 'border-grass-ink/40 bg-grass/10'}`}>
+                                <div className={`mb-1 text-xs font-semibold ${r.error ? 'text-tomato-ink' : 'text-grass-ink'}`}>Input {i + 1}</div>
+                                <pre className="whitespace-pre-wrap break-all font-mono text-[13px]">{r.error || r.output || '(empty)'}</pre>
                               </div>
                             ))}
                           </div>
@@ -744,511 +605,180 @@ export default function OfflinePractice() {
                     </div>
                   </div>
                 ) : (
-                  <div className="h-7 flex items-center px-4 border-t border-white/[0.05] bg-[#060a12] shrink-0">
-                    <button onClick={() => setBottomOpen(true)} className="flex items-center gap-1.5 text-[10px] text-slate-600 hover:text-slate-300 transition-colors">
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 15l-6-6-6 6"/></svg>
-                      Show panel
+                  <div className="flex h-9 shrink-0 items-center gap-3 border-t border-line px-4">
+                    <button onClick={() => setBottomOpen(true)} className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-2 hover:text-ink">
+                      <Icon name="chevron-up" size={14} /> Show results
                     </button>
-                    {totalCount > 0 && (
-                      <span className={`ml-3 text-[9px] font-black px-2 py-0.5 rounded-full ${passedCount === totalCount ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'}`}>
-                        {passedCount}/{totalCount} passed
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Submit result banner */}
-                {submitResult && (
-                  <div className={`shrink-0 flex items-center justify-between px-5 py-2.5 border-t ${
-                    submitResult.status === 'passed' ? 'bg-emerald-500/8 border-emerald-500/20' : 'bg-rose-500/8 border-rose-500/20'
-                  }`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-base ${submitResult.status === 'passed' ? 'bg-emerald-500/20' : 'bg-rose-500/20'}`}>
-                        {submitResult.status === 'passed' ? '✅' : '❌'}
-                      </div>
-                      <div>
-                        <p className={`font-bold text-sm ${submitResult.status === 'passed' ? 'text-emerald-400' : 'text-rose-400'}`}>
-                          {submitResult.status === 'passed' ? 'All Tests Passed!' : `${submitResult.passed_tests}/${submitResult.total_tests} Tests Passed`}
-                        </p>
-                        {submitResult.execution_time_ms && <p className="text-[10px] text-slate-500">{Math.round(submitResult.execution_time_ms)}ms execution</p>}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-3xl font-black text-white leading-none">{submitResult.score}</p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">points</p>
-                    </div>
+                    {totalCount > 0 && <span className="chip h-5 px-2">{passedCount} of {totalCount} passed</span>}
                   </div>
                 )}
               </div>
             </>
           ) : (
-            /* Empty state */
-            <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
-              <div className="relative overflow-hidden rounded-3xl bg-[#0a0f1c]/60 backdrop-blur-xl border border-white/[0.05] p-12 sm:p-16 text-center shadow-2xl max-w-2xl w-full">
-                {/* Glowing background effects inside the card */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[200px] bg-gradient-to-b from-blue-500/10 to-transparent pointer-events-none" />
-                <div className="absolute -bottom-[50px] -right-[50px] w-[200px] h-[200px] bg-cyan-500/10 blur-[80px] pointer-events-none rounded-full" />
-                <div className="absolute -top-[50px] -left-[50px] w-[200px] h-[200px] bg-blue-600/10 blur-[80px] pointer-events-none rounded-full" />
-                
-                <div className="relative z-10 flex flex-col items-center">
-                  <div className="relative flex items-center justify-center w-28 h-28 mb-8">
-                    <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-ping" style={{ animationDuration: '3s' }} />
-                    <div className="absolute inset-2 rounded-full border border-cyan-400/20 animate-ping" style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.5)]">
-                      <span className="text-4xl drop-shadow-md">🧠</span>
-                    </div>
-                  </div>
-                  
-                  <h2 className="text-4xl font-black text-white mb-4 tracking-tight">AI Practice Arena</h2>
-                  <p className="text-slate-400 text-lg max-w-lg mx-auto mb-10 leading-relaxed">
-                    Generate highly personalized coding challenges from any topic. Powered by advanced AI — every question is strictly unique.
+            <div className="flex flex-1 items-center justify-center overflow-y-auto p-6">
+              <div className="grid w-full max-w-4xl items-start gap-10 md:grid-cols-[1fr_22rem]">
+                <div>
+                  <h1 className="display text-[clamp(2.6rem,5vw,4rem)]">Practice arena</h1>
+                  <p className="measure mt-5 text-lg text-ink-2">
+                    Pick a topic, or upload a syllabus, and get problems written for you. Run them against test cases, then ask the coach what went wrong.
                   </p>
-                  
-                  <div className="flex flex-wrap justify-center gap-4 sm:gap-8 text-sm text-slate-300">
-                    {[
-                      { i: '🤖', l: 'AI Generated', d: 'Infinite questions' },
-                      { i: '📊', l: 'Smart Analysis', d: 'Instant feedback' },
-                      { i: '⚡', l: 'Live Execution', d: 'Secure sandbox' }
-                    ].map(f => (
-                      <div key={f.l} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:-translate-y-1 transition-all duration-300">
-                        <span className="text-3xl mb-1">{f.i}</span>
-                        <span className="font-bold text-white">{f.l}</span>
-                        <span className="text-xs text-slate-500">{f.d}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <ul className="mt-8 space-y-4 text-ink-2">
+                    <li><span className="font-semibold text-ink">Never a repeat.</span> Questions already seen on this device are excluded.</li>
+                    <li><span className="font-semibold text-ink">Hidden tests.</span> Only the first case is visible, as in a real match.</li>
+                    <li><span className="font-semibold text-ink">Feedback after every submit.</span> A logic score, hints, and a complexity report.</li>
+                  </ul>
+                </div>
+                <div className="panel p-5">
+                  <h2 className="mb-4 font-bold">New questions</h2>
+                  {generator}
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* ══ RIGHT ICON RAIL ══ */}
-        <div className="w-14 shrink-0 flex flex-col border-l border-white/[0.05] bg-[#0a0f1c]/80 backdrop-blur-xl relative z-10">
-          <IconTab icon="📋" label="List"  active={rightPanel === 'questions'}  onClick={() => setRightPanel(p => p === 'questions'  ? null : 'questions')}  badge={questions.length || null} />
-          <IconTab icon="🤖" label="AI"    active={rightPanel === 'ai'}         onClick={() => setRightPanel(p => p === 'ai'         ? null : 'ai')}         />
-          <IconTab icon="📊" label="Cmplx" active={rightPanel === 'complexity'} onClick={() => setRightPanel(p => p === 'complexity' ? null : 'complexity')} />
-        </div>
-
-        {/* ══ RIGHT SLIDING PANEL ══ */}
+        {/* Side panel */}
         {rightPanel && (
-          <div className="w-80 shrink-0 flex flex-col border-l border-white/[0.05] bg-[#0a0f1c]/80 backdrop-blur-xl overflow-hidden relative z-10">
+          <aside className="flex w-[22rem] shrink-0 flex-col border-l border-line bg-panel">
+            <div className="tabs shrink-0 px-2" role="tablist">
+              {panelTabs.map(([key, label]) => (
+                <button key={key} role="tab" aria-selected={rightPanel === key} onClick={() => setRightPanel(key)} className="tab">
+                  {label}
+                  {key === 'questions' && questions.length > 0 && <span className="chip h-5 px-2">{questions.length}</span>}
+                </button>
+              ))}
+            </div>
 
-            {/* ── QUESTIONS panel ── */}
-            {rightPanel === 'questions' && (
-              <div className="flex flex-col h-full">
-                <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between shrink-0">
-                  <span className="text-xs font-black text-white uppercase tracking-widest">Questions</span>
-                  {questions.length > 0 && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/25 text-blue-300 font-bold">{questions.length}</span>
-                  )}
-                </div>
-
-                {/* Generator */}
-                <div className="border-b border-white/[0.05] p-3 space-y-2.5">
-                  <div className="flex gap-1 p-1 bg-white/[0.03] rounded-xl border border-white/[0.04]">
-                    {[['type','✏️ Topic'],['upload','📄 File']].map(([m,l]) => (
-                      <button key={m} onClick={() => setInputMode(m)}
-                        className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${inputMode === m ? 'bg-blue-600/25 text-violet-200 border border-blue-500/30' : 'text-slate-600 hover:text-slate-300'}`}>{l}</button>
-                    ))}
-                  </div>
-
-                  {inputMode === 'type' ? (
-                    <>
-                      <input value={typedTopic} onChange={e => setTypedTopic(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleGenerate()}
-                        list="topic-suggestions" placeholder="e.g. binary trees, graphs…"
-                        className="w-full px-3 py-2 rounded-xl text-xs bg-white/[0.03] border border-white/[0.06] text-white placeholder-slate-700 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/15 transition-all" />
-                      <datalist id="topic-suggestions">{availableTopics.map(t => <option key={t} value={t} />)}</datalist>
-                      <div className="flex gap-1">
-                        {['easy','medium','hard'].map(d => (
-                          <button key={d} onClick={() => setDifficulty(d)}
-                            className={`flex-1 py-1.5 rounded-xl text-[10px] font-bold capitalize border transition-all ${
-                              difficulty === d ? `${DIFF[d].bg} ${DIFF[d].text} ${DIFF[d].border}` : 'bg-white/[0.02] text-slate-600 border-white/[0.04] hover:text-slate-300'
-                            }`}>{d}</button>
-                        ))}
-                      </div>
-                    </>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              {rightPanel === 'questions' && (
+                <div>
+                  <div className="border-b border-line p-4">{generator}</div>
+                  {questions.length === 0 ? (
+                    <PanelNote title="No questions yet">Generate some above and they will be listed here.</PanelNote>
                   ) : (
-                    <>
-                      <input type="file" accept=".pdf,.txt,image/*" onChange={e => setFile(e.target.files?.[0])} className="hidden" id="fu" />
-                      <label htmlFor="fu" className="flex items-center gap-3 p-3 border-2 border-dashed border-white/[0.06] rounded-xl cursor-pointer hover:border-blue-500/30 hover:bg-blue-500/3 transition-all">
-                        <span className="text-lg">{file ? '✅' : '📄'}</span>
-                        <div><p className="text-xs font-semibold text-white">{file ? file.name : 'Upload Syllabus'}</p><p className="text-[10px] text-slate-600">PDF, TXT, or Image</p></div>
-                      </label>
-                    </>
-                  )}
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-500 flex-1">Questions</span>
-                    <div className="flex items-center gap-1">
-                      {[-1,null,1].map((delta, i) => delta === null
-                        ? <span key="n" className="w-8 text-center text-sm font-black text-white">{numQuestions}</span>
-                        : <button key={delta} onClick={() => setNumQuestions(n => Math.min(10, Math.max(1, n + delta)))}
-                            className="w-6 h-6 rounded-lg bg-white/[0.05] border border-white/[0.07] text-slate-400 hover:text-white hover:bg-white/[0.1] transition-all text-sm flex items-center justify-center font-bold">
-                            {delta < 0 ? '−' : '+'}
-                          </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <button onClick={handleGenerate} disabled={loading || (inputMode === 'type' ? !typedTopic.trim() : !file)}
-                    className="relative w-full py-2.5 rounded-xl text-xs font-black text-white overflow-hidden group disabled:opacity-40 transition-all hover:scale-[1.02] active:scale-95">
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600" />
-                    <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-all" />
-                    <span className="relative z-10 flex items-center justify-center gap-2">
-                      {loading ? <><Spinner color="border-white" /> Generating…</> : <>✨ Generate</>}
-                    </span>
-                  </button>
-                  {genError && <p className="text-[10px] text-rose-400 bg-rose-500/8 border border-rose-500/15 rounded-xl px-3 py-2">{genError}</p>}
-                </div>
-
-                {/* Question list */}
-                <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                  {questions.map((qItem, i) => {
-                    const s = DIFF[qItem.difficulty] || DIFF.medium
-                    const status = submissionStatus[i]
-                    return (
-                      <button key={i} onClick={() => {
-                          if (status && i !== activeQ) {
-                            showToast('You have already submitted this question.', 'info')
-                            return
-                          }
-                          setActiveQ(i)
-                        }}
-                        className={`w-full text-left p-3 rounded-2xl border transition-all ${
-                          i === activeQ
-                            ? 'bg-gradient-to-br from-blue-500/12 to-cyan-500/8 border-blue-500/30'
-                            : 'bg-white/[0.02] border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.08]'
-                        } ${status ? 'opacity-80' : ''}`}>
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <div className="flex items-center gap-2 min-w-0">
-                            {status === 'passed' ? (
-                              <span className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500/20 text-emerald-400 text-[10px] font-black">✓</span>
-                            ) : status === 'failed' ? (
-                              <span className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0 bg-rose-500/20 text-rose-400 text-[10px] font-black">✗</span>
-                            ) : (
-                              <span className={`text-[9px] font-black w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${i === activeQ ? 'bg-blue-500/30 text-blue-300' : 'bg-white/[0.05] text-slate-600'}`}>{i+1}</span>
-                            )}
-                            <span className="text-[11px] font-semibold text-white leading-tight line-clamp-2">{qItem.title}</span>
-                          </div>
-                          <span className={`text-[8px] px-1.5 py-0.5 rounded-full border font-black shrink-0 uppercase ${s.text} ${s.bg} ${s.border}`}>{qItem.difficulty}</span>
-                        </div>
-                        <p className="text-[9px] text-slate-600 ml-7">{qItem.topic || 'General'}</p>
-                      </button>
-                    )
-                  })}
-                  {questions.length === 0 && (
-                    <div className="text-center py-10">
-                      <p className="text-3xl mb-2">✨</p>
-                      <p className="text-xs text-slate-600">Generate questions above</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ── AI FEEDBACK panel ── */}
-            {rightPanel === 'ai' && (
-              <div className="flex flex-col h-full">
-                <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between shrink-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-black text-white uppercase tracking-widest">AI Feedback</span>
-                    {aiFeedback && (
-                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${aiFeedback.logic_correctness >= 80 ? 'bg-emerald-500/15 text-emerald-400' : aiFeedback.logic_correctness >= 50 ? 'bg-amber-500/15 text-amber-400' : 'bg-rose-500/15 text-rose-400'}`}>
-                        {aiFeedback.logic_correctness}%
-                      </span>
-                    )}
-                  </div>
-                  <button onClick={() => fetchAI(submitResult)} disabled={loadingAI}
-                    className="text-[10px] font-bold text-blue-400 hover:text-blue-300 disabled:opacity-40 transition-colors px-2 py-1 rounded-lg hover:bg-blue-500/10">
-                    {loadingAI ? '…' : '↻'}
-                  </button>
-                </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {loadingAI && <div className="flex flex-col items-center justify-center py-16 gap-3"><Spinner color="border-blue-500" /><p className="text-xs text-slate-500">Analyzing…</p></div>}
-                  {!loadingAI && !aiFeedback && (
-                    <div className="flex flex-col items-center justify-center text-center gap-4 py-8 px-4 rounded-2xl bg-white/[0.02] border border-white/[0.05]">
-                      <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-3xl">🤖</div>
-                      <div><p className="text-sm font-bold text-white mb-1">AI Code Review</p><p className="text-xs text-slate-500 leading-relaxed">Submit code to get intelligent analysis and suggestions.</p></div>
-                      <button onClick={() => fetchAI(submitResult)} className="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600/20 text-blue-300 border border-blue-500/30 hover:bg-blue-600/30 transition-all">Analyze Now</button>
-                    </div>
-                  )}
-                  {!loadingAI && aiFeedback && (
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-gradient-to-br from-blue-500/8 to-cyan-500/5 border border-blue-500/15">
-                        <ScoreRing value={aiFeedback.logic_correctness} />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-black text-white mb-1">Logic Score</p>
-                          <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-3">{aiFeedback.analysis}</p>
-                        </div>
-                      </div>
-                      {aiFeedback.breakdown && Object.keys(aiFeedback.breakdown).length > 0 && (
-                        <div className="p-3.5 rounded-2xl bg-white/[0.025] border border-white/[0.05] space-y-2.5">
-                          <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Breakdown</p>
-                          {Object.entries(aiFeedback.breakdown).map(([k, v]) => (
-                            <div key={k}>
-                              <div className="flex justify-between text-[10px] mb-1.5">
-                                <span className="text-slate-400 capitalize">{k.replace(/_/g,' ')}</span>
-                                <span className="font-black" style={{ color: v >= 80 ? '#10b981' : v >= 50 ? '#f59e0b' : '#ef4444' }}>{v}%</span>
-                              </div>
-                              <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
-                                <div className="h-full rounded-full transition-all duration-700"
-                                  style={{ width:`${v}%`, background: v >= 80 ? '#10b981' : v >= 50 ? '#f59e0b' : '#ef4444' }} />
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {aiFeedback.suggestions?.length > 0 && (
-                        <div className="p-3.5 rounded-2xl bg-white/[0.025] border border-white/[0.05] space-y-2">
-                          <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Suggestions</p>
-                          {aiFeedback.suggestions.map((s, i) => (
-                            <div key={i} className="flex gap-2 text-[11px] text-slate-300 leading-relaxed">
-                              <span className="text-blue-400 shrink-0 mt-0.5 font-bold">›</span><span>{s}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* ── AI Feedback Chat ── */}
-                  {!loadingAI && (
-                    <div className="rounded-xl overflow-hidden" style={{ background: '#101018', border: '1px solid rgba(59, 130, 246,0.3)' }}>
-                      {/* Chat header */}
-                      <div className="px-3 py-2.5 flex items-center justify-between" style={{ background: 'rgba(59, 130, 246,0.12)', borderBottom: '1px solid rgba(59, 130, 246,0.2)' }}>
-                        <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-[11px]" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
-                          <span className="text-xs font-bold text-white">Ask AI Coach</span>
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase" style={{ background: 'rgba(59, 130, 246,0.25)', color: '#60a5fa' }}>NVIDIA</span>
-                        </div>
-                        {grokMessages.length > 0 && (
-                          <button
-                            onClick={() => setGrokMessages([])}
-                            className="text-[10px] text-slate-500 hover:text-slate-300 transition-colors"
-                            title="Clear chat"
-                          >
-                            Clear
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Chat messages */}
-                      <div className="overflow-y-auto p-3 space-y-3" style={{ maxHeight: '320px', minHeight: grokMessages.length === 0 ? '0px' : '120px' }}>
-                        {grokMessages.length === 0 && (
-                          <div className="text-center py-4">
-                            <div className="text-2xl mb-2">✦</div>
-                            <div className="text-[11px] text-slate-400 mb-1">Ask anything about your code</div>
-                            <div className="text-[10px] text-slate-600">e.g. "Why is my solution O(n²)?" or "How do I fix this bug?"</div>
-                          </div>
-                        )}
-                        {grokMessages.map((msg, i) => (
-                          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            {msg.role === 'assistant' && (
-                              <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
-                            )}
-                            <div
-                              className="rounded-xl px-3 py-2 text-[11px] leading-relaxed max-w-[85%]"
-                              style={msg.role === 'user'
-                                ? { background: 'rgba(59, 130, 246,0.25)', color: '#e2e8f0', borderBottomRightRadius: '4px' }
-                                : { background: 'rgba(255,255,255,0.05)', color: '#cbd5e1', borderBottomLeftRadius: '4px', border: '1px solid rgba(255,255,255,0.07)' }
-                              }
-                            >
-                              {msg.content}
-                            </div>
-                          </div>
-                        ))}
-                        {grokLoading && (
-                          <div className="flex justify-start">
-                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
-                            <div className="rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                              <div className="flex gap-1 items-center h-4">
-                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        <div ref={grokChatEndRef} />
-                      </div>
-
-                      {/* Quick prompts */}
-                      {grokMessages.length === 0 && (
-                        <div className="px-3 pb-2 flex flex-wrap gap-1.5">
-                          {[
-                            'Why is my code wrong?',
-                            'Explain the time complexity',
-                            'How can I optimize this?',
-                            'What edge cases am I missing?',
-                          ].map(prompt => (
+                    <ol>
+                      {questions.map((qItem, i) => {
+                        const status = submissionStatus[i]
+                        return (
+                          <li key={i} className="border-b border-line">
                             <button
-                              key={prompt}
-                              onClick={() => sendGrokMessage(prompt)}
-                              disabled={grokLoading}
-                              className="px-2 py-1 rounded-full text-[10px] transition-all hover:scale-105 active:scale-95 disabled:opacity-40"
-                              style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.25)' }}
+                              onClick={() => {
+                                if (status && i !== activeQ) { showToast('You have already submitted this question.', 'info'); return }
+                                setActiveQ(i)
+                              }}
+                              aria-current={i === activeQ}
+                              className={`flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors ${i === activeQ ? 'bg-sunken' : 'hover:bg-sunken'}`}
                             >
-                              {prompt}
+                              <span className="mt-0.5">
+                                {status ? (
+                                  <Icon name={status === 'passed' ? 'check-circle' : 'x-circle'} size={18} className={status === 'passed' ? 'text-grass-ink' : 'text-tomato-ink'} />
+                                ) : (
+                                  <span className="numeral flex h-[18px] w-[18px] items-center justify-center text-base text-ink-3">{i + 1}</span>
+                                )}
+                              </span>
+                              <span className="min-w-0 flex-1">
+                                <span className="clamp-2 block font-semibold leading-snug">{qItem.title}</span>
+                                <span className="mt-1 flex items-center gap-2 text-xs text-ink-3">
+                                  <span className="dot" style={{ background: balloonFill(DIFF_COLOR[qItem.difficulty] || 'sun') }} />
+                                  <span className="capitalize">{qItem.difficulty}</span>
+                                  <span>{qItem.topic || 'General'}</span>
+                                </span>
+                              </span>
                             </button>
-                          ))}
-                        </div>
-                      )}
+                          </li>
+                        )
+                      })}
+                    </ol>
+                  )}
+                </div>
+              )}
 
-                      {/* Input box */}
-                      <div className="p-2.5 pt-0" style={{ borderTop: grokMessages.length > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-                        <div className="flex gap-2 items-end rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(59, 130, 246,0.25)' }}>
-                          <textarea
-                            value={grokInput}
-                            onChange={e => setGrokInput(e.target.value)}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault()
-                                sendGrokMessage()
-                              }
-                            }}
-                            placeholder="Ask about your code… (Enter to send)"
-                            disabled={grokLoading}
-                            rows={1}
-                            className="flex-1 bg-transparent text-[11px] text-slate-200 placeholder-slate-600 resize-none outline-none px-3 py-2.5 disabled:opacity-50"
-                            style={{ maxHeight: '80px', lineHeight: '1.5' }}
-                          />
-                          <button
-                            onClick={() => sendGrokMessage()}
-                            disabled={grokLoading || !grokInput.trim()}
-                            className="m-1.5 w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-                            style={{ background: grokInput.trim() ? 'linear-gradient(135deg,#2563eb,#a855f7)' : 'rgba(59, 130, 246,0.2)' }}
-                          >
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                            </svg>
-                          </button>
-                        </div>
-                        <div className="text-[9px] text-slate-600 mt-1 px-1">Shift+Enter for new line · Powered by NVIDIA NIM</div>
-                      </div>
-                    </div>
+              {rightPanel === 'ai' && (
+                <div className="space-y-5 p-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold">Review of your solution</h3>
+                    <button onClick={() => fetchAI(submitResult)} disabled={loadingAI || !q} className="btn btn-quiet btn-sm">
+                      <Icon name="refresh" size={14} />
+                      Analyse
+                    </button>
+                  </div>
+                  {loadingAI && (
+                    <div className="flex items-center gap-3 py-6 text-sm text-ink-2" role="status"><Spinner /> Reading your code…</div>
+                  )}
+                  {!loadingAI && !aiFeedback && (
+                    <p className="text-sm text-ink-2">Submit your code, or press Analyse, to get a logic score and hints.</p>
+                  )}
+                  {!loadingAI && aiFeedback && <LogicReport data={aiFeedback} showPredicted={false} />}
+                  {!loadingAI && (
+                    <CoachChat
+                      messages={coachMessages}
+                      input={coachInput}
+                      setInput={setCoachInput}
+                      loading={coachLoading}
+                      onSend={sendCoachMessage}
+                      onClear={() => setCoachMessages([])}
+                    />
                   )}
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* ── COMPLEXITY panel ── */}
-            {rightPanel === 'complexity' && (
-              <div className="flex flex-col h-full">
-                <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between shrink-0">
-                  <span className="text-xs font-black text-white uppercase tracking-widest">Complexity</span>
-                  <button onClick={fetchComplexity} disabled={loadingCx}
-                    className="text-[10px] font-bold text-amber-400 hover:text-amber-300 disabled:opacity-40 transition-colors px-2 py-1 rounded-lg hover:bg-amber-500/10">
-                    {loadingCx ? '…' : '↻ Analyze'}
-                  </button>
+              {rightPanel === 'complexity' && (
+                <div className="p-4">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="font-bold">Complexity</h3>
+                    <button onClick={fetchComplexity} disabled={loadingCx || !q} className="btn btn-quiet btn-sm">
+                      <Icon name="refresh" size={14} />
+                      Analyse
+                    </button>
+                  </div>
+                  {loadingCx && <div className="flex items-center gap-3 py-6 text-sm text-ink-2" role="status"><Spinner /> Working out how your code scales…</div>}
+                  {!loadingCx && !complexity && <p className="text-sm text-ink-2">Press Analyse to see the time and space complexity of your solution.</p>}
+                  {!loadingCx && complexity && <ComplexityReport data={complexity} />}
                 </div>
-                <div className="flex-1 overflow-y-auto">
-                  {loadingCx && <div className="flex flex-col items-center justify-center h-full gap-3"><Spinner color="border-amber-500" /><p className="text-xs text-slate-500">Analyzing…</p></div>}
-                  {!loadingCx && !complexity && (
-                    <div className="flex flex-col items-center justify-center h-full text-center gap-4 p-6">
-                      <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-3xl">📊</div>
-                      <div><p className="text-sm font-bold text-white mb-1">Complexity Analyzer</p><p className="text-xs text-slate-500 leading-relaxed">Analyze time & space complexity of your solution.</p></div>
-                      <button onClick={fetchComplexity} className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600/20 text-amber-300 border border-amber-500/30 hover:bg-amber-600/30 transition-all">Analyze Now</button>
-                    </div>
-                  )}
-                  {!loadingCx && complexity && (
-                    <div className="p-4 space-y-3">
-                      {[['Time Complexity', complexity.time_complexity, { Best:'#10b981', Avg:'#f59e0b', Worst:'#ef4444' }],
-                        ['Space Complexity', complexity.space_complexity, { Best:'#818cf8', Avg:'#818cf8', Worst:'#818cf8' }]
-                      ].map(([title, cx, colors]) => cx && (
-                        <div key={title} className="p-3.5 rounded-2xl bg-white/[0.025] border border-white/[0.05]">
-                          <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-3">{title}</p>
-                          <div className="grid grid-cols-3 gap-2">
-                            {[['Best', cx.best], ['Avg', cx.average], ['Worst', cx.worst]].map(([l, v]) => (
-                              <div key={l} className="text-center p-2 rounded-xl bg-white/[0.03] border border-white/[0.05]">
-                                <p className="text-[8px] text-slate-600 font-bold mb-1 uppercase">{l}</p>
-                                <p className="text-xs font-black font-mono" style={{ color: colors[l] }}>{v || 'N/A'}</p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                      {complexity.analysis && (
-                        <div className="p-3.5 rounded-2xl bg-white/[0.025] border border-white/[0.05]">
-                          <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-2">Analysis</p>
-                          <p className="text-[11px] text-slate-300 leading-relaxed">{complexity.analysis}</p>
-                        </div>
-                      )}
-                      {complexity.suggestions?.length > 0 && (
-                        <div className="p-3.5 rounded-2xl bg-white/[0.025] border border-white/[0.05] space-y-2">
-                          <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Optimizations</p>
-                          {complexity.suggestions.map((s, i) => (
-                            <div key={i} className="flex gap-2 text-[11px] text-slate-300 leading-relaxed">
-                              <span className="text-amber-400 shrink-0 mt-0.5 font-bold">›</span><span>{s}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          </aside>
         )}
       </div>
 
-      {/* ── COMPLETION MODAL ── */}
+      {/* Completion dialog */}
       {showCompletionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
-          <div className="bg-[#0f1524] border border-white/10 rounded-2xl shadow-2xl p-8 max-w-sm w-full relative text-center">
-            <button onClick={() => setShowCompletionModal(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-            </button>
-            <div className="w-20 h-20 mx-auto bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20">
-              <span className="text-4xl">✨</span>
-            </div>
-            <h2 className="text-2xl font-black text-white mb-2">Practice Complete!</h2>
-            <p className="text-slate-400 text-sm mb-6">You have finished this practice session.</p>
-            
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4" role="dialog" aria-modal="true" aria-labelledby="done-title">
+          <div className="panel w-full max-w-sm p-7 shadow-float">
+            <h2 id="done-title" className="stretch-narrow text-3xl font-extrabold tracking-tight">Session complete</h2>
+            <p className="mt-1.5 text-ink-2">You have submitted every question in this set.</p>
+
             {(() => {
-              const passedCount = Object.values(submissionStatus).filter(s => s === 'passed').length
-              const laggingTopics = [...new Set(questions.filter((_, i) => submissionStatus[i] === 'failed').map(q => q.topic).filter(Boolean))]
+              const passed = Object.values(submissionStatus).filter((s) => s === 'passed').length
+              const lagging = [...new Set(questions.filter((_, i) => submissionStatus[i] === 'failed').map((x) => x.topic).filter(Boolean))]
               return (
-                <div className="mb-8 space-y-4">
-                  <div className="flex items-center justify-center gap-6">
-                    <div className="text-center">
-                      <p className="text-2xl font-black text-emerald-400">{passedCount}</p>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Passed</p>
+                <>
+                  <dl className="mt-6 grid grid-cols-2 divide-x divide-line rounded-md border border-line">
+                    <div className="px-4 py-4">
+                      <dd className="numeral text-4xl text-grass-ink">{passed}</dd>
+                      <dt className="mt-1 text-sm text-ink-3">Passed</dt>
                     </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-black text-rose-400">{questions.length - passedCount}</p>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Failed</p>
+                    <div className="px-4 py-4">
+                      <dd className="numeral text-4xl text-tomato-ink">{questions.length - passed}</dd>
+                      <dt className="mt-1 text-sm text-ink-3">Not passed</dt>
                     </div>
-                  </div>
-                  {laggingTopics.length > 0 && (
-                    <div className="pt-4 border-t border-white/5">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-rose-400 mb-2">Areas for Improvement</p>
-                      <div className="flex flex-wrap justify-center gap-2">
-                        {laggingTopics.map(topic => (
-                          <span key={topic} className="px-2.5 py-1 rounded-md text-[10px] font-semibold bg-rose-500/10 text-rose-300 border border-rose-500/20">
-                            #{topic}
-                          </span>
-                        ))}
-                      </div>
+                  </dl>
+                  {lagging.length > 0 ? (
+                    <div className="mt-5">
+                      <p className="mb-2 text-sm font-semibold">Worth another look</p>
+                      <div className="flex flex-wrap gap-2">{lagging.map((t) => <span key={t} className="chip capitalize">{t}</span>)}</div>
                     </div>
+                  ) : (
+                    <p className="mt-5 text-sm font-semibold text-grass-ink">A perfect set. Nothing to review.</p>
                   )}
-                  {laggingTopics.length === 0 && (
-                    <div className="pt-4 border-t border-white/5">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Perfect Score! 🎉</p>
-                    </div>
-                  )}
-                </div>
+                </>
               )
             })()}
 
-            <button 
-              onClick={() => { setShowCompletionModal(false); nav('/profile') }}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-bold text-sm transition-all shadow-lg shadow-blue-500/25 active:scale-[0.98]"
-            >
-              View Learning Chart
-            </button>
+            <div className="mt-7 flex gap-3">
+              <button onClick={() => setShowCompletionModal(false)} className="btn btn-secondary flex-1">Keep reviewing</button>
+              <button onClick={() => { setShowCompletionModal(false); nav('/profile') }} className="btn btn-primary flex-1">See your progress</button>
+            </div>
           </div>
         </div>
       )}
