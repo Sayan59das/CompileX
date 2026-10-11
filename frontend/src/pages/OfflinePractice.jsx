@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 import Editor from '@monaco-editor/react'
+import Icon from '../components/Icons'
 import MathText from '../components/MathText'
 import AnimatedBackgroundCSS from '../components/AnimatedBackgroundCSS'
 import { attachProtectedRegion } from '../utils/protectedRegion'
@@ -11,11 +12,11 @@ import { attachProtectedRegion } from '../utils/protectedRegion'
 // CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
 const LANGUAGES = [
-  { value: 'python',     label: 'Python',     icon: '🐍', monaco: 'python'     },
-  { value: 'cpp',        label: 'C++',        icon: '⚡', monaco: 'cpp'        },
-  { value: 'java',       label: 'Java',       icon: '☕', monaco: 'java'       },
-  { value: 'javascript', label: 'JavaScript', icon: '💛', monaco: 'javascript' },
-  { value: 'c',          label: 'C',          icon: '🔵', monaco: 'c'          },
+  { value: 'python',     label: 'Python',     monaco: 'python'     },
+  { value: 'cpp',        label: 'C++',        monaco: 'cpp'        },
+  { value: 'java',       label: 'Java',       monaco: 'java'       },
+  { value: 'javascript', label: 'JavaScript', monaco: 'javascript' },
+  { value: 'c',          label: 'C',          monaco: 'c'          },
 ]
 
 const DIFF = {
@@ -84,7 +85,7 @@ function SectionBlock({ name, content }) {
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <div className={`w-0.5 h-3.5 rounded-full ${s.bar}`} />
-        <span className={`text-[10px] font-black uppercase tracking-[0.12em] ${s.label}`}>{name}</span>
+        <span className={`text-[10px] font-extrabold ${s.label}`}>{name}</span>
       </div>
       {s.code ? (
         <pre className="bg-[#0A0A10] border border-white/[0.06] rounded-xl px-4 py-3 text-[12px] font-mono text-slate-200 whitespace-pre-wrap leading-relaxed">
@@ -131,10 +132,10 @@ function IconTab({ icon, label, active, onClick, badge }) {
  active ? 'text-blue-300' : 'text-slate-600 hover:text-slate-300'
       }`}>
       {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-8 bg-blue-500 rounded-r-full" />}
-      <span className="text-base">{icon}</span>
-      <span className="text-[9px] font-bold uppercase tracking-wider leading-none">{label}</span>
+      <Icon name={icon} size={18} />
+      <span className="text-[9px] font-bold leading-none">{label}</span>
       {badge != null && (
-        <span className={`absolute top-1.5 right-1.5 text-[8px] font-black min-w-[14px] h-3.5 flex items-center justify-center rounded-full px-0.5 ${
+        <span className={`absolute top-1.5 right-1.5 text-[8px] font-extrabold min-w-[14px] h-3.5 flex items-center justify-center rounded-full px-0.5 ${
  active ? 'bg-blue-500 text-white' : 'bg-white/10 text-slate-400'
         }`}>{badge}</span>
       )}
@@ -414,7 +415,7 @@ export default function OfflinePractice() {
       setGrokMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
     } catch (err) {
       const errMsg = err.response?.data?.detail || 'Failed to get AI response. Please try again.'
-      setGrokMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${errMsg}` }])
+      setGrokMessages(prev => [...prev, { role: 'assistant', content: errMsg }])
     } finally {
       setGrokLoading(false)
     }
@@ -440,7 +441,7 @@ export default function OfflinePractice() {
           toast.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300' :
           'bg-[#1a1f2e]/90 border-white/10 text-slate-300'
         }`}>
-          <span>{toast.type === 'error' ? '⚠️' : toast.type === 'success' ? '✓' : 'ℹ'}</span>
+          <Icon name={toast.type === 'error' ? 'alert' : toast.type === 'success' ? 'check' : 'info'} size={14} />
           {toast.msg}
         </div>
       </div>
@@ -454,14 +455,14 @@ export default function OfflinePractice() {
           </button>
           <div className="w-px h-4 bg-white/[0.08]" />
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-[10px] shadow-lg shadow-blue-500/30">⚡</div>
+            <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-[10px] shadow-lg shadow-blue-500/30"><Icon name="bolt" size={12} className="text-white" /></div>
             <span className="text-sm font-bold bg-gradient-to-r from-blue-300 to-pink-300 bg-clip-text text-transparent">Practice Arena</span>
           </div>
         </div>
 
         {q && (
           <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-            <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide ${ds.text} ${ds.bg} border ${ds.border}`}>{q.difficulty}</span>
+            <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold ${ds.text} ${ds.bg} border ${ds.border}`}>{q.difficulty}</span>
             {q.topic && <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-blue-500/10 border border-blue-500/20 text-blue-300">#{q.topic}</span>}
             <span className="text-sm font-bold text-white max-w-xs truncate">{q.title}</span>
           </div>
@@ -470,7 +471,7 @@ export default function OfflinePractice() {
         <div className="flex items-center gap-2">
           {user?.rating && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.07] text-[10px] text-slate-400">
-              <span>{user.rating < 800 ? '🌱' : user.rating < 1200 ? '⚡' : user.rating < 1600 ? '🔥' : '💎'}</span>
+              <Icon name="medal" size={13} className="text-amber-400" />
               <span className="font-bold text-blue-400">{user.rating}</span>
             </div>
           )}
@@ -493,12 +494,12 @@ export default function OfflinePractice() {
                 <div className="flex-1 overflow-y-auto scrollbar-thin">
                   <div className="px-6 pt-6 pb-4">
                     <div className="flex items-center gap-2 mb-3 flex-wrap">
-                      <span className={`inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wide ${ds.text} ${ds.bg} border ${ds.border}`}>
+                      <span className={`inline-flex items-center gap-1.5 text-[10px] px-2.5 py-1 rounded-full font-bold ${ds.text} ${ds.bg} border ${ds.border}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${ds.dot}`} />{q.difficulty}
                       </span>
                       {q.topic && <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold bg-blue-500/8 border border-blue-500/20 text-blue-400">#{q.topic}</span>}
                     </div>
-                    <h2 className="text-lg font-black text-white leading-tight tracking-tight mb-1">{q.title}</h2>
+                    <h2 className="text-lg font-extrabold text-white leading-tight tracking-tight mb-1">{q.title}</h2>
                   </div>
 
                   <div className="px-6 pb-6 space-y-5">
@@ -515,7 +516,7 @@ export default function OfflinePractice() {
                           )}
                           {q.diagram && (
                             <div className="rounded-xl overflow-hidden border border-white/[0.06]">
-                              <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest px-3 py-2 border-b border-white/[0.05]">Diagram</p>
+                              <p className="text-[9px] text-slate-600 font-bold px-3 py-2 border-b border-white/[0.05]">Diagram</p>
                               <img src={q.diagram} alt="diagram" className="w-full" />
                             </div>
                           )}
@@ -526,7 +527,7 @@ export default function OfflinePractice() {
                             return (
                               <div key={i} className="rounded-xl border border-white/[0.06] bg-[#0A0A10] overflow-hidden">
                                 <div className="px-3 py-1.5 border-b border-white/[0.05] bg-white/[0.02]">
-                                  <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Example {i + 1}</span>
+                                  <span className="text-[9px] text-slate-500 font-bold">Example {i + 1}</span>
                                 </div>
                                 <div className="p-3 space-y-2 font-mono text-[11.5px]">
                                   <div><span className="text-slate-500 text-[10px] font-bold">Input</span><pre className="text-sky-300 mt-0.5 whitespace-pre-wrap">{inp}</pre></div>
@@ -560,14 +561,14 @@ export default function OfflinePractice() {
                             ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
                             : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
                         }`}>
-                        <span>{l.icon}</span><span className="hidden sm:inline">{l.label}</span>
+                        <span>{l.label}</span>
                       </button>
                     ))}
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-3">
                     <button onClick={fetchComplexity} disabled={loadingCx}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-400/80 hover:text-amber-300 hover:bg-amber-500/8 border border-amber-500/15 hover:border-amber-500/30 transition-all disabled:opacity-40">
-                      {loadingCx ? <Spinner color="border-amber-500" /> : '📊'}
+                      {loadingCx ? <Spinner color="border-amber-500" /> : <Icon name="bars" size={14} />}
                       <span className="hidden md:inline">Complexity</span>
                     </button>
                     <button onClick={bottomTab === 'custom' ? handleRunCustom : handleRunTests} disabled={isRunning || submissionStatus[activeQ]}
@@ -576,7 +577,7 @@ export default function OfflinePractice() {
                       Run
                     </button>
                     <button onClick={handleSubmit} disabled={submitting || submissionStatus[activeQ]}
-                      className="relative flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-black text-white overflow-hidden group disabled:opacity-40 transition-all active:scale-95">
+                      className="relative flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold text-white overflow-hidden group disabled:opacity-40 transition-all active:scale-95">
                       <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-500 rounded-lg" />
                       <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-all rounded-lg" />
                       <span className="relative z-10 flex items-center gap-1.5">
@@ -612,7 +613,7 @@ export default function OfflinePractice() {
                     <div className="flex items-center justify-between px-4 border-b border-white/[0.05] bg-[#060a12] shrink-0 h-9">
                       <div className="flex h-full">
                         {[
-                          { id: 'testcases', label: '🧪 Tests', badge: totalCount > 0 ? `${passedCount}/${totalCount}` : null, badgeOk: passedCount === totalCount && totalCount > 0 },
+                          { id: 'testcases', label: 'Tests', badge: totalCount > 0 ? `${passedCount}/${totalCount}` : null, badgeOk: passedCount === totalCount && totalCount > 0 },
                           { id: 'custom',    label: '⌨️ Custom' },
                         ].map(t => (
                           <button key={t.id} onClick={() => setBottomTab(t.id)}
@@ -620,7 +621,7 @@ export default function OfflinePractice() {
  bottomTab === t.id ? 'border-blue-500 text-blue-300' : 'border-transparent text-slate-500 hover:text-slate-300'
                             }`}>
                             {t.label}
-                            {t.badge && <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${t.badgeOk ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>{t.badge}</span>}
+                            {t.badge && <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded-full ${t.badgeOk ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>{t.badge}</span>}
                           </button>
                         ))}
                       </div>
@@ -641,7 +642,7 @@ export default function OfflinePractice() {
                                   className={`w-full flex items-center gap-2 px-2 py-2 rounded-xl text-[11px] font-semibold transition-all ${
  selectedTC === i ? 'bg-blue-500/15 text-blue-300 border border-blue-500/25' : 'text-slate-500 hover:bg-white/[0.04] hover:text-slate-300'
                                   }`}>
-                                  <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[9px] font-black shrink-0 ${
+                                  <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[9px] font-extrabold shrink-0 ${
  !r ? 'bg-white/[0.06] text-slate-600' :
                                     r.passed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
                                   }`}>{r ? (r.passed ? '✓' : '✗') : i+1}</span>
@@ -663,14 +664,14 @@ export default function OfflinePractice() {
                                         <circle cx="12" cy="12" r="3"/>
                                         <line x1="3" y1="3" x2="21" y2="21"/>
                                       </svg>
-                                      <div className="font-semibold text-sm mb-1 uppercase tracking-widest text-white/50">Hidden Test Case</div>
+                                      <div className="font-semibold text-sm mb-1 text-white/50">Hidden Test Case</div>
                                       <div className="text-xs text-center opacity-70 mb-4 max-w-[250px]">
                                         The input and expected output for this test case are hidden.
                                       </div>
                                       {r && (
                                         <div className="w-full bg-black/20 border border-white/5 rounded-lg p-3 text-center">
-                                          <p className={`text-[10px] font-black uppercase tracking-widest mb-1 ${r.passed ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                            YOUR OUTPUT — {r.passed ? '✓ PASSED' : '✗ FAILED'}
+                                          <p className={`text-[10px] font-extrabold mb-1 ${r.passed ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            Your output: {r.passed ? 'passed' : 'failed'}
                                           </p>
                                           {!r.passed && r.error && (
                                             <p className="text-rose-400 text-[9px] mt-2 whitespace-pre-wrap text-left bg-rose-500/10 p-2 rounded">{r.error}</p>
@@ -681,18 +682,18 @@ export default function OfflinePractice() {
                                   ) : (
                                     <>
                                       {[
-                                        { label: 'INPUT',           value: tc.input || tc.input_data || '—', color: 'text-sky-300'    },
-                                    { label: 'EXPECTED OUTPUT', value: tc.output || tc.expected_output || '—', color: 'text-slate-300' },
+                                        { label: 'Input',           value: tc.input || tc.input_data || '—', color: 'text-sky-300'    },
+                                    { label: 'Expected output', value: tc.output || tc.expected_output || '—', color: 'text-slate-300' },
                                   ].map(item => (
                                     <div key={item.label}>
-                                      <p className="text-[9px] text-slate-600 font-black uppercase tracking-widest mb-1.5">{item.label}</p>
+                                      <p className="text-[9px] text-slate-600 font-extrabold mb-1.5">{item.label}</p>
                                       <pre className={`bg-white/[0.03] border border-white/[0.05] rounded-xl px-3 py-2.5 whitespace-pre-wrap break-all leading-relaxed ${item.color}`}>{item.value}</pre>
                                     </div>
                                   ))}
                                   {r && (
                                     <div>
-                                      <p className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${r.passed ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                        YOUR OUTPUT — {r.passed ? '✓ PASSED' : '✗ FAILED'}
+                                      <p className={`text-[9px] font-extrabold mb-1.5 ${r.passed ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                        Your output: {r.passed ? 'passed' : 'failed'}
                                       </p>
                                       <pre className={`rounded-xl px-3 py-2.5 whitespace-pre-wrap break-all leading-relaxed border ${
  r.passed ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-300' : 'bg-rose-500/5 border-rose-500/20 text-rose-300'
@@ -729,12 +730,12 @@ export default function OfflinePractice() {
                               className="flex-1 bg-transparent p-3 text-xs font-mono text-slate-300 placeholder-slate-700 resize-none focus:outline-none" />
                           </div>
                           <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                            <p className="text-[9px] text-slate-600 font-black uppercase tracking-widest mb-2">OUTPUT</p>
+                            <p className="text-[9px] text-slate-600 font-extrabold mb-2">Output</p>
                             {!runningCustom && !customOutput && <p className="text-xs text-slate-600 text-center py-6">Run to see output</p>}
                             {runningCustom && <div className="flex justify-center pt-4"><Spinner color="border-blue-500" /></div>}
                             {!runningCustom && customOutput?.map((r, i) => (
                               <div key={i} className={`rounded-xl border p-3 text-xs font-mono ${r.error ? 'bg-rose-500/5 border-rose-500/20' : 'bg-emerald-500/5 border-emerald-500/20'}`}>
-                                <p className={`text-[9px] font-black uppercase tracking-widest mb-1 ${r.error ? 'text-rose-500' : 'text-emerald-500'}`}>Case {i+1}</p>
+                                <p className={`text-[9px] font-extrabold mb-1 ${r.error ? 'text-rose-500' : 'text-emerald-500'}`}>Case {i+1}</p>
                                 <pre className={`whitespace-pre-wrap break-all ${r.error ? 'text-rose-300' : 'text-emerald-300'}`}>{r.error || r.output || '(empty)'}</pre>
                               </div>
                             ))}
@@ -750,7 +751,7 @@ export default function OfflinePractice() {
                       Show panel
                     </button>
                     {totalCount > 0 && (
-                      <span className={`ml-3 text-[9px] font-black px-2 py-0.5 rounded-full ${passedCount === totalCount ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'}`}>
+                      <span className={`ml-3 text-[9px] font-extrabold px-2 py-0.5 rounded-full ${passedCount === totalCount ? 'bg-emerald-500/15 text-emerald-400' : 'bg-rose-500/15 text-rose-400'}`}>
                         {passedCount}/{totalCount} passed
                       </span>
                     )}
@@ -764,7 +765,7 @@ export default function OfflinePractice() {
                   }`}>
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-base ${submitResult.status === 'passed' ? 'bg-emerald-500/20' : 'bg-rose-500/20'}`}>
-                        {submitResult.status === 'passed' ? '✅' : '❌'}
+                        <Icon name={submitResult.status === 'passed' ? 'check-circle' : 'x-circle'} size={18} className={submitResult.status === 'passed' ? 'text-emerald-400' : 'text-rose-400'} />
                       </div>
                       <div>
                         <p className={`font-bold text-sm ${submitResult.status === 'passed' ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -774,7 +775,7 @@ export default function OfflinePractice() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-3xl font-black text-white leading-none">{submitResult.score}</p>
+                      <p className="text-3xl font-extrabold text-white leading-none">{submitResult.score}</p>
                       <p className="text-[10px] text-slate-500 mt-0.5">points</p>
                     </div>
                   </div>
@@ -795,23 +796,23 @@ export default function OfflinePractice() {
                     <div className="absolute inset-0 rounded-full border border-blue-500/30 " style={{ animationDuration: '3s' }} />
                     <div className="absolute inset-2 rounded-full border border-cyan-400/20 " style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
                     <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.5)]">
-                      <span className="text-4xl drop-shadow-md">🧠</span>
+                      <Icon name="target" size={34} className="text-white" />
                     </div>
                   </div>
                   
-                  <h2 className="text-4xl font-black text-white mb-4 tracking-tight">AI Practice Arena</h2>
+                  <h2 className="text-4xl font-extrabold text-white mb-4 tracking-tight">AI Practice Arena</h2>
                   <p className="text-slate-400 text-lg max-w-lg mx-auto mb-10 leading-relaxed">
                     Generate highly personalized coding challenges from any topic. Powered by advanced AI — every question is strictly unique.
                   </p>
                   
                   <div className="flex flex-wrap justify-center gap-4 sm:gap-8 text-sm text-slate-300">
                     {[
-                      { i: '🤖', l: 'AI Generated', d: 'Infinite questions' },
-                      { i: '📊', l: 'Smart Analysis', d: 'Instant feedback' },
-                      { i: '⚡', l: 'Live Execution', d: 'Secure sandbox' }
+                      { i: 'message', l: 'AI Generated', d: 'Infinite questions' },
+                      { i: 'bars', l: 'Smart Analysis', d: 'Instant feedback' },
+                      { i: 'bolt', l: 'Live Execution', d: 'Secure sandbox' }
                     ].map(f => (
                       <div key={f.l} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300">
-                        <span className="text-3xl mb-1">{f.i}</span>
+                        <Icon name={f.i} size={26} className="mb-1 text-blue-400" />
                         <span className="font-bold text-white">{f.l}</span>
                         <span className="text-xs text-slate-500">{f.d}</span>
                       </div>
@@ -825,9 +826,9 @@ export default function OfflinePractice() {
 
         {/* ══ RIGHT ICON RAIL ══ */}
         <div className="w-14 shrink-0 flex flex-col border-l border-white/[0.05] bg-[#0a0f1c]/80 backdrop-blur-xl relative z-10">
-          <IconTab icon="📋" label="List"  active={rightPanel === 'questions'}  onClick={() => setRightPanel(p => p === 'questions'  ? null : 'questions')}  badge={questions.length || null} />
-          <IconTab icon="🤖" label="AI"    active={rightPanel === 'ai'}         onClick={() => setRightPanel(p => p === 'ai'         ? null : 'ai')}         />
-          <IconTab icon="📊" label="Cmplx" active={rightPanel === 'complexity'} onClick={() => setRightPanel(p => p === 'complexity' ? null : 'complexity')} />
+          <IconTab icon="list" label="List"  active={rightPanel === 'questions'}  onClick={() => setRightPanel(p => p === 'questions'  ? null : 'questions')}  badge={questions.length || null} />
+          <IconTab icon="message" label="AI"    active={rightPanel === 'ai'}         onClick={() => setRightPanel(p => p === 'ai'         ? null : 'ai')}         />
+          <IconTab icon="gauge" label="Cmplx" active={rightPanel === 'complexity'} onClick={() => setRightPanel(p => p === 'complexity' ? null : 'complexity')} />
         </div>
 
         {/* ══ RIGHT SLIDING PANEL ══ */}
@@ -838,7 +839,7 @@ export default function OfflinePractice() {
             {rightPanel === 'questions' && (
               <div className="flex flex-col h-full">
                 <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between shrink-0">
-                  <span className="text-xs font-black text-white uppercase tracking-widest">Questions</span>
+                  <span className="text-xs font-bold text-white">Questions</span>
                   {questions.length > 0 && (
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/25 text-blue-300 font-bold">{questions.length}</span>
                   )}
@@ -847,7 +848,7 @@ export default function OfflinePractice() {
                 {/* Generator */}
                 <div className="border-b border-white/[0.05] p-3 space-y-2.5">
                   <div className="flex gap-1 p-1 bg-white/[0.03] rounded-xl border border-white/[0.04]">
-                    {[['type','✏️ Topic'],['upload','📄 File']].map(([m,l]) => (
+                    {[['type','Topic'],['upload','File']].map(([m,l]) => (
                       <button key={m} onClick={() => setInputMode(m)}
                         className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${inputMode === m ? 'bg-blue-600/25 text-violet-200 border border-blue-500/30' : 'text-slate-600 hover:text-slate-300'}`}>{l}</button>
                     ))}
@@ -873,7 +874,7 @@ export default function OfflinePractice() {
                     <>
                       <input type="file" accept=".pdf,.txt,image/*" onChange={e => setFile(e.target.files?.[0])} className="hidden" id="fu" />
                       <label htmlFor="fu" className="flex items-center gap-3 p-3 border-2 border-dashed border-white/[0.06] rounded-xl cursor-pointer hover:border-blue-500/30 hover:bg-blue-500/3 transition-all">
-                        <span className="text-lg">{file ? '✅' : '📄'}</span>
+                        <Icon name={file ? 'check-circle' : 'file'} size={20} className={file ? 'text-emerald-400' : 'text-slate-400'} />
                         <div><p className="text-xs font-semibold text-white">{file ? file.name : 'Upload Syllabus'}</p><p className="text-[10px] text-slate-600">PDF, TXT, or Image</p></div>
                       </label>
                     </>
@@ -883,7 +884,7 @@ export default function OfflinePractice() {
                     <span className="text-[10px] text-slate-500 flex-1">Questions</span>
                     <div className="flex items-center gap-1">
                       {[-1,null,1].map((delta, i) => delta === null
-                        ? <span key="n" className="w-8 text-center text-sm font-black text-white">{numQuestions}</span>
+                        ? <span key="n" className="w-8 text-center text-sm font-bold text-white">{numQuestions}</span>
                         : <button key={delta} onClick={() => setNumQuestions(n => Math.min(10, Math.max(1, n + delta)))}
                             className="w-6 h-6 rounded-lg bg-white/[0.05] border border-white/[0.07] text-slate-400 hover:text-white hover:bg-white/[0.1] transition-all text-sm flex items-center justify-center font-bold">
                             {delta < 0 ? '−' : '+'}
@@ -893,11 +894,11 @@ export default function OfflinePractice() {
                   </div>
 
                   <button onClick={handleGenerate} disabled={loading || (inputMode === 'type' ? !typedTopic.trim() : !file)}
-                    className="relative w-full py-2.5 rounded-xl text-xs font-black text-white overflow-hidden group disabled:opacity-40 transition-all active:scale-95">
+                    className="relative w-full py-2.5 rounded-xl text-xs font-bold text-white overflow-hidden group disabled:opacity-40 transition-all active:scale-95">
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600" />
                     <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-all" />
                     <span className="relative z-10 flex items-center justify-center gap-2">
-                      {loading ? <><Spinner color="border-white" /> Generating…</> : <>✨ Generate</>}
+                      {loading ? <><Spinner color="border-white" /> Generating…</> : <>Generate</>}
                     </span>
                   </button>
                   {genError && <p className="text-[10px] text-rose-400 bg-rose-500/8 border border-rose-500/15 rounded-xl px-3 py-2">{genError}</p>}
@@ -924,15 +925,15 @@ export default function OfflinePractice() {
                         <div className="flex items-start justify-between gap-2 mb-1">
                           <div className="flex items-center gap-2 min-w-0">
                             {status === 'passed' ? (
-                              <span className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500/20 text-emerald-400 text-[10px] font-black">✓</span>
+                              <span className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500/20 text-emerald-400 text-[10px] font-extrabold">✓</span>
                             ) : status === 'failed' ? (
-                              <span className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0 bg-rose-500/20 text-rose-400 text-[10px] font-black">✗</span>
+                              <span className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0 bg-rose-500/20 text-rose-400 text-[10px] font-extrabold">✗</span>
                             ) : (
-                              <span className={`text-[9px] font-black w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${i === activeQ ? 'bg-blue-500/30 text-blue-300' : 'bg-white/[0.05] text-slate-600'}`}>{i+1}</span>
+                              <span className={`text-[9px] font-extrabold w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${i === activeQ ? 'bg-blue-500/30 text-blue-300' : 'bg-white/[0.05] text-slate-600'}`}>{i+1}</span>
                             )}
                             <span className="text-[11px] font-semibold text-white leading-tight line-clamp-2">{qItem.title}</span>
                           </div>
-                          <span className={`text-[8px] px-1.5 py-0.5 rounded-full border font-black shrink-0 uppercase ${s.text} ${s.bg} ${s.border}`}>{qItem.difficulty}</span>
+                          <span className={`text-[8px] px-1.5 py-0.5 rounded-full border font-extrabold shrink-0 ${s.text} ${s.bg} ${s.border}`}>{qItem.difficulty}</span>
                         </div>
                         <p className="text-[9px] text-slate-600 ml-7">{qItem.topic || 'General'}</p>
                       </button>
@@ -940,7 +941,7 @@ export default function OfflinePractice() {
                   })}
                   {questions.length === 0 && (
                     <div className="text-center py-10">
-                      <p className="text-3xl mb-2">✨</p>
+                      <Icon name="list" size={28} className="mx-auto mb-2 text-slate-600" />
                       <p className="text-xs text-slate-600">Generate questions above</p>
                     </div>
                   )}
@@ -953,9 +954,9 @@ export default function OfflinePractice() {
               <div className="flex flex-col h-full">
                 <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-black text-white uppercase tracking-widest">AI Feedback</span>
+                    <span className="text-xs font-bold text-white">AI Feedback</span>
                     {aiFeedback && (
-                      <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${aiFeedback.logic_correctness >= 80 ? 'bg-emerald-500/15 text-emerald-400' : aiFeedback.logic_correctness >= 50 ? 'bg-amber-500/15 text-amber-400' : 'bg-rose-500/15 text-rose-400'}`}>
+                      <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded-full ${aiFeedback.logic_correctness >= 80 ? 'bg-emerald-500/15 text-emerald-400' : aiFeedback.logic_correctness >= 50 ? 'bg-amber-500/15 text-amber-400' : 'bg-rose-500/15 text-rose-400'}`}>
                         {aiFeedback.logic_correctness}%
                       </span>
                     )}
@@ -969,7 +970,7 @@ export default function OfflinePractice() {
                   {loadingAI && <div className="flex flex-col items-center justify-center py-16 gap-3"><Spinner color="border-blue-500" /><p className="text-xs text-slate-500">Analyzing…</p></div>}
                   {!loadingAI && !aiFeedback && (
                     <div className="flex flex-col items-center justify-center text-center gap-4 py-8 px-4 rounded-2xl bg-white/[0.02] border border-white/[0.05]">
-                      <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-3xl">🤖</div>
+                      <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400"><Icon name="message" size={28} /></div>
                       <div><p className="text-sm font-bold text-white mb-1">AI Code Review</p><p className="text-xs text-slate-500 leading-relaxed">Submit code to get intelligent analysis and suggestions.</p></div>
                       <button onClick={() => fetchAI(submitResult)} className="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600/20 text-blue-300 border border-blue-500/30 hover:bg-blue-600/30 transition-all">Analyze Now</button>
                     </div>
@@ -979,18 +980,18 @@ export default function OfflinePractice() {
                       <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-gradient-to-br from-blue-500/8 to-cyan-500/5 border border-blue-500/15">
                         <ScoreRing value={aiFeedback.logic_correctness} />
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-black text-white mb-1">Logic Score</p>
+                          <p className="text-xs font-bold text-white mb-1">Logic Score</p>
                           <p className="text-[11px] text-slate-400 leading-relaxed line-clamp-3">{aiFeedback.analysis}</p>
                         </div>
                       </div>
                       {aiFeedback.breakdown && Object.keys(aiFeedback.breakdown).length > 0 && (
                         <div className="p-3.5 rounded-2xl bg-white/[0.025] border border-white/[0.05] space-y-2.5">
-                          <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Breakdown</p>
+                          <p className="text-[9px] font-extrabold text-slate-600">Breakdown</p>
                           {Object.entries(aiFeedback.breakdown).map(([k, v]) => (
                             <div key={k}>
                               <div className="flex justify-between text-[10px] mb-1.5">
                                 <span className="text-slate-400 capitalize">{k.replace(/_/g,' ')}</span>
-                                <span className="font-black" style={{ color: v >= 80 ? '#10b981' : v >= 50 ? '#f59e0b' : '#ef4444' }}>{v}%</span>
+                                <span className="font-extrabold" style={{ color: v >= 80 ? '#10b981' : v >= 50 ? '#f59e0b' : '#ef4444' }}>{v}%</span>
                               </div>
                               <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
                                 <div className="h-full rounded-full transition-all duration-700"
@@ -1002,7 +1003,7 @@ export default function OfflinePractice() {
                       )}
                       {aiFeedback.suggestions?.length > 0 && (
                         <div className="p-3.5 rounded-2xl bg-white/[0.025] border border-white/[0.05] space-y-2">
-                          <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Suggestions</p>
+                          <p className="text-[9px] font-extrabold text-slate-600">Suggestions</p>
                           {aiFeedback.suggestions.map((s, i) => (
                             <div key={i} className="flex gap-2 text-[11px] text-slate-300 leading-relaxed">
                               <span className="text-blue-400 shrink-0 mt-0.5 font-bold">›</span><span>{s}</span>
@@ -1019,9 +1020,9 @@ export default function OfflinePractice() {
                       {/* Chat header */}
                       <div className="px-3 py-2.5 flex items-center justify-between" style={{ background: 'rgba(59, 130, 246,0.12)', borderBottom: '1px solid rgba(59, 130, 246,0.2)' }}>
                         <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-[11px]" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-[11px]" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}><Icon name="message" size={11} className="text-white" /></div>
                           <span className="text-xs font-bold text-white">Ask AI Coach</span>
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase" style={{ background: 'rgba(59, 130, 246,0.25)', color: '#60a5fa' }}>NVIDIA</span>
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ background: 'rgba(59, 130, 246,0.25)', color: '#60a5fa' }}>NVIDIA</span>
                         </div>
                         {grokMessages.length > 0 && (
                           <button
@@ -1038,7 +1039,7 @@ export default function OfflinePractice() {
                       <div className="overflow-y-auto p-3 space-y-3" style={{ maxHeight: '320px', minHeight: grokMessages.length === 0 ? '0px' : '120px' }}>
                         {grokMessages.length === 0 && (
                           <div className="text-center py-4">
-                            <div className="text-2xl mb-2">✦</div>
+                            <Icon name="message" size={24} className="mx-auto mb-2 text-slate-500" />
                             <div className="text-[11px] text-slate-400 mb-1">Ask anything about your code</div>
                             <div className="text-[10px] text-slate-600">e.g. "Why is my solution O(n²)?" or "How do I fix this bug?"</div>
                           </div>
@@ -1046,7 +1047,7 @@ export default function OfflinePractice() {
                         {grokMessages.map((msg, i) => (
                           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             {msg.role === 'assistant' && (
-                              <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
+                              <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}><Icon name="message" size={11} className="text-white" /></div>
                             )}
                             <div
                               className="rounded-xl px-3 py-2 text-[11px] leading-relaxed max-w-[85%]"
@@ -1061,7 +1062,7 @@ export default function OfflinePractice() {
                         ))}
                         {grokLoading && (
                           <div className="flex justify-start">
-                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
+                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}><Icon name="message" size={11} className="text-white" /></div>
                             <div className="rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
                               <div className="flex gap-1 items-center h-4">
                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -1137,7 +1138,7 @@ export default function OfflinePractice() {
             {rightPanel === 'complexity' && (
               <div className="flex flex-col h-full">
                 <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between shrink-0">
-                  <span className="text-xs font-black text-white uppercase tracking-widest">Complexity</span>
+                  <span className="text-xs font-bold text-white">Complexity</span>
                   <button onClick={fetchComplexity} disabled={loadingCx}
                     className="text-[10px] font-bold text-amber-400 hover:text-amber-300 disabled:opacity-40 transition-colors px-2 py-1 rounded-lg hover:bg-amber-500/10">
                     {loadingCx ? '…' : '↻ Analyze'}
@@ -1147,7 +1148,7 @@ export default function OfflinePractice() {
                   {loadingCx && <div className="flex flex-col items-center justify-center h-full gap-3"><Spinner color="border-amber-500" /><p className="text-xs text-slate-500">Analyzing…</p></div>}
                   {!loadingCx && !complexity && (
                     <div className="flex flex-col items-center justify-center h-full text-center gap-4 p-6">
-                      <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-3xl">📊</div>
+                      <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400"><Icon name="bars" size={28} /></div>
                       <div><p className="text-sm font-bold text-white mb-1">Complexity Analyzer</p><p className="text-xs text-slate-500 leading-relaxed">Analyze time & space complexity of your solution.</p></div>
                       <button onClick={fetchComplexity} className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600/20 text-amber-300 border border-amber-500/30 hover:bg-amber-600/30 transition-all">Analyze Now</button>
                     </div>
@@ -1158,12 +1159,12 @@ export default function OfflinePractice() {
                         ['Space Complexity', complexity.space_complexity, { Best:'#818cf8', Avg:'#818cf8', Worst:'#818cf8' }]
                       ].map(([title, cx, colors]) => cx && (
                         <div key={title} className="p-3.5 rounded-2xl bg-white/[0.025] border border-white/[0.05]">
-                          <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-3">{title}</p>
+                          <p className="text-[9px] font-extrabold text-slate-600 mb-3">{title}</p>
                           <div className="grid grid-cols-3 gap-2">
                             {[['Best', cx.best], ['Avg', cx.average], ['Worst', cx.worst]].map(([l, v]) => (
                               <div key={l} className="text-center p-2 rounded-xl bg-white/[0.03] border border-white/[0.05]">
-                                <p className="text-[8px] text-slate-600 font-bold mb-1 uppercase">{l}</p>
-                                <p className="text-xs font-black font-mono" style={{ color: colors[l] }}>{v || 'N/A'}</p>
+                                <p className="text-[8px] text-slate-600 font-bold mb-1">{l}</p>
+                                <p className="text-xs font-bold font-mono" style={{ color: colors[l] }}>{v || 'N/A'}</p>
                               </div>
                             ))}
                           </div>
@@ -1171,13 +1172,13 @@ export default function OfflinePractice() {
                       ))}
                       {complexity.analysis && (
                         <div className="p-3.5 rounded-2xl bg-white/[0.025] border border-white/[0.05]">
-                          <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-2">Analysis</p>
+                          <p className="text-[9px] font-extrabold text-slate-600 mb-2">Analysis</p>
                           <p className="text-[11px] text-slate-300 leading-relaxed">{complexity.analysis}</p>
                         </div>
                       )}
                       {complexity.suggestions?.length > 0 && (
                         <div className="p-3.5 rounded-2xl bg-white/[0.025] border border-white/[0.05] space-y-2">
-                          <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Optimizations</p>
+                          <p className="text-[9px] font-extrabold text-slate-600">Optimizations</p>
                           {complexity.suggestions.map((s, i) => (
                             <div key={i} className="flex gap-2 text-[11px] text-slate-300 leading-relaxed">
                               <span className="text-amber-400 shrink-0 mt-0.5 font-bold">›</span><span>{s}</span>
@@ -1202,9 +1203,9 @@ export default function OfflinePractice() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
             <div className="w-20 h-20 mx-auto bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20">
-              <span className="text-4xl">✨</span>
+              <Icon name="check" size={36} strokeWidth={2.4} className="text-white" />
             </div>
-            <h2 className="text-2xl font-black text-white mb-2">Practice Complete!</h2>
+            <h2 className="text-2xl font-extrabold text-white mb-2">Practice Complete!</h2>
             <p className="text-slate-400 text-sm mb-6">You have finished this practice session.</p>
             
             {(() => {
@@ -1214,17 +1215,17 @@ export default function OfflinePractice() {
                 <div className="mb-8 space-y-4">
                   <div className="flex items-center justify-center gap-6">
                     <div className="text-center">
-                      <p className="text-2xl font-black text-emerald-400">{passedCount}</p>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Passed</p>
+                      <p className="text-2xl font-extrabold text-emerald-400">{passedCount}</p>
+                      <p className="text-[10px] font-bold text-slate-500">Passed</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-black text-rose-400">{questions.length - passedCount}</p>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Failed</p>
+                      <p className="text-2xl font-extrabold text-rose-400">{questions.length - passedCount}</p>
+                      <p className="text-[10px] font-bold text-slate-500">Failed</p>
                     </div>
                   </div>
                   {laggingTopics.length > 0 && (
                     <div className="pt-4 border-t border-white/5">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-rose-400 mb-2">Areas for Improvement</p>
+                      <p className="text-[10px] font-bold text-rose-400 mb-2">Areas for Improvement</p>
                       <div className="flex flex-wrap justify-center gap-2">
                         {laggingTopics.map(topic => (
                           <span key={topic} className="px-2.5 py-1 rounded-md text-[10px] font-semibold bg-rose-500/10 text-rose-300 border border-rose-500/20">
@@ -1236,7 +1237,7 @@ export default function OfflinePractice() {
                   )}
                   {laggingTopics.length === 0 && (
                     <div className="pt-4 border-t border-white/5">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Perfect Score! 🎉</p>
+                      <p className="text-[10px] font-bold text-emerald-400">Perfect score</p>
                     </div>
                   )}
                 </div>
