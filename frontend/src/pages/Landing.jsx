@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import Logo from '../components/Logo'
 import Navbar from '../components/Navbar'
@@ -301,7 +301,7 @@ function LiveTerminal() {
           {/* Line numbers - always show 1-12 */}
           <div className="py-6 px-4 bg-[#0A0A10] border-r border-white/[0.05] select-none" style={{ minWidth: '64px' }}>
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((num) => (
-              <div key={num} className="text-slate-600 text-right pr-4 transition-colors duration-300 hover:text-slate-400">
+              <div key={num} className="text-slate-500 text-right pr-4 transition-colors duration-300 hover:text-slate-400">
                 {num}
               </div>
             ))}
@@ -496,7 +496,14 @@ export default function Landing() {
   const [isDarkMode, setIsDarkMode] = useState(true)
   const { user, logout, login } = useAuth()
   const navigate = useNavigate()
-  
+  const { hash } = useLocation()
+
+  // In-page links such as /#features are router links, so scroll to the target here.
+  useEffect(() => {
+    if (!hash) return
+    document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [hash])
+
   // Handle OAuth callback
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -559,7 +566,7 @@ export default function Landing() {
             <HeroTitle isDarkMode={isDarkMode} onCompleteOnce={() => setHasCompletedOnce(true)} />
 
             <div className={`transition-all duration-1000 ${hasCompletedOnce ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`} style={{ transitionDelay: '600ms' }}>
-              <p className={`text-xl max-w-xl mb-12 leading-relaxed hover:text-slate-300 transition-colors duration-300 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
+              <p className={`text-xl max-w-xl mb-12 leading-relaxed hover:text-slate-300 transition-colors duration-300 ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 The real-time multiplayer coding platform. Battle against developers worldwide,
                 master algorithms, and climb the leaderboard with AI-generated challenges.
               </p>
@@ -606,7 +613,7 @@ export default function Landing() {
       </section>
 
       {/* ── Features ───────────────────────────────────────────────────────── */}
-      <section id="features" className="py-24">
+      <section id="features" className="py-24 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <FeaturesSection />
         </div>
@@ -623,14 +630,14 @@ export default function Landing() {
       </section>
 
       {/* ── Game Modes ─────────────────────────────────────────────────────── */}
-      <section id="modes" className="py-24">
+      <section id="modes" className="py-24 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <GameModesSection />
         </div>
       </section>
 
       {/* ── Testimonials ───────────────────────────────────────────────────── */}
-      <section id="testimonials" className="py-24">
+      <section id="testimonials" className="py-24 scroll-mt-20">
         <div className="max-w-7xl mx-auto px-6">
           <TestimonialsSection />
         </div>
