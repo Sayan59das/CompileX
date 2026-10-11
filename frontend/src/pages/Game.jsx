@@ -937,7 +937,6 @@ export default function Game() {
         setTestCaseDetails(data.test_case_details.map((tc, i) => ({ ...tc, hidden: i > 0 })))
         setSelectedTestCase(0)
         setRightPanelTab('tests')
-        setActivePanel('right')
       }
 
       // Update AI analyzer panel directly from submission response
@@ -1048,7 +1047,6 @@ export default function Game() {
         }))
         setConsoleOutput(enrichedResults)
         setRightPanelTab('console')
-        setActivePanel('right')
       } else {
         // Test cases mode: update test case details with actual output
         const results = data.results || []
@@ -1067,7 +1065,6 @@ export default function Game() {
         })
         setTestCaseDetails(updatedTestCases)
         setRightPanelTab('tests')
-        setActivePanel('right')
       }
     } catch (err) {
       if (useCustomInput) {
@@ -1492,7 +1489,7 @@ export default function Game() {
                   style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   <Icon name="trophy" size={14} className="" /> Live Standings
                 </div>
-                <div className="grid grid-cols-12 px-4 py-2 text-[10px] font-bold text-slate-600"
+                <div className="grid grid-cols-12 px-4 py-2 text-[10px] font-bold text-slate-500"
                   style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                   <span className="col-span-1">#</span>
                   <span className="col-span-7">Player</span>
@@ -1944,7 +1941,7 @@ export default function Game() {
                     <div className="text-center py-4">
                       <Icon name="message" size={24} className="mx-auto mb-2 text-slate-500" />
                       <div className="text-[11px] text-slate-400 mb-1">Ask anything about your code</div>
-                      <div className="text-[10px] text-slate-600">e.g. "Why is my solution O(n²)?" or "How do I fix this bug?"</div>
+                      <div className="text-[10px] text-slate-500">e.g. "Why is my solution O(n²)?" or "How do I fix this bug?"</div>
                     </div>
                   )}
                   {grokMessages.map((msg, i) => (
@@ -2029,7 +2026,7 @@ export default function Game() {
                       </svg>
                     </button>
                   </div>
-                  <div className="text-[9px] text-slate-600 mt-1 px-1">Shift+Enter for new line · Powered by NVIDIA NIM</div>
+                  <div className="text-[9px] text-slate-500 mt-1 px-1">Shift+Enter for new line · Powered by NVIDIA NIM</div>
                 </div>
               </div>
             </>
@@ -2140,7 +2137,7 @@ export default function Game() {
                               : `${complexityData.execution_stats.memory_kb.toFixed(1)} KB`
                             : '—'}
                         </div>
-                        <div className="text-[9px] text-slate-600">max 1.6 MB</div>
+                        <div className="text-[9px] text-slate-500">max 1.6 MB</div>
                       </div>
                       <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
                         <div className="flex items-center justify-center gap-1 mb-1">
@@ -2152,7 +2149,7 @@ export default function Game() {
                             ? `${Math.round(complexityData.execution_stats.cpu_time_ms)} ms`
                             : '—'}
                         </div>
-                        <div className="text-[9px] text-slate-600">
+                        <div className="text-[9px] text-slate-500">
                           max {complexityData.execution_stats.cpu_time_ms != null ? `${Math.round(complexityData.execution_stats.cpu_time_ms)} ms` : '—'}
                         </div>
                       </div>
@@ -2166,7 +2163,7 @@ export default function Game() {
                             ? `${Math.round(complexityData.execution_stats.wall_time_ms)} ms`
                             : '—'}
                         </div>
-                        <div className="text-[9px] text-slate-600">
+                        <div className="text-[9px] text-slate-500">
                           avg of {complexityData.execution_stats.total_tests ?? '—'} tests
                         </div>
                       </div>
@@ -2224,31 +2221,31 @@ export default function Game() {
                     <div>
                       <div className="text-[9px] text-slate-500 mb-0.5">Best</div>
                       <div className="text-[11px] font-mono font-bold text-emerald-400">{complexityData.time_complexity?.best}</div>
-                      <div className="text-[9px] text-slate-600">time</div>
+                      <div className="text-[9px] text-slate-500">time</div>
                     </div>
                     <div>
                       <div className="text-[9px] text-slate-500 mb-0.5">Avg</div>
                       <div className="text-[11px] font-mono font-bold text-yellow-400">{complexityData.time_complexity?.average}</div>
-                      <div className="text-[9px] text-slate-600">time</div>
+                      <div className="text-[9px] text-slate-500">time</div>
                     </div>
                     <div>
                       <div className="text-[9px] text-slate-500 mb-0.5">Worst</div>
                       <div className="text-[11px] font-mono font-bold text-rose-400">{complexityData.time_complexity?.worst}</div>
-                      <div className="text-[9px] text-slate-600">time</div>
+                      <div className="text-[9px] text-slate-500">time</div>
                     </div>
                   </div>
                   <div className="border-t border-white/5 pt-2 grid grid-cols-3 gap-1 text-center">
                     <div>
                       <div className="text-[11px] font-mono font-bold text-emerald-400">{complexityData.space_complexity?.best}</div>
-                      <div className="text-[9px] text-slate-600">space</div>
+                      <div className="text-[9px] text-slate-500">space</div>
                     </div>
                     <div>
                       <div className="text-[11px] font-mono font-bold text-yellow-400">{complexityData.space_complexity?.average}</div>
-                      <div className="text-[9px] text-slate-600">space</div>
+                      <div className="text-[9px] text-slate-500">space</div>
                     </div>
                     <div>
                       <div className="text-[11px] font-mono font-bold text-rose-400">{complexityData.space_complexity?.worst}</div>
-                      <div className="text-[9px] text-slate-600">space</div>
+                      <div className="text-[9px] text-slate-500">space</div>
                     </div>
                   </div>
                 </div>
@@ -2320,8 +2317,8 @@ export default function Game() {
                         <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                       </svg>
                       <div>
-                        <div className="text-[11px] font-semibold text-white">Share Solution</div>
-                        <div className="text-[9px] text-slate-500">Make your solution visible to others</div>
+                        <div className="text-[11px] font-semibold text-white">Copy summary</div>
+                        <div className="text-[9px] text-slate-500">Copy the complexity result to share it</div>
                       </div>
                     </div>
                     <button
@@ -2333,7 +2330,7 @@ export default function Game() {
                       style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.3)' }}
                     >
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                      Make Public
+                      Copy
                     </button>
                   </div>
                 </div>
