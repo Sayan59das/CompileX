@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import api from '../services/api'
+import Icon from './Icons'
 
 // ---------------------------------------------------------------------------
 // A render takes minutes, so the flow is: POST a topic, get a slug back
@@ -14,6 +15,7 @@ const POLL_INTERVAL_MS = 4000
 const SUGGESTIONS = ['binary search', 'hash tables', 'recursion', 'linked lists']
 
 const STAGES = ['designing', 'writing', 'rendering']
+const STAGE_NAMES = { designing: 'Designing the lesson', writing: 'Writing the narration', rendering: 'Rendering the video' }
 
 /** Absolute URL for a backend-relative media path.
  *
@@ -37,24 +39,20 @@ function errorMessage(err) {
 function StageTrack({ status }) {
   const current = STAGES.indexOf(status)
   return (
-    <div className="flex items-center gap-2">
+    <ol className="grid grid-cols-3 gap-2">
       {STAGES.map((stage, i) => {
         const done = current > i
         const active = current === i
         return (
-          <div
-            key={stage}
-            className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
-              done
-                ? 'bg-blue-500'
-                : active
-                  ? 'bg-gradient-to-r from-blue-500 to-cyan-400 animate-pulse'
-                  : 'bg-white/[0.08]'
-            }`}
-          />
+          <li key={stage}>
+            <div className={`h-1.5 rounded-full ${done || active ? 'bg-ink' : 'bg-line'}`} />
+            <div className={`mt-2 text-sm ${active ? 'font-semibold text-ink' : done ? 'text-ink-2' : 'text-ink-3'}`}>
+              {STAGE_NAMES[stage]}
+            </div>
+          </li>
         )
       })}
-    </div>
+    </ol>
   )
 }
 
@@ -136,125 +134,106 @@ export default function LearnMore() {
   const chips = ready.length ? ready : SUGGESTIONS.map((t) => ({ slug: t.replace(/ /g, '-'), topic: t, pending: true }))
 
   return (
-    <div>
-      <div className="text-center mb-12">
-        <div className="inline-flex items-center gap-2 bg-[#101018] border border-blue-500/20 rounded-full px-4 py-1.5 mb-6">
-          <span className="w-2 h-2 rounded-full bg-[#3b82f6]" />
-          <span className="text-sm font-medium text-[#60a5fa]">Powered by Claude + Manim</span>
-        </div>
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">Learn More</h2>
-        <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-          Name any coding topic and we will build you a narrated explainer video —
-          hook, real-world intuition, the mechanism, an animated code trace, and a summary.
+    <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
+      <div>
+        <h2 className="display text-[clamp(2.2rem,4.4vw,3.5rem)]">Learn a topic before the match</h2>
+        <p className="measure mt-6 text-lg text-ink-2">
+          Name any coding topic and we will build a narrated explainer video: a hook, a real-world comparison, how it
+          works, an animated walk through the code, and a summary. It is made with Claude and Manim.
         </p>
       </div>
 
-      <div className="max-w-3xl mx-auto">
-        {/* ── Topic input ─────────────────────────────────────────────────── */}
+      <div>
         <form
           onSubmit={(e) => { e.preventDefault(); generate() }}
-          className="flex flex-col sm:flex-row gap-3 mb-5"
+          className="flex flex-col gap-3 sm:flex-row"
         >
+          <label htmlFor="learn-topic" className="sr-only">Topic to explain</label>
           <input
+            id="learn-topic"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             maxLength={80}
-            placeholder="e.g. binary search trees, memoization, two pointers"
-            aria-label="Topic to explain"
-            className="flex-1 px-6 py-4 bg-[#0A0A10] border border-white/[0.08] rounded-xl text-white placeholder-slate-500 outline-none transition-all duration-300 focus:border-blue-500/50 focus:shadow-[0_0_25px_rgba(59,130,246,0.15)]"
+            placeholder="For example: binary search trees, memoization, two pointers"
+            className="field h-12 flex-1"
           />
           <button
             type="submit"
             disabled={submitting || working || !topic.trim()}
-            className="px-8 py-4 font-bold text-white rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/30 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="btn btn-primary h-12 px-6"
           >
-            {working ? 'Generating…' : submitting ? 'Starting…' : 'Generate Video'}
+            {working ? 'Generating…' : submitting ? 'Starting…' : 'Generate video'}
           </button>
         </form>
 
-        {/* ── Suggested / already-rendered topics ─────────────────────────── */}
-        <div className="flex flex-wrap items-center gap-2 mb-8">
-          <span className="text-xs uppercase tracking-wider text-slate-500 mr-1">
-            {ready.length ? 'Ready to watch' : 'Try'}
-          </span>
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <span className="mr-1 text-sm text-ink-3">{ready.length ? 'Ready to watch:' : 'Try:'}</span>
           {chips.map((v) => (
             <button
               key={v.slug}
               type="button"
               onClick={() => (v.pending ? generate(v.topic) : play(v))}
               disabled={working || submitting}
-              className="px-3 py-1.5 text-sm rounded-full bg-[#0A0A10] border border-white/[0.07] text-slate-300 transition-all duration-300 hover:border-blue-500/40 hover:text-blue-300 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="chip h-8 px-3 text-sm transition-colors hover:border-ink-3 hover:text-ink disabled:cursor-not-allowed disabled:opacity-50"
             >
               {v.topic}
             </button>
           ))}
         </div>
 
-        {/* ── Errors from the request itself ──────────────────────────────── */}
         {error && (
-          <div className="p-4 mb-6 rounded-xl bg-red-500/[0.07] border border-red-500/20 text-sm text-red-300">
+          <div role="alert" className="mt-6 flex items-start gap-3 rounded-md border border-tomato-ink/40 bg-tomato/10 p-4 text-sm text-ink">
+            <Icon name="alert" size={18} className="mt-0.5 text-tomato-ink" />
             {error}
           </div>
         )}
 
-        {/* ── Progress ────────────────────────────────────────────────────── */}
         {working && (
-          <div className="p-6 rounded-2xl bg-[#0A0A10]/80 border border-white/[0.05]">
-            <div className="flex items-baseline justify-between mb-4">
-              <span className="text-white font-medium">{job.stage_label}…</span>
-              <span className="text-slate-500 text-sm font-mono tabular-nums">
+          <div className="panel mt-6 p-5">
+            <div className="mb-4 flex items-baseline justify-between">
+              <span className="font-semibold">{job.stage_label}…</span>
+              <span className="tnum text-sm text-ink-3">
                 {Math.floor(job.elapsed_seconds / 60)}m {job.elapsed_seconds % 60}s
               </span>
             </div>
             <StageTrack status={job.status} />
-            <p className="text-slate-500 text-sm mt-4 leading-relaxed">
-              Writing and rendering a lesson takes several minutes — the first
-              pass also synthesises the voiceover. You can leave this open; it
-              keeps working while you scroll.
+            <p className="mt-4 text-sm text-ink-3">
+              A lesson takes a few minutes to write and render, and the first one also records the voiceover. You can
+              keep this page open and carry on reading.
             </p>
           </div>
         )}
 
-        {/* ── Failure reported by the generator ───────────────────────────── */}
         {job?.status === 'failed' && (
-          <div className="p-6 rounded-2xl bg-red-500/[0.07] border border-red-500/20">
-            <div className="text-red-300 font-medium mb-2">
-              Could not generate “{job.topic}”
-            </div>
-            <p className="text-slate-400 text-sm whitespace-pre-line">{job.error}</p>
-            <button
-              type="button"
-              onClick={() => generate(job.topic)}
-              className="mt-4 px-5 py-2 text-sm font-medium rounded-lg border border-white/[0.1] text-slate-300 transition-colors hover:border-blue-500/40 hover:text-blue-300"
-            >
+          <div role="alert" className="mt-6 rounded-md border border-tomato-ink/40 bg-tomato/10 p-5">
+            <div className="font-semibold">Could not generate “{job.topic}”</div>
+            <p className="mt-1.5 whitespace-pre-line text-sm text-ink-2">{job.error}</p>
+            <button type="button" onClick={() => generate(job.topic)} className="btn btn-secondary btn-sm mt-4">
               Try again
             </button>
           </div>
         )}
 
-        {/* ── The video ───────────────────────────────────────────────────── */}
         {job?.status === 'ready' && (
-          <div className="relative group">
-            <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-3xl blur-2xl pointer-events-none" />
-            <div className="relative bg-[#0A0A10] border border-white/[0.07] rounded-2xl overflow-hidden shadow-2xl">
-              <video
-                key={job.slug}
-                src={mediaUrl(job.video_url)}
-                controls
-                autoPlay
-                playsInline
-                className="w-full aspect-video bg-black"
-              />
-              <div className="flex items-center justify-between px-5 py-3 bg-[#101018] border-t border-white/[0.05]">
-                <span className="text-white text-sm font-medium">{job.topic}</span>
-                <a
-                  href={mediaUrl(job.video_url)}
-                  download
-                  className="text-xs text-slate-400 hover:text-blue-300 transition-colors"
-                >
-                  Download mp4
-                </a>
-              </div>
+          <div className="panel mt-6 overflow-hidden">
+            <video
+              key={job.slug}
+              src={mediaUrl(job.video_url)}
+              controls
+              autoPlay
+              playsInline
+              className="aspect-video w-full bg-black"
+            />
+            <div className="flex items-center justify-between border-t border-line px-4 py-3">
+              <span className="text-sm font-semibold">{job.topic}</span>
+              <a
+                href={mediaUrl(job.video_url)}
+                download
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-2 hover:text-ink"
+              >
+                <Icon name="download" size={14} />
+                Download mp4
+              </a>
             </div>
           </div>
         )}
