@@ -141,7 +141,7 @@ export default function Login() {
             </div>
 
             <div className="relative z-10 " style={{animationDelay: '0.3s'}}>
-              <p className="text-sm text-slate-600 font-medium">© 2026 CompileX Platform</p>
+              <p className="text-sm text-slate-500 font-medium">© 2026 CompileX Platform</p>
             </div>
           </div>
 

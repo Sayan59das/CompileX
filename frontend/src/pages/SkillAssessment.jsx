@@ -145,7 +145,7 @@ function LoadingQuestion({ slot, dimension }) {
       <div className="text-center">
         <p className="text-white text-xl font-bold mb-2">Generating Question {slot + 1} of {TOTAL_QUESTIONS}</p>
         <p className="text-gray-500 text-sm">Testing your <span className="text-blue-400 font-semibold">{dim.label}</span> skills...</p>
-        <p className="text-gray-600 text-xs mt-2">AI is crafting a unique question just for you</p>
+        <p className="text-gray-500 text-xs mt-2">AI is crafting a unique question just for you</p>
       </div>
       <div className="flex gap-2">
         {Array.from({ length: TOTAL_QUESTIONS }).map((_, i) => (
@@ -252,8 +252,8 @@ function ResultScreen({ rating, tier, topicScores, questionResults, onContinue }
                     </div>
                     <div className="flex items-center gap-1 mt-1">
                       <Icon name={dim.icon} size={11} />
-                      <span className="text-gray-600 text-[10px]">{dim.label}</span>
-                      {r.timeTaken && <span className="text-gray-700 text-[10px] ml-auto">{r.timeTaken}s</span>}
+                      <span className="text-gray-500 text-[10px]">{dim.label}</span>
+                      {r.timeTaken && <span className="text-gray-500 text-[10px] ml-auto">{r.timeTaken}s</span>}
                     </div>
                   </div>
                 )
@@ -353,11 +353,11 @@ function IntroScreen({ onStart, onSkip }) {
           ))}
         </div>
 
-        <div className="flex gap-3 mb-3 text-center text-gray-600 text-xs">
+        <div className="flex gap-3 mb-3 text-center text-gray-500 text-xs">
           {[['5', 'Questions'], ['~15min', 'Duration'], ['Real', 'Execution'], ['Adaptive', 'Difficulty']].map(([v, l]) => (
             <div key={l} className="flex-1 bg-gray-900/50 border border-gray-800 rounded-xl py-2">
               <p className="text-white font-bold text-sm">{v}</p>
-              <p className="text-gray-600 text-[10px]">{l}</p>
+              <p className="text-gray-500 text-[10px]">{l}</p>
             </div>
           ))}
         </div>
@@ -367,7 +367,7 @@ function IntroScreen({ onStart, onSkip }) {
           Start My Assessment
         </button>
         <button onClick={onSkip}
-          className="w-full py-3 rounded-xl text-gray-600 hover:text-gray-400 text-sm transition-colors">
+          className="w-full py-3 rounded-xl text-gray-500 hover:text-gray-400 text-sm transition-colors">
           Skip — use default rating (1000 · Intermediate)
         </button>
       </div>
@@ -650,7 +650,7 @@ export default function SkillAssessment() {
       <div className="border-b border-gray-800 px-5 py-3 flex items-center justify-between bg-gray-950/95 backdrop-blur sticky top-0 z-20">
         <div className="flex items-center gap-3">
           <span className="text-white font-extrabold text-lg">CompileX</span>
-          <span className="text-gray-700">|</span>
+          <span className="text-gray-500">|</span>
           <span className="text-gray-400 text-sm">Skill Assessment</span>
           <div className={`px-2.5 py-1 rounded-full border text-xs font-bold ${ds.bg} ${ds.border} ${ds.text}`}>{ds.label}</div>
           <div className="flex items-center gap-1.5 text-gray-500 text-xs">
@@ -702,7 +702,7 @@ export default function SkillAssessment() {
 
             {/* Question header */}
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-gray-600 text-xs font-mono">Q{currentSlot + 1}</span>
+              <span className="text-gray-500 text-xs font-mono">Q{currentSlot + 1}</span>
               <div className={`px-2 py-0.5 rounded text-[10px] font-bold ${ds.bg} ${ds.text}`}>{ds.label}</div>
               <div className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400">
                 {currentSlot === 4 ? 500 : currentSlot === 3 ? 400 : currentSlot === 2 ? 300 : 200} pts
@@ -732,14 +732,14 @@ export default function SkillAssessment() {
             {/* Previous results mini-list */}
             {questionResults.length > 0 && (
               <div className="mt-5 pt-5 border-t border-gray-800">
-                <p className="text-gray-600 text-[10px] mb-2">Previous</p>
+                <p className="text-gray-500 text-[10px] mb-2">Previous</p>
                 {questionResults.map((r, i) => (
                   <div key={i} className="flex items-center gap-2 mb-1.5">
                     <span className={`text-xs font-bold ${r.passed ? 'text-emerald-400' : r.partial ? 'text-amber-400' : 'text-red-400'}`}>
                       {r.passed ? '✓' : r.partial ? '~' : '✗'}
                     </span>
                     <span className="text-gray-500 text-xs truncate flex-1">{r.title}</span>
-                    <span className="text-gray-700 text-[10px]">{r.pointsEarned}pts</span>
+                    <span className="text-gray-500 text-[10px]">{r.pointsEarned}pts</span>
                   </div>
                 ))}
               </div>
@@ -774,7 +774,7 @@ export default function SkillAssessment() {
                 {runResult && !running && (
                   <span className={`text-xs font-bold ${runResult.passed ? 'text-emerald-400' : runResult.passedTests > 0 ? 'text-amber-400' : 'text-red-400'}`}>
                     {runResult.passed ? '✓ All tests passed!' : `${runResult.passedTests}/${runResult.totalTests} tests passed`}
-                    {runResult.preview && <span className="text-gray-600 font-normal ml-1">(preview)</span>}
+                    {runResult.preview && <span className="text-gray-500 font-normal ml-1">(preview)</span>}
                   </span>
                 )}
               </div>
@@ -794,7 +794,7 @@ export default function SkillAssessment() {
 
             <div className="flex-1 overflow-y-auto p-4">
               {!runResult && !running && (
-                <p className="text-gray-700 text-xs text-center py-6">Click Run to test with examples, or Submit to evaluate all test cases</p>
+                <p className="text-gray-500 text-xs text-center py-6">Click Run to test with examples, or Submit to evaluate all test cases</p>
               )}
               {running && (
                 <div className="flex items-center gap-3 py-6 justify-center">

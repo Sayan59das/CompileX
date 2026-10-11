@@ -173,7 +173,7 @@ export default function Lobby() {
               <p className="font-mono font-extrabold text-5xl tracking-[0.18em] text-white" style={{ background: 'linear-gradient(135deg, #60a5fa, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 {code}
               </p>
-              <p className={`text-xs mt-3 font-semibold transition-colors duration-300 ${copied ? 'text-emerald-400' : 'text-slate-600 group-hover:text-slate-400'}`}>
+              <p className={`text-xs mt-3 font-semibold transition-colors duration-300 ${copied ? 'text-emerald-400' : 'text-slate-500 group-hover:text-slate-400'}`}>
                 {copied ? 'Copied' : 'Tap to copy'}
               </p>
             </button>
@@ -216,13 +216,13 @@ export default function Lobby() {
                     ))}
                   </div>
                   <span className="text-xs font-bold text-slate-400 bg-white/[0.05] px-2.5 py-1 rounded-full border border-white/[0.08]">
-                    {players.length}<span className="text-slate-600">/{lobby?.max_players}</span>
+                    {players.length}<span className="text-slate-500">/{lobby?.max_players}</span>
                   </span>
                 </div>
               </div>
               <div className="p-3 space-y-1.5 min-h-[80px]">
                 {players.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-slate-600">
+                  <div className="flex flex-col items-center justify-center py-8 text-slate-500">
                     <Icon name="users" size={26} className="mx-auto mb-2" />
                     <p className="text-xs font-semibold">Waiting for players…</p>
                   </div>
@@ -264,7 +264,7 @@ export default function Lobby() {
                 {startError && (
                   <p className="text-center text-xs text-rose-400 mt-2 bg-rose-500/8 border border-rose-500/15 rounded-xl px-4 py-2.5">{startError}</p>
                 )}
-                <p className="text-center text-[11px] text-slate-600 mt-3">Only you can start — you created this lobby</p>
+                <p className="text-center text-[11px] text-slate-500 mt-3">Only you can start — you created this lobby</p>
               </>
             ) : (
               <div className="flex flex-col items-center gap-3 py-5">
@@ -276,7 +276,7 @@ export default function Lobby() {
                   </div>
                   Waiting for host to start…
                 </div>
-                <p className="text-[11px] text-slate-600">Hang tight — the match will begin shortly</p>
+                <p className="text-[11px] text-slate-500">Hang tight — the match will begin shortly</p>
               </div>
             )}
           </div>

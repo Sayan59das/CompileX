@@ -129,7 +129,7 @@ function IconTab({ icon, label, active, onClick, badge }) {
   return (
     <button onClick={onClick} title={label}
       className={`relative flex flex-col items-center gap-1 py-3 w-full transition-all duration-200 group ${
- active ? 'text-blue-300' : 'text-slate-600 hover:text-slate-300'
+ active ? 'text-blue-300' : 'text-slate-500 hover:text-slate-300'
       }`}>
       {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-8 bg-blue-500 rounded-r-full" />}
       <Icon name={icon} size={18} />
@@ -516,7 +516,7 @@ export default function OfflinePractice() {
                           )}
                           {q.diagram && (
                             <div className="rounded-xl overflow-hidden border border-white/[0.06]">
-                              <p className="text-[9px] text-slate-600 font-bold px-3 py-2 border-b border-white/[0.05]">Diagram</p>
+                              <p className="text-[9px] text-slate-500 font-bold px-3 py-2 border-b border-white/[0.05]">Diagram</p>
                               <img src={q.diagram} alt="diagram" className="w-full" />
                             </div>
                           )}
@@ -625,7 +625,7 @@ export default function OfflinePractice() {
                           </button>
                         ))}
                       </div>
-                      <button onClick={() => setBottomOpen(false)} className="text-slate-600 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/[0.05]">
+                      <button onClick={() => setBottomOpen(false)} className="text-slate-500 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/[0.05]">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
                       </button>
                     </div>
@@ -643,7 +643,7 @@ export default function OfflinePractice() {
  selectedTC === i ? 'bg-blue-500/15 text-blue-300 border border-blue-500/25' : 'text-slate-500 hover:bg-white/[0.04] hover:text-slate-300'
                                   }`}>
                                   <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[9px] font-extrabold shrink-0 ${
- !r ? 'bg-white/[0.06] text-slate-600' :
+ !r ? 'bg-white/[0.06] text-slate-500' :
                                     r.passed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
                                   }`}>{r ? (r.passed ? '✓' : '✗') : i+1}</span>
                                   Case {i+1}
@@ -686,7 +686,7 @@ export default function OfflinePractice() {
                                     { label: 'Expected output', value: tc.output || tc.expected_output || '—', color: 'text-slate-300' },
                                   ].map(item => (
                                     <div key={item.label}>
-                                      <p className="text-[9px] text-slate-600 font-extrabold mb-1.5">{item.label}</p>
+                                      <p className="text-[9px] text-slate-500 font-extrabold mb-1.5">{item.label}</p>
                                       <pre className={`bg-white/[0.03] border border-white/[0.05] rounded-xl px-3 py-2.5 whitespace-pre-wrap break-all leading-relaxed ${item.color}`}>{item.value}</pre>
                                     </div>
                                   ))}
@@ -709,7 +709,7 @@ export default function OfflinePractice() {
                                 )}
                                 </>
                               )
-                            })() : <p className="text-slate-600 text-xs text-center py-6">Select a test case</p>}
+                            })() : <p className="text-slate-500 text-xs text-center py-6">Select a test case</p>}
                           </div>
                         </div>
                       )}
@@ -719,7 +719,7 @@ export default function OfflinePractice() {
                         <div className="flex h-full">
                           <div className="flex-1 flex flex-col border-r border-white/[0.05]">
                             <div className="flex items-center justify-between px-3 py-2 border-b border-white/[0.05] shrink-0">
-                              <span className="text-[10px] text-slate-600 font-semibold">Separate cases with <code className="text-slate-400 bg-white/[0.05] px-1 rounded">---</code></span>
+                              <span className="text-[10px] text-slate-500 font-semibold">Separate cases with <code className="text-slate-400 bg-white/[0.05] px-1 rounded">---</code></span>
                               <button onClick={handleRunCustom} disabled={runningCustom}
                                 className="flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-bold bg-blue-500/10 text-blue-300 border border-blue-500/25 hover:bg-blue-500/20 transition-all disabled:opacity-40">
                                 {runningCustom ? <Spinner color="border-blue-400" /> : '▶'} Run
@@ -730,8 +730,8 @@ export default function OfflinePractice() {
                               className="flex-1 bg-transparent p-3 text-xs font-mono text-slate-300 placeholder-slate-700 resize-none focus:outline-none" />
                           </div>
                           <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                            <p className="text-[9px] text-slate-600 font-extrabold mb-2">Output</p>
-                            {!runningCustom && !customOutput && <p className="text-xs text-slate-600 text-center py-6">Run to see output</p>}
+                            <p className="text-[9px] text-slate-500 font-extrabold mb-2">Output</p>
+                            {!runningCustom && !customOutput && <p className="text-xs text-slate-500 text-center py-6">Run to see output</p>}
                             {runningCustom && <div className="flex justify-center pt-4"><Spinner color="border-blue-500" /></div>}
                             {!runningCustom && customOutput?.map((r, i) => (
                               <div key={i} className={`rounded-xl border p-3 text-xs font-mono ${r.error ? 'bg-rose-500/5 border-rose-500/20' : 'bg-emerald-500/5 border-emerald-500/20'}`}>
@@ -746,7 +746,7 @@ export default function OfflinePractice() {
                   </div>
                 ) : (
                   <div className="h-7 flex items-center px-4 border-t border-white/[0.05] bg-[#060a12] shrink-0">
-                    <button onClick={() => setBottomOpen(true)} className="flex items-center gap-1.5 text-[10px] text-slate-600 hover:text-slate-300 transition-colors">
+                    <button onClick={() => setBottomOpen(true)} className="flex items-center gap-1.5 text-[10px] text-slate-500 hover:text-slate-300 transition-colors">
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 15l-6-6-6 6"/></svg>
                       Show panel
                     </button>
@@ -850,7 +850,7 @@ export default function OfflinePractice() {
                   <div className="flex gap-1 p-1 bg-white/[0.03] rounded-xl border border-white/[0.04]">
                     {[['type','Topic'],['upload','File']].map(([m,l]) => (
                       <button key={m} onClick={() => setInputMode(m)}
-                        className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${inputMode === m ? 'bg-blue-600/25 text-violet-200 border border-blue-500/30' : 'text-slate-600 hover:text-slate-300'}`}>{l}</button>
+                        className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${inputMode === m ? 'bg-blue-600/25 text-violet-200 border border-blue-500/30' : 'text-slate-500 hover:text-slate-300'}`}>{l}</button>
                     ))}
                   </div>
 
@@ -865,7 +865,7 @@ export default function OfflinePractice() {
                         {['easy','medium','hard'].map(d => (
                           <button key={d} onClick={() => setDifficulty(d)}
                             className={`flex-1 py-1.5 rounded-xl text-[10px] font-bold capitalize border transition-all ${
- difficulty === d ? `${DIFF[d].bg} ${DIFF[d].text} ${DIFF[d].border}` : 'bg-white/[0.02] text-slate-600 border-white/[0.04] hover:text-slate-300'
+ difficulty === d ? `${DIFF[d].bg} ${DIFF[d].text} ${DIFF[d].border}` : 'bg-white/[0.02] text-slate-500 border-white/[0.04] hover:text-slate-300'
                             }`}>{d}</button>
                         ))}
                       </div>
@@ -875,7 +875,7 @@ export default function OfflinePractice() {
                       <input type="file" accept=".pdf,.txt,image/*" onChange={e => setFile(e.target.files?.[0])} className="hidden" id="fu" />
                       <label htmlFor="fu" className="flex items-center gap-3 p-3 border-2 border-dashed border-white/[0.06] rounded-xl cursor-pointer hover:border-blue-500/30 hover:bg-blue-500/3 transition-all">
                         <Icon name={file ? 'check-circle' : 'file'} size={20} className={file ? 'text-emerald-400' : 'text-slate-400'} />
-                        <div><p className="text-xs font-semibold text-white">{file ? file.name : 'Upload Syllabus'}</p><p className="text-[10px] text-slate-600">PDF, TXT, or Image</p></div>
+                        <div><p className="text-xs font-semibold text-white">{file ? file.name : 'Upload Syllabus'}</p><p className="text-[10px] text-slate-500">PDF, TXT, or Image</p></div>
                       </label>
                     </>
                   )}
@@ -929,20 +929,20 @@ export default function OfflinePractice() {
                             ) : status === 'failed' ? (
                               <span className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0 bg-rose-500/20 text-rose-400 text-[10px] font-extrabold">✗</span>
                             ) : (
-                              <span className={`text-[9px] font-extrabold w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${i === activeQ ? 'bg-blue-500/30 text-blue-300' : 'bg-white/[0.05] text-slate-600'}`}>{i+1}</span>
+                              <span className={`text-[9px] font-extrabold w-5 h-5 rounded-lg flex items-center justify-center shrink-0 ${i === activeQ ? 'bg-blue-500/30 text-blue-300' : 'bg-white/[0.05] text-slate-500'}`}>{i+1}</span>
                             )}
                             <span className="text-[11px] font-semibold text-white leading-tight line-clamp-2">{qItem.title}</span>
                           </div>
                           <span className={`text-[8px] px-1.5 py-0.5 rounded-full border font-extrabold shrink-0 ${s.text} ${s.bg} ${s.border}`}>{qItem.difficulty}</span>
                         </div>
-                        <p className="text-[9px] text-slate-600 ml-7">{qItem.topic || 'General'}</p>
+                        <p className="text-[9px] text-slate-500 ml-7">{qItem.topic || 'General'}</p>
                       </button>
                     )
                   })}
                   {questions.length === 0 && (
                     <div className="text-center py-10">
-                      <Icon name="list" size={28} className="mx-auto mb-2 text-slate-600" />
-                      <p className="text-xs text-slate-600">Generate questions above</p>
+                      <Icon name="list" size={28} className="mx-auto mb-2 text-slate-500" />
+                      <p className="text-xs text-slate-500">Generate questions above</p>
                     </div>
                   )}
                 </div>
@@ -986,7 +986,7 @@ export default function OfflinePractice() {
                       </div>
                       {aiFeedback.breakdown && Object.keys(aiFeedback.breakdown).length > 0 && (
                         <div className="p-3.5 rounded-2xl bg-white/[0.025] border border-white/[0.05] space-y-2.5">
-                          <p className="text-[9px] font-extrabold text-slate-600">Breakdown</p>
+                          <p className="text-[9px] font-extrabold text-slate-500">Breakdown</p>
                           {Object.entries(aiFeedback.breakdown).map(([k, v]) => (
                             <div key={k}>
                               <div className="flex justify-between text-[10px] mb-1.5">
@@ -1003,7 +1003,7 @@ export default function OfflinePractice() {
                       )}
                       {aiFeedback.suggestions?.length > 0 && (
                         <div className="p-3.5 rounded-2xl bg-white/[0.025] border border-white/[0.05] space-y-2">
-                          <p className="text-[9px] font-extrabold text-slate-600">Suggestions</p>
+                          <p className="text-[9px] font-extrabold text-slate-500">Suggestions</p>
                           {aiFeedback.suggestions.map((s, i) => (
                             <div key={i} className="flex gap-2 text-[11px] text-slate-300 leading-relaxed">
                               <span className="text-blue-400 shrink-0 mt-0.5 font-bold">›</span><span>{s}</span>
@@ -1041,7 +1041,7 @@ export default function OfflinePractice() {
                           <div className="text-center py-4">
                             <Icon name="message" size={24} className="mx-auto mb-2 text-slate-500" />
                             <div className="text-[11px] text-slate-400 mb-1">Ask anything about your code</div>
-                            <div className="text-[10px] text-slate-600">e.g. "Why is my solution O(n²)?" or "How do I fix this bug?"</div>
+                            <div className="text-[10px] text-slate-500">e.g. "Why is my solution O(n²)?" or "How do I fix this bug?"</div>
                           </div>
                         )}
                         {grokMessages.map((msg, i) => (
@@ -1126,7 +1126,7 @@ export default function OfflinePractice() {
                             </svg>
                           </button>
                         </div>
-                        <div className="text-[9px] text-slate-600 mt-1 px-1">Shift+Enter for new line · Powered by NVIDIA NIM</div>
+                        <div className="text-[9px] text-slate-500 mt-1 px-1">Shift+Enter for new line · Powered by NVIDIA NIM</div>
                       </div>
                     </div>
                   )}
@@ -1159,11 +1159,11 @@ export default function OfflinePractice() {
                         ['Space Complexity', complexity.space_complexity, { Best:'#818cf8', Avg:'#818cf8', Worst:'#818cf8' }]
                       ].map(([title, cx, colors]) => cx && (
                         <div key={title} className="p-3.5 rounded-2xl bg-white/[0.025] border border-white/[0.05]">
-                          <p className="text-[9px] font-extrabold text-slate-600 mb-3">{title}</p>
+                          <p className="text-[9px] font-extrabold text-slate-500 mb-3">{title}</p>
                           <div className="grid grid-cols-3 gap-2">
                             {[['Best', cx.best], ['Avg', cx.average], ['Worst', cx.worst]].map(([l, v]) => (
                               <div key={l} className="text-center p-2 rounded-xl bg-white/[0.03] border border-white/[0.05]">
-                                <p className="text-[8px] text-slate-600 font-bold mb-1">{l}</p>
+                                <p className="text-[8px] text-slate-500 font-bold mb-1">{l}</p>
                                 <p className="text-xs font-bold font-mono" style={{ color: colors[l] }}>{v || 'N/A'}</p>
                               </div>
                             ))}
@@ -1172,13 +1172,13 @@ export default function OfflinePractice() {
                       ))}
                       {complexity.analysis && (
                         <div className="p-3.5 rounded-2xl bg-white/[0.025] border border-white/[0.05]">
-                          <p className="text-[9px] font-extrabold text-slate-600 mb-2">Analysis</p>
+                          <p className="text-[9px] font-extrabold text-slate-500 mb-2">Analysis</p>
                           <p className="text-[11px] text-slate-300 leading-relaxed">{complexity.analysis}</p>
                         </div>
                       )}
                       {complexity.suggestions?.length > 0 && (
                         <div className="p-3.5 rounded-2xl bg-white/[0.025] border border-white/[0.05] space-y-2">
-                          <p className="text-[9px] font-extrabold text-slate-600">Optimizations</p>
+                          <p className="text-[9px] font-extrabold text-slate-500">Optimizations</p>
                           {complexity.suggestions.map((s, i) => (
                             <div key={i} className="flex gap-2 text-[11px] text-slate-300 leading-relaxed">
                               <span className="text-amber-400 shrink-0 mt-0.5 font-bold">›</span><span>{s}</span>
