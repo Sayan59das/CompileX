@@ -5,6 +5,7 @@ import api from '../services/api'
 import Logo from '../components/Logo'
 import AnimatedBackgroundCSS from '../components/AnimatedBackgroundCSS'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts'
+import Icon from '../components/Icons'
 
 const TOPICS = ['Arrays', 'Strings', 'Trees', 'DP', 'Graphs', 'Sorting', 'Hashing', 'Greedy']
 
@@ -99,10 +100,10 @@ export default function Profile() {
   const unlockedCount = achievements.filter(a => a.unlocked).length
 
   const statCards = [
-    { label: 'Matches', value: stats?.total_matches ?? '—', icon: '🎮', color: '#6366f1' },
-    { label: 'Win Rate', value: stats?.win_rate ? `${stats.win_rate.toFixed(0)}%` : '—', icon: '📈', color: '#10b981' },
-    { label: 'Solved', value: stats?.questions_solved ?? '—', icon: '✅', color: '#22d3ee' },
-    { label: 'Rating', value: stats?.rating ?? 1000, icon: '⭐', color: '#f59e0b' },
+    { label: 'Matches', value: stats?.total_matches ?? '—', icon: 'play', color: '#818cf8' },
+    { label: 'Win Rate', value: stats?.win_rate ? `${stats.win_rate.toFixed(0)}%` : '—', icon: 'trend', color: '#34d399' },
+    { label: 'Solved', value: stats?.questions_solved ?? '—', icon: 'check-circle', color: '#22d3ee' },
+    { label: 'Rating', value: stats?.rating ?? 1000, icon: 'gauge', color: '#fbbf24' },
   ]
 
   return (
@@ -140,9 +141,9 @@ export default function Profile() {
         <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-6 text-center sm:text-left bg-[#0A0A10]/60 border border-white/[0.05] p-6 sm:p-8 rounded-3xl backdrop-blur-xl shadow-2xl relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent pointer-events-none" />
           <div className="relative z-10 w-full sm:w-auto">
-            <p className="text-sm font-bold uppercase tracking-[0.2em] mb-2 text-blue-400">Dashboard</p>
-            <h1 className="text-3xl sm:text-5xl font-black text-white">
-              Hey, <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">{user?.username}</span> 👋
+            <p className="text-sm font-bold mb-2 text-blue-400">Dashboard</p>
+            <h1 className="text-3xl sm:text-5xl font-extrabold text-white">
+              Hey, <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">{user?.username}</span>
             </h1>
           </div>
           <button onClick={() => nav('/practice')} className="relative z-10 px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-2xl transition-all duration-300 shadow-[0_0_30px_rgba(59,130,246,0.4)] whitespace-nowrap text-lg group">
@@ -162,10 +163,10 @@ export default function Profile() {
                 <div className="relative bg-[#0A0A10]/80 backdrop-blur-xl border border-white/[0.07] rounded-3xl p-6 transition-all duration-300 flex items-center justify-between shadow-xl">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
-                      <span className="text-3xl filter drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{s.icon}</span>
-                      <span className="text-sm font-bold tracking-wide uppercase" style={{ color: s.color }}>{s.label}</span>
+                      <span style={{ color: s.color }}><Icon name={s.icon} size={26} /></span>
+                      <span className="text-sm font-bold" style={{ color: s.color }}>{s.label}</span>
                     </div>
-                    <div className="text-4xl font-black text-white ml-1">{s.value}</div>
+                    <div className="text-4xl font-extrabold text-white ml-1">{s.value}</div>
                   </div>
                 </div>
               </div>
@@ -197,7 +198,7 @@ export default function Profile() {
                       {progress && progress.learning_curve?.length > 0 ? (
                         <>
                           <div className="w-full h-64 bg-[#101018]/80 p-4 rounded-2xl border border-white/[0.07] flex flex-col">
-                            <h4 className="text-xs font-bold uppercase tracking-wider mb-4 text-slate-400 text-center">Learning Curve (Questions Solved)</h4>
+                            <h4 className="text-xs font-bold mb-4 text-slate-400 text-center">Learning Curve (Questions Solved)</h4>
                             <div className="flex-1 min-h-[200px]">
                               <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={progress.learning_curve}>
@@ -218,7 +219,7 @@ export default function Profile() {
                           </div>
                           
                           <div className="w-full h-72 bg-[#101018]/80 p-4 rounded-2xl border border-white/[0.07] flex flex-col">
-                            <h4 className="text-xs font-bold uppercase tracking-wider mb-2 text-slate-400 text-center">Topic Strengths (Accuracy %)</h4>
+                            <h4 className="text-xs font-bold mb-2 text-slate-400 text-center">Topic Strengths (Accuracy %)</h4>
                             <div className="flex-1 min-h-[200px]">
                               <ResponsiveContainer width="100%" height="100%">
                                 <RadarChart cx="50%" cy="50%" outerRadius="70%" data={progress.topic_stats}>
@@ -241,13 +242,13 @@ export default function Profile() {
                   ) : tab === 'create' ? (
                     <form onSubmit={createLobby} className="space-y-6 max-w-xl mx-auto w-full">
                       <div>
-                        <label className="block text-xs sm:text-sm font-bold uppercase tracking-wider mb-2 text-slate-400 ml-1">Room Name</label>
+                        <label className="block text-xs sm:text-sm font-bold mb-2 text-slate-400 ml-1">Room Name</label>
                         <input className="w-full px-5 py-4 bg-[#101018]/80 border border-white/[0.07] rounded-2xl text-base text-white placeholder-slate-600 focus:outline-none focus:border-blue-500/50 focus:bg-[#101018] transition-colors" 
                           placeholder={`${user?.username}'s Arena`} value={lobbyName} onChange={e => setLobbyName(e.target.value)} />
                       </div>
 
                       <div>
-                        <label className="block text-xs sm:text-sm font-bold uppercase tracking-wider mb-2 text-slate-400 ml-1">Game Mode</label>
+                        <label className="block text-xs sm:text-sm font-bold mb-2 text-slate-400 ml-1">Game Mode</label>
                         <div className="grid grid-cols-2 gap-3 sm:gap-4">
                           {[{ v: 'multiplayer', label: 'Multiplayer', sub: 'Up to 20 players' }, { v: '1v1', label: '1v1 Duel', sub: 'Head-to-head' }].map(m => (
                             <button key={m.v} type="button" onClick={() => setGameMode(m.v)}
@@ -265,17 +266,17 @@ export default function Profile() {
 
                       <div className="grid grid-cols-3 gap-3 sm:gap-4">
                         <div>
-                          <label className="block text-xs sm:text-[10px] font-bold uppercase tracking-wider mb-2 text-slate-400 ml-1">Players</label>
+                          <label className="block text-xs sm:text-[10px] font-bold mb-2 text-slate-400 ml-1">Players</label>
                           <input className="w-full px-4 py-3 bg-[#101018]/80 border border-white/[0.07] rounded-2xl text-base text-white text-center focus:outline-none focus:border-blue-500/50 transition-colors" 
                             type="number" min="2" max="20" value={maxPlayers} onChange={e => setMaxPlayers(e.target.value)} />
                         </div>
                         <div>
-                          <label className="block text-xs sm:text-[10px] font-bold uppercase tracking-wider mb-2 text-slate-400 ml-1">Time (s)</label>
+                          <label className="block text-xs sm:text-[10px] font-bold mb-2 text-slate-400 ml-1">Time (s)</label>
                           <input className="w-full px-4 py-3 bg-[#101018]/80 border border-white/[0.07] rounded-2xl text-base text-white text-center focus:outline-none focus:border-blue-500/50 transition-colors" 
                             type="number" value={duration} onChange={e => setDuration(e.target.value)} />
                         </div>
                         <div>
-                          <label className="block text-xs sm:text-[10px] font-bold uppercase tracking-wider mb-2 text-slate-400 ml-1">Questions</label>
+                          <label className="block text-xs sm:text-[10px] font-bold mb-2 text-slate-400 ml-1">Questions</label>
                           <input className="w-full px-4 py-3 bg-[#101018]/80 border border-white/[0.07] rounded-2xl text-base text-white text-center focus:outline-none focus:border-blue-500/50 transition-colors" 
                             type="number" min="1" max="50" value={totalQuestions} onChange={e => setTotalQuestions(e.target.value)} />
                         </div>
@@ -295,22 +296,22 @@ export default function Profile() {
                       {error && <p className="text-sm text-red-400 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-center font-medium">{error}</p>}
 
                       <button type="submit" disabled={creating} 
-                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-base text-white font-black uppercase tracking-wider rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(59,130,246,0.3)]">
-                        {creating ? <><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block mr-2 align-middle" />CREATING...</> : 'LAUNCH MATCH'}
+                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-base text-white font-extrabold rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+                        {creating ? <><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block mr-2 align-middle" />Creating…</> : 'Launch match'}
                       </button>
                     </form>
                   ) : (
                     <form onSubmit={joinLobby} className="space-y-6 max-w-md mx-auto w-full">
                       <div>
-                        <label className="block text-sm font-bold uppercase tracking-wider mb-4 text-slate-400 text-center">Enter Room Code</label>
-                        <input className="w-full px-6 py-5 bg-[#101018]/80 border-2 border-white/[0.05] rounded-2xl text-white text-center text-3xl font-black uppercase tracking-[0.4em] placeholder-slate-700 focus:outline-none focus:border-blue-500/50 transition-colors"
+                        <label className="block text-sm font-bold mb-4 text-slate-400 text-center">Enter Room Code</label>
+                        <input className="w-full px-6 py-5 bg-[#101018]/80 border-2 border-white/[0.05] rounded-2xl text-white text-center text-3xl font-extrabold uppercase tracking-[0.4em] placeholder-slate-700 focus:outline-none focus:border-blue-500/50 transition-colors"
                           placeholder="CODE" value={joinCode}
                           onChange={e => setJoinCode(e.target.value.toUpperCase())} maxLength={6} autoFocus />
                       </div>
                       {joinError && <p className="text-sm text-red-400 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-center font-medium">{joinError}</p>}
                       <button type="submit" disabled={joining || !joinCode.trim()} 
-                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-base text-white font-black uppercase tracking-wider rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(59,130,246,0.3)]">
-                        {joining ? 'JOINING...' : 'JOIN MATCH'}
+                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-base text-white font-extrabold rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+                        {joining ? 'Joining…' : 'Join match'}
                       </button>
                     </form>
                   )}
@@ -328,15 +329,15 @@ export default function Profile() {
               <div className="relative bg-[#0A0A10]/80 backdrop-blur-xl border border-white/[0.07] rounded-3xl overflow-hidden shadow-2xl flex flex-col">
                 <div className="px-6 py-5 border-b border-white/[0.07] bg-white/[0.02]">
                   <h3 className="text-sm font-bold text-white flex items-center justify-between">
-                    <span>🏆 Top Players</span>
-                    <span className="text-[10px] font-black uppercase px-2 py-1 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30">Global</span>
+                    <span className="flex items-center gap-2"><Icon name="trophy" size={16} className="text-amber-400" /> Top Players</span>
+                    <span className="text-[10px] font-extrabold px-2 py-1 rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30">Global</span>
                   </h3>
                 </div>
                 <div className="p-4 space-y-2">
                   {leaderboard.length > 0 ? leaderboard.map((p, i) => (
                     <div key={i} className="flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-300 hover:bg-white/[0.05] cursor-pointer">
-                      <span className="text-sm font-black w-6 text-center flex-shrink-0" style={{ color: RANK_COLORS[i] }}>{RANK_LABELS[i]}</span>
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white shadow-lg flex-shrink-0"
+                      <span className="text-sm font-bold w-6 text-center flex-shrink-0" style={{ color: RANK_COLORS[i] }}>{RANK_LABELS[i]}</span>
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg flex-shrink-0"
                         style={{ background: `linear-gradient(135deg, ${RANK_COLORS[i]}40, ${RANK_COLORS[i]}20)`, border: `2px solid ${RANK_COLORS[i]}60` }}>
                         {(p.username || p.name || '?').charAt(0).toUpperCase()}
                       </div>
@@ -344,7 +345,7 @@ export default function Profile() {
                       <span className="text-xs font-mono font-bold px-2 py-1.5 rounded-lg bg-[#101018] text-blue-400 border border-white/[0.05]">{p.score || p.total_score || 0}</span>
                     </div>
                   )) : (
-                    <p className="text-center py-8 text-xs font-medium text-slate-500">No players yet. Be the first! 🚀</p>
+                    <p className="text-center py-8 text-xs font-medium text-slate-500">No players yet. Be the first!</p>
                   )}
                 </div>
               </div>
@@ -355,7 +356,7 @@ export default function Profile() {
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="relative bg-[#0A0A10]/80 backdrop-blur-xl border border-white/[0.07] rounded-3xl overflow-hidden shadow-2xl">
                 <div className="px-6 py-5 border-b border-white/[0.07] bg-white/[0.02]">
-                  <h3 className="text-sm font-bold text-white">📚 Practice Topics</h3>
+                  <h3 className="text-sm font-bold text-white"><span className="flex items-center gap-2"><Icon name="layers" size={16} className="text-blue-400" /> Practice Topics</span></h3>
                 </div>
                 <div className="p-5 flex flex-wrap gap-2">
                   {TOPICS.map(t => (
@@ -375,8 +376,8 @@ export default function Profile() {
         {achievements.length > 0 && (
           <div className="mt-4 w-full" style={{ animationDelay: '0.5s' }}>
             <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-3 sm:gap-0 mb-6 bg-[#0A0A10]/40 p-6 rounded-3xl border border-white/[0.05]">
-              <h2 className="text-xl font-black text-white uppercase tracking-wider">🎖️ Achievements</h2>
-              <span className="text-xs font-bold px-4 py-2 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-500/30 whitespace-nowrap uppercase tracking-widest">
+              <h2 className="text-xl font-extrabold text-white"><span className="flex items-center gap-2.5"><Icon name="medal" size={20} className="text-amber-400" /> Achievements</span></h2>
+              <span className="text-xs font-bold px-4 py-2 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-500/30 whitespace-nowrap">
                 {unlockedCount} / {achievements.length} unlocked
               </span>
             </div>
@@ -390,12 +391,12 @@ export default function Profile() {
                       ? 'border-white/[0.07]  hover:shadow-[0_10px_30px_rgba(59,130,246,0.2)] cursor-pointer' 
                       : 'border-white/[0.04] cursor-not-allowed'
                   }`}>
-                    <div className="text-4xl sm:text-5xl mb-4 transition-transform duration-500 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">{a.icon || '🏅'}</div>
-                    <div className="text-sm sm:text-base font-black text-white mb-2 uppercase tracking-wide">{a.name}</div>
+                    <div className={`mb-4 ${a.unlocked ? 'text-amber-400' : 'text-slate-500'}`}><Icon name={a.unlocked ? 'medal' : 'lock'} size={40} strokeWidth={1.6} /></div>
+                    <div className="text-sm sm:text-base font-bold text-white mb-2">{a.name}</div>
                     <div className="text-xs sm:text-sm text-slate-400 leading-relaxed font-medium">{a.description}</div>
                     {a.unlocked && (
                       <div className="mt-4 pt-4 border-t border-white/[0.07] w-full">
-                        <span className="text-xs font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">✓ Unlocked</span>
+                        <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">✓ Unlocked</span>
                       </div>
                     )}
                   </div>

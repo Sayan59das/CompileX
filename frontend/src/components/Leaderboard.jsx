@@ -1,12 +1,13 @@
 import React from 'react'
+import Icon from '../components/Icons'
 
-const MEDALS = ['🥇', '🥈', '🥉']
+const RANK_COLOR = ['text-amber-400', 'text-slate-300', 'text-orange-400']
 
 export default function Leaderboard({ entries = [], currentPlayerId }) {
   if (!entries.length) {
     return (
       <div className="text-center py-8">
-        <div className="text-3xl mb-2">📊</div>
+        <Icon name="bars" size={28} className="mx-auto mb-2 text-slate-500" />
         <p className="text-slate-500 text-xs">No scores yet</p>
       </div>
     )
@@ -26,7 +27,7 @@ export default function Leaderboard({ entries = [], currentPlayerId }) {
             }`}
           >
             <span className="w-5 text-center text-base shrink-0">
-              {MEDALS[i] ?? <span className="text-slate-500 text-xs font-mono">{i + 1}</span>}
+              <span className={`text-sm font-bold ${RANK_COLOR[i] ?? 'text-slate-500'}`}>{i + 1}</span>
             </span>
             <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo to-violet flex items-center justify-center text-white text-xs font-bold shrink-0">
               {entry.username?.[0]?.toUpperCase()}
