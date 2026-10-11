@@ -6,6 +6,7 @@ import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import AnimatedGlobe3D from '../components/AnimatedGlobe3D'
 import LearnMore from '../components/LearnMore'
+import Icon from '../components/Icons'
 
 // ---------------------------------------------------------------------------
 // Typewriter hook for hero title - types full sentence character by character
@@ -147,18 +148,18 @@ const STATS = [
 ]
 
 const FEATURES = [
-  { icon: '⚡', title: 'Real-Time Coding Battles',  desc: 'Compete live with multiple players in simultaneous coding challenges' },
-  { icon: '🤖', title: 'AI-Generated Challenges',   desc: 'Unique problems generated on-demand using advanced AI technology' },
-  { icon: '📊', title: 'Live Leaderboard',          desc: 'Watch rankings update in real-time during matches' },
-  { icon: '⏱️', title: 'Timed Challenges',          desc: 'Test your speed with countdown timers and pressure rounds' },
-  { icon: '</>', title: 'Multi-Language Support',   desc: 'Python, JavaScript, C++, Java, C and 35+ more languages' },
-  { icon: '👥', title: 'Multiplayer Rooms',         desc: 'Create private rooms for team interviews and group practice' },
+  { icon: 'bolt', title: 'Real-Time Coding Battles',  desc: 'Compete live with multiple players in simultaneous coding challenges' },
+  { icon: 'message', title: 'AI-Generated Challenges',   desc: 'Unique problems generated on-demand using advanced AI technology' },
+  { icon: 'bars', title: 'Live Leaderboard',          desc: 'Watch rankings update in real-time during matches' },
+  { icon: 'clock', title: 'Timed Challenges',          desc: 'Test your speed with countdown timers and pressure rounds' },
+  { icon: 'code', title: 'Multi-Language Support',   desc: 'Python, JavaScript, C++, Java, C and 35+ more languages' },
+  { icon: 'users', title: 'Multiplayer Rooms',         desc: 'Create private rooms for team interviews and group practice' },
 ]
 
 const GAME_MODES = [
-  { icon: '⚔️', title: 'Arena Match', desc: 'Multiplayer competition' },
-  { icon: '🎯', title: '1v1 Duel',    desc: 'Head-to-head' },
-  { icon: '🏆', title: 'Tournament',  desc: 'Bracket elimination' },
+  { icon: 'duel', title: 'Arena Match', desc: 'Multiplayer competition' },
+  { icon: 'target', title: '1v1 Duel',    desc: 'Head-to-head' },
+  { icon: 'trophy', title: 'Tournament',  desc: 'Bracket elimination' },
 ]
 
 const TESTIMONIALS = [
@@ -361,8 +362,8 @@ function FeaturesSection() {
             }`}
             style={{ transitionDelay: `${i * 100}ms` }}
           >
-            <div className="w-12 h-12 rounded-xl bg-[#3b82f6]/10 group-hover:bg-[#3b82f6]/20 flex items-center justify-center text-2xl mb-6 transition-all duration-300 ">
-              {f.icon}
+            <div className="w-12 h-12 rounded-xl bg-[#3b82f6]/10 group-hover:bg-[#3b82f6]/20 flex items-center justify-center mb-6 text-blue-400 transition-colors duration-300">
+              <Icon name={f.icon} size={22} />
             </div>
             <h3 className="text-xl font-bold text-white mb-3 group-hover:text-blue-300 transition-colors duration-300">{f.title}</h3>
             <p className="text-slate-400 text-sm leading-relaxed">{f.desc}</p>
@@ -382,7 +383,7 @@ function GameModesSection() {
   return (
     <div ref={ref}>
       <div className={`text-center mb-16 transition-all duration-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">How It Works</h2>
+        <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 tracking-tight">Game Modes</h2>
         <p className="text-slate-400 max-w-xl mx-auto text-lg">Choose your battle format</p>
       </div>
       <div className="grid md:grid-cols-3 gap-6">
@@ -394,7 +395,7 @@ function GameModesSection() {
             }`}
             style={{ transitionDelay: `${i * 150}ms` }}
           >
-            <div className="text-6xl mb-6 transition-transform duration-500 ">{m.icon}</div>
+            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-[#3b82f6]/10 flex items-center justify-center text-blue-400"><Icon name={m.icon} size={30} /></div>
             <h3 className="text-2xl font-bold text-white mb-3 group-hover:text-blue-300 transition-colors duration-300">{m.title}</h3>
             <p className="text-slate-400 text-sm">{m.desc}</p>
           </div>
