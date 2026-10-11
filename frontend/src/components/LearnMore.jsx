@@ -135,7 +135,7 @@ export default function LearnMore() {
 
   return (
     <div className="grid gap-12 lg:grid-cols-[0.8fr_1.2fr] lg:gap-16">
-      <div>
+      <div className="min-w-0">
         <h2 className="display text-[clamp(2.2rem,4.4vw,3.5rem)]">Learn a topic before the match</h2>
         <p className="measure mt-6 text-lg text-ink-2">
           Name any coding topic and we will build a narrated explainer video: a hook, a real-world comparison, how it
@@ -143,7 +143,7 @@ export default function LearnMore() {
         </p>
       </div>
 
-      <div>
+      <div className="min-w-0">
         <form
           onSubmit={(e) => { e.preventDefault(); generate() }}
           className="flex flex-col gap-3 sm:flex-row"

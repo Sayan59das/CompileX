@@ -208,7 +208,7 @@ export default function Landing() {
       <main>
         {/* Hero */}
         <section className="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-20 pt-12 sm:px-8 lg:grid-cols-[1.02fr_0.98fr] lg:gap-14 lg:pb-28 lg:pt-20">
-          <div>
+          <div className="min-w-0">
             <h1 className="display text-[clamp(2.9rem,6.4vw,5.5rem)]">
               Same problem for everyone.
               <br />
@@ -237,7 +237,7 @@ export default function Landing() {
         {/* How a match runs */}
         <section id="how" className="scroll-mt-16 border-t border-line">
           <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_1fr] lg:gap-16 lg:py-28">
-            <div>
+            <div className="min-w-0">
               <h2 className="display text-[clamp(2.2rem,4.4vw,3.5rem)]">How a match runs</h2>
               <ol className="mt-10 space-y-8">
                 {STEPS.map((s, i) => (
@@ -251,7 +251,7 @@ export default function Landing() {
                 ))}
               </ol>
             </div>
-            <div className="lg:sticky lg:top-24 lg:self-start">
+            <div className="min-w-0 lg:sticky lg:top-24 lg:self-start">
               <EditorMock />
               <p className="mt-3 text-sm text-ink-3">
                 Visible cases show their input and output. Hidden cases only tell you whether you passed.
@@ -290,7 +290,7 @@ export default function Landing() {
         {/* Practice */}
         <section id="practice" className="scroll-mt-16 border-t border-line">
           <div className="mx-auto grid max-w-6xl items-start gap-12 px-5 py-20 sm:px-8 lg:grid-cols-[1fr_0.9fr] lg:gap-16 lg:py-28">
-            <div>
+            <div className="min-w-0">
               <h2 className="display text-[clamp(2.2rem,4.4vw,3.5rem)]">Practice with feedback that reads your code</h2>
               <dl className="mt-10 space-y-7">
                 {PRACTICE_POINTS.map((p) => (
@@ -304,7 +304,7 @@ export default function Landing() {
                 {user ? 'Open the practice arena' : 'Create an account to practice'}
               </Link>
             </div>
-            <ComplexityMock />
+            <div className="min-w-0"><ComplexityMock /></div>
           </div>
         </section>
 
