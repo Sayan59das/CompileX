@@ -174,7 +174,7 @@ export default function LearnMore() {
 
         {/* ── Suggested / already-rendered topics ─────────────────────────── */}
         <div className="flex flex-wrap items-center gap-2 mb-8">
-          <span className="text-xs uppercase tracking-wider text-slate-500 mr-1">
+          <span className="text-xs text-slate-500 mr-1">
             {ready.length ? 'Ready to watch' : 'Try'}
           </span>
           {chips.map((v) => (

@@ -139,7 +139,7 @@ export default function Register() {
             </div>
 
             <div className="relative z-10 max-w-xl ">
-              <h1 className="text-6xl font-black text-white leading-[1.1] tracking-tight mb-6 " style={{animationDelay: '0.1s'}}>
+              <h1 className="text-6xl font-extrabold text-white leading-[1.1] tracking-tight mb-6 " style={{animationDelay: '0.1s'}}>
                 Join the elite.<br/>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Master your craft.</span>
               </h1>
@@ -149,7 +149,7 @@ export default function Register() {
             </div>
 
             <div className="relative z-10 " style={{animationDelay: '0.3s'}}>
-              <p className="text-sm text-slate-600 font-medium tracking-wide uppercase">© 2026 CompileX Platform</p>
+              <p className="text-sm text-slate-600 font-medium">© 2026 CompileX Platform</p>
             </div>
           </div>
 
@@ -228,7 +228,7 @@ export default function Register() {
 
             <div className="flex items-center gap-4 my-10 opacity-60">
               <div className="flex-1 h-px bg-white/[0.1]" />
-              <span className="text-xs text-slate-400 font-medium uppercase tracking-widest">Or connect via</span>
+              <span className="text-xs text-slate-400 font-medium">Or connect via</span>
               <div className="flex-1 h-px bg-white/[0.1]" />
             </div>
 

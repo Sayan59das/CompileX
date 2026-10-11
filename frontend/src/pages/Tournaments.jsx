@@ -174,7 +174,7 @@ export default function Tournaments() {
                     </div>
                   </div>
                   
-                  <h2 className="text-2xl font-black text-white mb-3 tracking-tight">No Active Tournaments</h2>
+                  <h2 className="text-2xl font-extrabold text-white mb-3 tracking-tight">No Active Tournaments</h2>
                   <p className="text-slate-400 max-w-md mx-auto mb-8 leading-relaxed">
                     The arena is quiet. There are currently no tournaments running. Step up and be the first to host an epic coding battle!
                   </p>
