@@ -128,14 +128,14 @@ function IconTab({ icon, label, active, onClick, badge }) {
   return (
     <button onClick={onClick} title={label}
       className={`relative flex flex-col items-center gap-1 py-3 w-full transition-all duration-200 group ${
-        active ? 'text-blue-300' : 'text-slate-600 hover:text-slate-300'
+ active ? 'text-blue-300' : 'text-slate-600 hover:text-slate-300'
       }`}>
       {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-8 bg-blue-500 rounded-r-full" />}
       <span className="text-base">{icon}</span>
       <span className="text-[9px] font-bold uppercase tracking-wider leading-none">{label}</span>
       {badge != null && (
         <span className={`absolute top-1.5 right-1.5 text-[8px] font-black min-w-[14px] h-3.5 flex items-center justify-center rounded-full px-0.5 ${
-          active ? 'bg-blue-500 text-white' : 'bg-white/10 text-slate-400'
+ active ? 'bg-blue-500 text-white' : 'bg-white/10 text-slate-400'
         }`}>{badge}</span>
       )}
     </button>
@@ -436,7 +436,7 @@ export default function OfflinePractice() {
       {/* ── TOAST ── */}
       <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 pointer-events-none ${toast.visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3'}`}>
         <div className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl shadow-2xl text-xs font-semibold backdrop-blur border ${
-          toast.type === 'error' ? 'bg-rose-950/90 border-rose-500/40 text-rose-300' :
+ toast.type === 'error' ? 'bg-rose-950/90 border-rose-500/40 text-rose-300' :
           toast.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300' :
           'bg-[#1a1f2e]/90 border-white/10 text-slate-300'
         }`}>
@@ -449,7 +449,7 @@ export default function OfflinePractice() {
       <header className="h-11 flex items-center justify-between px-4 border-b border-white/[0.05] bg-[#060a12]/95 backdrop-blur shrink-0 z-40">
         <div className="flex items-center gap-3">
           <button onClick={() => nav('/home')} className="flex items-center gap-1.5 text-slate-500 hover:text-white transition-colors text-xs group">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="group-hover:-translate-x-0.5 transition-transform"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className=" transition-transform"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
             Back
           </button>
           <div className="w-px h-4 bg-white/[0.08]" />
@@ -475,7 +475,7 @@ export default function OfflinePractice() {
             </div>
           )}
           <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.07] text-[10px] text-slate-400">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
             {user?.username}
           </div>
         </div>
@@ -556,7 +556,7 @@ export default function OfflinePractice() {
                     {LANGUAGES.map(l => (
                       <button key={l.value} onClick={() => setLanguage(l.value)}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-                          language === l.value
+ language === l.value
                             ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
                             : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
                         }`}>
@@ -576,7 +576,7 @@ export default function OfflinePractice() {
                       Run
                     </button>
                     <button onClick={handleSubmit} disabled={submitting || submissionStatus[activeQ]}
-                      className="relative flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-black text-white overflow-hidden group disabled:opacity-40 transition-all hover:scale-105 active:scale-95">
+                      className="relative flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-black text-white overflow-hidden group disabled:opacity-40 transition-all active:scale-95">
                       <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-500 rounded-lg" />
                       <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-all rounded-lg" />
                       <span className="relative z-10 flex items-center gap-1.5">
@@ -617,7 +617,7 @@ export default function OfflinePractice() {
                         ].map(t => (
                           <button key={t.id} onClick={() => setBottomTab(t.id)}
                             className={`flex items-center gap-2 px-4 text-xs font-semibold border-b-2 transition-all h-full ${
-                              bottomTab === t.id ? 'border-blue-500 text-blue-300' : 'border-transparent text-slate-500 hover:text-slate-300'
+ bottomTab === t.id ? 'border-blue-500 text-blue-300' : 'border-transparent text-slate-500 hover:text-slate-300'
                             }`}>
                             {t.label}
                             {t.badge && <span className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${t.badgeOk ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>{t.badge}</span>}
@@ -639,10 +639,10 @@ export default function OfflinePractice() {
                               return (
                                 <button key={i} onClick={() => setSelectedTC(i)}
                                   className={`w-full flex items-center gap-2 px-2 py-2 rounded-xl text-[11px] font-semibold transition-all ${
-                                    selectedTC === i ? 'bg-blue-500/15 text-blue-300 border border-blue-500/25' : 'text-slate-500 hover:bg-white/[0.04] hover:text-slate-300'
+ selectedTC === i ? 'bg-blue-500/15 text-blue-300 border border-blue-500/25' : 'text-slate-500 hover:bg-white/[0.04] hover:text-slate-300'
                                   }`}>
                                   <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[9px] font-black shrink-0 ${
-                                    !r ? 'bg-white/[0.06] text-slate-600' :
+ !r ? 'bg-white/[0.06] text-slate-600' :
                                     r.passed ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
                                   }`}>{r ? (r.passed ? '✓' : '✗') : i+1}</span>
                                   Case {i+1}
@@ -695,7 +695,7 @@ export default function OfflinePractice() {
                                         YOUR OUTPUT — {r.passed ? '✓ PASSED' : '✗ FAILED'}
                                       </p>
                                       <pre className={`rounded-xl px-3 py-2.5 whitespace-pre-wrap break-all leading-relaxed border ${
-                                        r.passed ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-300' : 'bg-rose-500/5 border-rose-500/20 text-rose-300'
+ r.passed ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-300' : 'bg-rose-500/5 border-rose-500/20 text-rose-300'
                                       }`}>{r.actual_output || r.error || '—'}</pre>
                                     </div>
                                   )}
@@ -760,7 +760,7 @@ export default function OfflinePractice() {
                 {/* Submit result banner */}
                 {submitResult && (
                   <div className={`shrink-0 flex items-center justify-between px-5 py-2.5 border-t ${
-                    submitResult.status === 'passed' ? 'bg-emerald-500/8 border-emerald-500/20' : 'bg-rose-500/8 border-rose-500/20'
+ submitResult.status === 'passed' ? 'bg-emerald-500/8 border-emerald-500/20' : 'bg-rose-500/8 border-rose-500/20'
                   }`}>
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-base ${submitResult.status === 'passed' ? 'bg-emerald-500/20' : 'bg-rose-500/20'}`}>
@@ -792,8 +792,8 @@ export default function OfflinePractice() {
                 
                 <div className="relative z-10 flex flex-col items-center">
                   <div className="relative flex items-center justify-center w-28 h-28 mb-8">
-                    <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-ping" style={{ animationDuration: '3s' }} />
-                    <div className="absolute inset-2 rounded-full border border-cyan-400/20 animate-ping" style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
+                    <div className="absolute inset-0 rounded-full border border-blue-500/30 " style={{ animationDuration: '3s' }} />
+                    <div className="absolute inset-2 rounded-full border border-cyan-400/20 " style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
                     <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.5)]">
                       <span className="text-4xl drop-shadow-md">🧠</span>
                     </div>
@@ -810,7 +810,7 @@ export default function OfflinePractice() {
                       { i: '📊', l: 'Smart Analysis', d: 'Instant feedback' },
                       { i: '⚡', l: 'Live Execution', d: 'Secure sandbox' }
                     ].map(f => (
-                      <div key={f.l} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:-translate-y-1 transition-all duration-300">
+                      <div key={f.l} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300">
                         <span className="text-3xl mb-1">{f.i}</span>
                         <span className="font-bold text-white">{f.l}</span>
                         <span className="text-xs text-slate-500">{f.d}</span>
@@ -864,7 +864,7 @@ export default function OfflinePractice() {
                         {['easy','medium','hard'].map(d => (
                           <button key={d} onClick={() => setDifficulty(d)}
                             className={`flex-1 py-1.5 rounded-xl text-[10px] font-bold capitalize border transition-all ${
-                              difficulty === d ? `${DIFF[d].bg} ${DIFF[d].text} ${DIFF[d].border}` : 'bg-white/[0.02] text-slate-600 border-white/[0.04] hover:text-slate-300'
+ difficulty === d ? `${DIFF[d].bg} ${DIFF[d].text} ${DIFF[d].border}` : 'bg-white/[0.02] text-slate-600 border-white/[0.04] hover:text-slate-300'
                             }`}>{d}</button>
                         ))}
                       </div>
@@ -893,7 +893,7 @@ export default function OfflinePractice() {
                   </div>
 
                   <button onClick={handleGenerate} disabled={loading || (inputMode === 'type' ? !typedTopic.trim() : !file)}
-                    className="relative w-full py-2.5 rounded-xl text-xs font-black text-white overflow-hidden group disabled:opacity-40 transition-all hover:scale-[1.02] active:scale-95">
+                    className="relative w-full py-2.5 rounded-xl text-xs font-black text-white overflow-hidden group disabled:opacity-40 transition-all active:scale-95">
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600" />
                     <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-all" />
                     <span className="relative z-10 flex items-center justify-center gap-2">
@@ -917,7 +917,7 @@ export default function OfflinePractice() {
                           setActiveQ(i)
                         }}
                         className={`w-full text-left p-3 rounded-2xl border transition-all ${
-                          i === activeQ
+ i === activeQ
                             ? 'bg-gradient-to-br from-blue-500/12 to-cyan-500/8 border-blue-500/30'
                             : 'bg-white/[0.02] border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.08]'
                         } ${status ? 'opacity-80' : ''}`}>
@@ -1087,7 +1087,7 @@ export default function OfflinePractice() {
                               key={prompt}
                               onClick={() => sendGrokMessage(prompt)}
                               disabled={grokLoading}
-                              className="px-2 py-1 rounded-full text-[10px] transition-all hover:scale-105 active:scale-95 disabled:opacity-40"
+                              className="px-2 py-1 rounded-full text-[10px] transition-all active:scale-95 disabled:opacity-40"
                               style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.25)' }}
                             >
                               {prompt}
@@ -1117,7 +1117,7 @@ export default function OfflinePractice() {
                           <button
                             onClick={() => sendGrokMessage()}
                             disabled={grokLoading || !grokInput.trim()}
-                            className="m-1.5 w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                            className="m-1.5 w-7 h-7 rounded-lg flex items-center justify-center transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
                             style={{ background: grokInput.trim() ? 'linear-gradient(135deg,#2563eb,#a855f7)' : 'rgba(59, 130, 246,0.2)' }}
                           >
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

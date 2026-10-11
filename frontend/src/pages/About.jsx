@@ -98,8 +98,8 @@ export default function About() {
     <div className="min-h-screen bg-[#05050A] text-slate-200 relative overflow-hidden">
       {/* Animated background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-20 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-float-slow" />
-        <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl animate-float-slower" />
+        <div className="absolute top-20 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl " />
+        <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl " />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-3xl" />
       </div>
 
@@ -117,8 +117,8 @@ export default function About() {
           0% { transform: rotate(0deg) translateX(100px) rotate(0deg); }
           100% { transform: rotate(360deg) translateX(100px) rotate(-360deg); }
         }
-        .animate-float-slow { animation: float-slow 20s ease-in-out infinite; }
-        .animate-float-slower { animation: float-slower 25s ease-in-out infinite; }
+        . { animation: float-slow 20s ease-in-out infinite; }
+        . { animation: float-slower 25s ease-in-out infinite; }
         .animate-orbit { animation: float-orbit 30s linear infinite; }
       `}</style>
 
@@ -126,10 +126,10 @@ export default function About() {
       <header className="fixed top-0 left-0 right-0 z-50 backdrop-blur-xl bg-[#05050A]/80 border-b border-white/[0.05]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3 group">
-            <Logo size={40} className="transition-all duration-300 group-hover:scale-110 group-hover:rotate-6" />
+            <Logo size={40} className="transition-all duration-300 " />
             <span className="text-xl font-bold text-white tracking-tight transition-all duration-300 group-hover:tracking-wide">CompileX</span>
           </Link>
-          <Link to="/" className="px-5 py-2.5 text-sm font-semibold bg-[#3b82f6] hover:bg-[#2563eb] text-white rounded-lg transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/50 hover:scale-105 active:scale-95">
+          <Link to="/" className="px-5 py-2.5 text-sm font-semibold bg-[#3b82f6] hover:bg-[#2563eb] text-white rounded-lg transition-all duration-300 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/50 active:scale-95">
             Back to Home
           </Link>
         </div>
@@ -138,15 +138,15 @@ export default function About() {
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-6">
         <div className="max-w-5xl mx-auto text-center">
-          <div className="inline-flex items-center gap-3 mb-8 animate-slide-up">
-            <Logo size={80} className="animate-float" />
+          <div className="inline-flex items-center gap-3 mb-8 ">
+            <Logo size={80} className="" />
           </div>
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-            <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-cyan-400 bg-clip-text text-transparent animate-gradient">
+          <h1 className="text-5xl md:text-7xl font-bold mb-6 " style={{ animationDelay: '0.1s' }}>
+            <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-cyan-400 bg-clip-text text-transparent ">
               About CompileX
             </span>
           </h1>
-          <p className="text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto leading-relaxed animate-slide-up" style={{ animationDelay: '0.2s' }}>
+          <p className="text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto leading-relaxed " style={{ animationDelay: '0.2s' }}>
             A competitive multiplayer coding platform where developers battle in real-time, powered by AI-generated challenges and cutting-edge technology.
           </p>
         </div>
@@ -164,22 +164,22 @@ export default function About() {
             {Object.entries(techStack).map(([category, techs], catIdx) => (
               <div
                 key={category}
-                className={`glass-panel p-8 transition-all duration-700 hover:scale-105 ${
+                className={`glass-panel p-8 transition-all duration-700 ${
                   techVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                 }`}
                 style={{ transitionDelay: `${catIdx * 0.1}s` }}
               >
                 <h3 className="text-2xl font-bold text-white mb-6 capitalize flex items-center gap-3">
-                  <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500 animate-pulse" />
+                  <span className="w-2 h-2 rounded-full bg-gradient-to-r from-blue-500 to-cyan-500" />
                   {category}
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
                   {techs.map((tech, idx) => (
                     <div
                       key={tech.name}
-                      className="p-4 rounded-xl bg-[#0A0A10] border border-white/[0.05] hover:border-blue-500/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-blue-500/20 group cursor-default"
+                      className="p-4 rounded-xl bg-[#0A0A10] border border-white/[0.05] hover:border-blue-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/20 group cursor-default"
                     >
-                      <div className="text-3xl mb-2 transition-transform duration-300 group-hover:scale-125">{tech.icon}</div>
+                      <div className="text-3xl mb-2 transition-transform duration-300 ">{tech.icon}</div>
                       <div className="font-semibold text-white mb-1 group-hover:text-blue-300 transition-colors">{tech.name}</div>
                       <div className="text-xs text-slate-500">{tech.desc}</div>
                     </div>
@@ -204,7 +204,7 @@ export default function About() {
               <div
                 key={creator.name}
                 className={`relative group transition-all duration-700 ${
-                  creatorsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
+ creatorsVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                 }`}
                 style={{ transitionDelay: `${idx * 0.2}s` }}
               >
@@ -214,7 +214,7 @@ export default function About() {
                 <div className="relative glass-panel p-8 h-full">
                   {/* Avatar */}
                   <div className="flex items-center gap-6 mb-6">
-                    <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${creator.gradient} flex items-center justify-center text-5xl shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                    <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${creator.gradient} flex items-center justify-center text-5xl shadow-lg transition-transform duration-300`}>
                       {creator.avatar}
                     </div>
                     <div>
@@ -266,12 +266,12 @@ export default function About() {
             {features.map((feature, idx) => (
               <div
                 key={feature.title}
-                className={`glass-panel p-8 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500 cursor-default border border-transparent hover:border-blue-500/30 ${
+                className={`glass-panel p-8 hover:shadow-2xl hover:shadow-blue-500/20 transition-all duration-500 cursor-default border border-transparent hover:border-blue-500/30 ${
                   featuresVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
                 }`}
                 style={{ transitionDelay: `${idx * 0.1}s` }}
               >
-                <div className="text-5xl mb-4 transition-transform duration-300 hover:scale-125 hover:rotate-12 inline-block">
+                <div className="text-5xl mb-4 transition-transform duration-300 inline-block">
                   {feature.icon}
                 </div>
                 <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
@@ -292,7 +292,7 @@ export default function About() {
               <p className="text-xl text-slate-400 mb-8">Join thousands of developers in real-time coding battles</p>
               <Link
                 to="/register"
-                className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl transition-all duration-300 shadow-xl shadow-blue-500/25 hover:shadow-blue-500/50 hover:scale-110 active:scale-95 hover:-translate-y-1"
+                className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl transition-all duration-300 shadow-xl shadow-blue-500/25 hover:shadow-blue-500/50 active:scale-95 "
               >
                 Get Started
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

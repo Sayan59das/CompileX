@@ -20,7 +20,7 @@ export default function Leaderboard({ entries = [], currentPlayerId }) {
           <div
             key={entry.player_id ?? entry.id ?? i}
             className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm ${
-              isMe
+ isMe
                 ? 'bg-indigo/20 border border-indigo/30'
                 : 'bg-white/[0.03] border border-white/5'
             }`}

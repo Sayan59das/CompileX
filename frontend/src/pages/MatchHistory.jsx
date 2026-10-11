@@ -52,13 +52,13 @@ export default function MatchHistory() {
             <div className="text-xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">Match History</div>
           </div>
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/50 backdrop-blur-sm border border-white/10">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="w-2 h-2 rounded-full bg-emerald-400" />
             <span className="text-sm text-slate-300">{user?.username}</span>
           </div>
         </div>
       </nav>
 
-      <div className="relative max-w-4xl mx-auto px-6 py-10 animate-fade-in">
+      <div className="relative max-w-4xl mx-auto px-6 py-10 ">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-extrabold bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent mb-2">Your Battles</h1>
           <p className="text-slate-400 text-sm">{total} matches played</p>
@@ -76,8 +76,8 @@ export default function MatchHistory() {
             <div className="relative z-10 flex flex-col items-center">
               {/* Animated Radar/Matchmaking Icon */}
               <div className="relative flex items-center justify-center w-24 h-24 mb-6">
-                <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-ping" style={{ animationDuration: '3s' }} />
-                <div className="absolute inset-2 rounded-full border border-cyan-400/20 animate-ping" style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
+                <div className="absolute inset-0 rounded-full border border-blue-500/30 " style={{ animationDuration: '3s' }} />
+                <div className="absolute inset-2 rounded-full border border-cyan-400/20 " style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
                 <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.5)]">
                   <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -92,13 +92,13 @@ export default function MatchHistory() {
               
               <button 
                 onClick={() => nav('/home')} 
-                className="group relative px-8 py-3.5 rounded-xl bg-blue-500 text-white font-bold tracking-wide overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.4)]"
+                className="group relative px-8 py-3.5 rounded-xl bg-blue-500 text-white font-bold tracking-wide overflow-hidden transition-all active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.4)]"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 bg-[length:200%_auto] animate-[shine_3s_linear_infinite]" />
                 <div className="absolute inset-0 bg-white/0 group-hover:bg-white/20 transition-colors" />
                 <span className="relative z-10 flex items-center gap-2">
                   Find a Match
-                  <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                  <svg className="w-4 h-4 transition-transform " fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
                 </span>
@@ -114,10 +114,10 @@ export default function MatchHistory() {
                   <div
                     key={i}
                     className={`bg-white/5 backdrop-blur-sm border rounded-xl p-4 flex items-center gap-4 transition-all duration-300 hover:bg-white/10 hover:border-blue-500/30 group ${
-                      isWin ? 'border-emerald-500/50 shadow-lg shadow-emerald-500/10' : 'border-white/10'
+ isWin ? 'border-emerald-500/50 shadow-lg shadow-emerald-500/10' : 'border-white/10'
                     }`}
                   >
-                    <div className="text-2xl w-10 text-center shrink-0 transition-transform duration-300 group-hover:scale-110">
+                    <div className="text-2xl w-10 text-center shrink-0 transition-transform duration-300 ">
                       {modeIcon[m.game_mode] || '🎮'}
                     </div>
                     <div className="flex-1 min-w-0">

@@ -110,7 +110,7 @@ export default function Tournaments() {
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800/50 backdrop-blur-sm border border-white/10">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-emerald-400" />
               <span className="text-sm text-slate-300">{user?.username}</span>
             </div>
             <button onClick={logout} className="text-sm text-slate-400 hover:text-white transition-colors duration-300">Sign out</button>
@@ -119,7 +119,7 @@ export default function Tournaments() {
       </nav>
 
       <div className="relative max-w-4xl mx-auto px-6 py-10">
-        <div className="text-center mb-10 animate-fade-in">
+        <div className="text-center mb-10 ">
           <h1 className="text-4xl font-extrabold text-white mb-2 bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent">Tournament Arena</h1>
           <p className="text-slate-400">Compete in bracket-style tournaments against the best coders</p>
         </div>
@@ -140,7 +140,7 @@ export default function Tournaments() {
               key={key}
               onClick={() => setTab(key)}
               className={`px-5 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 ${
-                tab === key 
+ tab === key 
                   ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/50' 
                   : 'bg-white/5 backdrop-blur-sm border border-white/10 text-slate-400 hover:text-white hover:bg-white/10'
               }`}
@@ -152,7 +152,7 @@ export default function Tournaments() {
 
         {/* Browse */}
         {tab === 'browse' && (
-          <div className="space-y-3 animate-fade-in">
+          <div className="space-y-3 ">
             {loading ? (
               <div className="text-center py-12 text-slate-500 animate-pulse">Loading tournaments...</div>
             ) : tournaments.length === 0 ? (
@@ -165,8 +165,8 @@ export default function Tournaments() {
                 <div className="relative z-10 flex flex-col items-center">
                   {/* Animated Trophy Icon */}
                   <div className="relative flex items-center justify-center w-24 h-24 mb-6">
-                    <div className="absolute inset-0 rounded-full border border-amber-500/30 animate-ping" style={{ animationDuration: '3s' }} />
-                    <div className="absolute inset-2 rounded-full border border-yellow-400/20 animate-ping" style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
+                    <div className="absolute inset-0 rounded-full border border-amber-500/30 " style={{ animationDuration: '3s' }} />
+                    <div className="absolute inset-2 rounded-full border border-yellow-400/20 " style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
                     <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-400 flex items-center justify-center shadow-[0_0_30px_rgba(245,158,11,0.5)]">
                       <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M19 3v4M5 3a2 2 0 002 2h10a2 2 0 002-2M5 3h14M7 21h10M9 17v4M15 17v4M9 7h6M12 7v10" />
@@ -181,13 +181,13 @@ export default function Tournaments() {
                   
                   <button 
                     onClick={() => setTab('create')} 
-                    className="group relative px-8 py-3.5 rounded-xl bg-amber-500 text-white font-bold tracking-wide overflow-hidden transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(245,158,11,0.4)]"
+                    className="group relative px-8 py-3.5 rounded-xl bg-amber-500 text-white font-bold tracking-wide overflow-hidden transition-all active:scale-95 shadow-[0_0_20px_rgba(245,158,11,0.4)]"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 bg-[length:200%_auto] animate-[shine_3s_linear_infinite]" />
                     <div className="absolute inset-0 bg-white/0 group-hover:bg-white/20 transition-colors" />
                     <span className="relative z-10 flex items-center gap-2">
                       Create Tournament
-                      <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                      <svg className="w-4 h-4 transition-transform " fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                       </svg>
                     </span>
@@ -227,7 +227,7 @@ export default function Tournaments() {
 
         {/* Create */}
         {tab === 'create' && (
-          <form onSubmit={createTournament} className="max-w-lg mx-auto bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 space-y-4 shadow-2xl shadow-blue-500/10 animate-slide-up">
+          <form onSubmit={createTournament} className="max-w-lg mx-auto bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 space-y-4 shadow-2xl shadow-blue-500/10 ">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">Tournament Name</label>
               <input 
@@ -298,7 +298,7 @@ export default function Tournaments() {
                     type="button"
                     onClick={() => setDifficulty(d)}
                     className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium border transition-all duration-300 ${
-                      difficulty === d ? diffColor[d] + ' shadow-lg' : 'text-slate-500 border-white/10 bg-white/5 hover:text-white hover:bg-white/10'
+ difficulty === d ? diffColor[d] + ' shadow-lg' : 'text-slate-500 border-white/10 bg-white/5 hover:text-white hover:bg-white/10'
                     }`}
                   >
                     {d.charAt(0).toUpperCase() + d.slice(1)}
@@ -316,7 +316,7 @@ export default function Tournaments() {
                     type="button"
                     onClick={() => toggleTopic(t)}
                     className={`px-2.5 py-1 rounded-lg text-xs transition-all duration-300 border ${
-                      selectedTopics.includes(t) 
+ selectedTopics.includes(t) 
                         ? 'bg-blue-500/20 border-blue-500/40 text-blue-300 shadow-lg shadow-blue-500/20' 
                         : 'border-white/10 bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
                     }`}
@@ -339,7 +339,7 @@ export default function Tournaments() {
 
         {/* Join by Code */}
         {tab === 'join' && (
-          <div className="max-w-md mx-auto bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 shadow-2xl shadow-blue-500/10 animate-slide-up">
+          <div className="max-w-md mx-auto bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 shadow-2xl shadow-blue-500/10 ">
             <label className="block text-sm font-medium text-slate-300 mb-2">Tournament Code</label>
             <input
               className="w-full px-4 text-center text-2xl font-mono font-bold tracking-[0.3em] uppercase py-4 mb-4 rounded-lg bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"

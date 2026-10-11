@@ -161,13 +161,13 @@ export default function TournamentDetail() {
         )}
 
         {/* Header */}
-        <div className="glass-panel p-8 mb-8 glow animate-slide-up">
+        <div className="glass-panel p-8 mb-8 glow ">
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-extrabold text-white mb-2">{t.name}</h1>
               <div className="flex items-center gap-2 mb-4">
                 <span className={`text-xs px-3 py-1 rounded-full border font-medium ${
-                  t.status === 'registration' ? 'text-emerald bg-emerald/10 border-emerald/20' :
+ t.status === 'registration' ? 'text-emerald bg-emerald/10 border-emerald/20' :
                   t.status === 'in_progress' ? 'text-amber bg-amber/10 border-amber/20' :
                   'text-slate-400 bg-white/5 border-white/10'
                 }`}>
@@ -229,7 +229,7 @@ export default function TournamentDetail() {
         </div>
 
         {/* Participants */}
-        <div className="glass-panel p-6 animate-fade-in">
+        <div className="glass-panel p-6 ">
           <h2 className="text-lg font-bold text-white mb-4">Participants</h2>
           {t.participants?.length === 0 ? (
             <p className="text-slate-500 text-center py-8">No participants yet</p>
@@ -239,7 +239,7 @@ export default function TournamentDetail() {
                 <div
                   key={p.user_id}
                   className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${
-                    p.eliminated
+ p.eliminated
                       ? 'bg-white/[0.01] border-white/5 opacity-50'
                       : p.user_id === user?.id
                         ? 'bg-indigo/10 border-indigo/30'

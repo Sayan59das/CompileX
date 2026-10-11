@@ -113,7 +113,7 @@ export default function Profile() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0A0A10]/80 backdrop-blur-xl border-b border-white/[0.07]">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 sm:gap-3 group cursor-pointer" onClick={() => nav('/')}>
-            <Logo size={32} className="sm:w-10 sm:h-10 transition-all duration-300 group-hover:scale-110 group-hover:rotate-6" />
+            <Logo size={32} className="sm:w-10 sm:h-10 transition-all duration-300 " />
             <span className="text-base sm:text-xl font-bold text-white">CompileX</span>
           </div>
           
@@ -137,7 +137,7 @@ export default function Profile() {
       <div className="flex-1 w-full max-w-[95rem] mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-12 flex flex-col gap-8">
         
         {/* Header Section */}
-        <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-6 animate-fade-in text-center sm:text-left bg-[#0A0A10]/60 border border-white/[0.05] p-6 sm:p-8 rounded-3xl backdrop-blur-xl shadow-2xl relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-6 text-center sm:text-left bg-[#0A0A10]/60 border border-white/[0.05] p-6 sm:p-8 rounded-3xl backdrop-blur-xl shadow-2xl relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-transparent pointer-events-none" />
           <div className="relative z-10 w-full sm:w-auto">
             <p className="text-sm font-bold uppercase tracking-[0.2em] mb-2 text-blue-400">Dashboard</p>
@@ -145,9 +145,9 @@ export default function Profile() {
               Hey, <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">{user?.username}</span> 👋
             </h1>
           </div>
-          <button onClick={() => nav('/practice')} className="relative z-10 px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-2xl hover:scale-105 transition-all duration-300 shadow-[0_0_30px_rgba(59,130,246,0.4)] whitespace-nowrap text-lg group">
+          <button onClick={() => nav('/practice')} className="relative z-10 px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-2xl transition-all duration-300 shadow-[0_0_30px_rgba(59,130,246,0.4)] whitespace-nowrap text-lg group">
             Practice Arena 
-            <span className="inline-block transition-transform duration-300 group-hover:translate-x-2 ml-2">→</span>
+            <span className="inline-block transition-transform duration-300 ml-2">→</span>
           </button>
         </div>
 
@@ -157,9 +157,9 @@ export default function Profile() {
           {/* Column 1: Stats Stack (Col-Span 3) */}
           <div className="lg:col-span-3 flex flex-col gap-4 sm:gap-6">
             {statCards.map((s, i) => (
-              <div key={i} className="relative group animate-slide-up" style={{ animationDelay: `${i * 0.1}s` }}>
+              <div key={i} className="relative group " style={{ animationDelay: `${i * 0.1}s` }}>
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/30 to-cyan-600/30 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                <div className="relative bg-[#0A0A10]/80 backdrop-blur-xl border border-white/[0.07] rounded-3xl p-6 hover:-translate-y-1 transition-all duration-300 flex items-center justify-between shadow-xl">
+                <div className="relative bg-[#0A0A10]/80 backdrop-blur-xl border border-white/[0.07] rounded-3xl p-6 transition-all duration-300 flex items-center justify-between shadow-xl">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
                       <span className="text-3xl filter drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{s.icon}</span>
@@ -173,7 +173,7 @@ export default function Profile() {
           </div>
 
           {/* Column 2: Match Panel (Col-Span 6) */}
-          <div className="lg:col-span-6 animate-slide-up h-full flex flex-col" style={{ animationDelay: '0.2s' }}>
+          <div className="lg:col-span-6 h-full flex flex-col" style={{ animationDelay: '0.2s' }}>
             <div className="relative group w-full h-full flex flex-col">
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-3xl blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="relative bg-[#0A0A10]/90 backdrop-blur-xl border border-white/[0.1] rounded-3xl overflow-hidden shadow-2xl h-full flex flex-col">
@@ -183,7 +183,7 @@ export default function Profile() {
                   {['create', 'join', 'progress'].map(t => (
                     <button key={t} onClick={() => setTab(t)}
                       className={`flex-1 py-5 text-sm sm:text-base font-bold capitalize transition-all duration-300 ${
-                        tab === t ? 'text-white border-b-2 border-blue-500 bg-blue-500/10 shadow-[inset_0_-2px_10px_rgba(59,130,246,0.2)]' : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
+ tab === t ? 'text-white border-b-2 border-blue-500 bg-blue-500/10 shadow-[inset_0_-2px_10px_rgba(59,130,246,0.2)]' : 'text-slate-400 hover:text-white hover:bg-white/[0.05]'
                       }`}>
                       {t === 'create' ? 'Create Match' : t === 'join' ? 'Join Match' : 'Learning Progress'}
                     </button>
@@ -252,7 +252,7 @@ export default function Profile() {
                           {[{ v: 'multiplayer', label: 'Multiplayer', sub: 'Up to 20 players' }, { v: '1v1', label: '1v1 Duel', sub: 'Head-to-head' }].map(m => (
                             <button key={m.v} type="button" onClick={() => setGameMode(m.v)}
                               className={`p-4 rounded-2xl text-center transition-all duration-300 ${
-                                gameMode === m.v 
+ gameMode === m.v 
                                   ? 'bg-blue-500/20 border-blue-500/50 shadow-[inset_0_0_20px_rgba(59,130,246,0.15)]' 
                                   : 'bg-[#101018]/80 border-white/[0.07] hover:border-blue-500/30 hover:bg-[#101018]'
                               } border`}>
@@ -295,7 +295,7 @@ export default function Profile() {
                       {error && <p className="text-sm text-red-400 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-center font-medium">{error}</p>}
 
                       <button type="submit" disabled={creating} 
-                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-base text-white font-black uppercase tracking-wider rounded-2xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-base text-white font-black uppercase tracking-wider rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(59,130,246,0.3)]">
                         {creating ? <><span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block mr-2 align-middle" />CREATING...</> : 'LAUNCH MATCH'}
                       </button>
                     </form>
@@ -309,7 +309,7 @@ export default function Profile() {
                       </div>
                       {joinError && <p className="text-sm text-red-400 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-center font-medium">{joinError}</p>}
                       <button type="submit" disabled={joining || !joinCode.trim()} 
-                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-base text-white font-black uppercase tracking-wider rounded-2xl hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-500 text-base text-white font-black uppercase tracking-wider rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(59,130,246,0.3)]">
                         {joining ? 'JOINING...' : 'JOIN MATCH'}
                       </button>
                     </form>
@@ -323,7 +323,7 @@ export default function Profile() {
           <div className="lg:col-span-3 flex flex-col gap-4 sm:gap-6">
             
             {/* Leaderboard Card */}
-            <div className="relative group w-full animate-slide-up" style={{ animationDelay: '0.3s' }}>
+            <div className="relative group w-full " style={{ animationDelay: '0.3s' }}>
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="relative bg-[#0A0A10]/80 backdrop-blur-xl border border-white/[0.07] rounded-3xl overflow-hidden shadow-2xl flex flex-col">
                 <div className="px-6 py-5 border-b border-white/[0.07] bg-white/[0.02]">
@@ -334,7 +334,7 @@ export default function Profile() {
                 </div>
                 <div className="p-4 space-y-2">
                   {leaderboard.length > 0 ? leaderboard.map((p, i) => (
-                    <div key={i} className="flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-300 hover:bg-white/[0.05] hover:scale-[1.02] cursor-pointer">
+                    <div key={i} className="flex items-center gap-3 px-3 py-3 rounded-2xl transition-all duration-300 hover:bg-white/[0.05] cursor-pointer">
                       <span className="text-sm font-black w-6 text-center flex-shrink-0" style={{ color: RANK_COLORS[i] }}>{RANK_LABELS[i]}</span>
                       <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white shadow-lg flex-shrink-0"
                         style={{ background: `linear-gradient(135deg, ${RANK_COLORS[i]}40, ${RANK_COLORS[i]}20)`, border: `2px solid ${RANK_COLORS[i]}60` }}>
@@ -351,7 +351,7 @@ export default function Profile() {
             </div>
 
             {/* Practice Topics Card */}
-            <div className="relative group w-full animate-slide-up" style={{ animationDelay: '0.4s' }}>
+            <div className="relative group w-full " style={{ animationDelay: '0.4s' }}>
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="relative bg-[#0A0A10]/80 backdrop-blur-xl border border-white/[0.07] rounded-3xl overflow-hidden shadow-2xl">
                 <div className="px-6 py-5 border-b border-white/[0.07] bg-white/[0.02]">
@@ -360,7 +360,7 @@ export default function Profile() {
                 <div className="p-5 flex flex-wrap gap-2">
                   {TOPICS.map(t => (
                     <button key={t} onClick={() => nav('/practice')} 
-                      className="px-4 py-2 text-xs font-bold rounded-xl bg-[#101018] text-slate-300 border border-white/[0.07] hover:bg-blue-500/20 hover:text-blue-300 hover:border-blue-500/30 transition-all duration-300 hover:scale-105 shadow-sm">
+                      className="px-4 py-2 text-xs font-bold rounded-xl bg-[#101018] text-slate-300 border border-white/[0.07] hover:bg-blue-500/20 hover:text-blue-300 hover:border-blue-500/30 transition-all duration-300 shadow-sm">
                       {t}
                     </button>
                   ))}
@@ -373,7 +373,7 @@ export default function Profile() {
 
         {/* Achievements Section */}
         {achievements.length > 0 && (
-          <div className="mt-4 animate-slide-up w-full" style={{ animationDelay: '0.5s' }}>
+          <div className="mt-4 w-full" style={{ animationDelay: '0.5s' }}>
             <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-between gap-3 sm:gap-0 mb-6 bg-[#0A0A10]/40 p-6 rounded-3xl border border-white/[0.05]">
               <h2 className="text-xl font-black text-white uppercase tracking-wider">🎖️ Achievements</h2>
               <span className="text-xs font-bold px-4 py-2 rounded-xl bg-blue-500/20 text-blue-300 border border-blue-500/30 whitespace-nowrap uppercase tracking-widest">
@@ -386,11 +386,11 @@ export default function Profile() {
                   className={`relative group transition-all duration-300 w-full max-w-sm ${a.unlocked ? 'opacity-100' : 'opacity-50 grayscale'}`}>
                   <div className={`absolute -inset-1 bg-gradient-to-r from-blue-600/30 to-cyan-600/30 rounded-3xl blur-xl transition-opacity duration-500 ${a.unlocked ? 'opacity-0 group-hover:opacity-100' : 'opacity-0'}`} />
                   <div className={`relative bg-[#0A0A10]/80 backdrop-blur-md border rounded-3xl p-6 sm:p-8 text-center transition-all duration-300 h-full flex flex-col items-center justify-center ${
-                    a.unlocked 
-                      ? 'border-white/[0.07] hover:-translate-y-2 hover:shadow-[0_10px_30px_rgba(59,130,246,0.2)] cursor-pointer' 
+ a.unlocked 
+                      ? 'border-white/[0.07]  hover:shadow-[0_10px_30px_rgba(59,130,246,0.2)] cursor-pointer' 
                       : 'border-white/[0.04] cursor-not-allowed'
                   }`}>
-                    <div className="text-4xl sm:text-5xl mb-4 transition-transform duration-500 group-hover:scale-125 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">{a.icon || '🏅'}</div>
+                    <div className="text-4xl sm:text-5xl mb-4 transition-transform duration-500 filter drop-shadow-[0_0_10px_rgba(255,255,255,0.3)]">{a.icon || '🏅'}</div>
                     <div className="text-sm sm:text-base font-black text-white mb-2 uppercase tracking-wide">{a.name}</div>
                     <div className="text-xs sm:text-sm text-slate-400 leading-relaxed font-medium">{a.description}</div>
                     {a.unlocked && (
