@@ -43,14 +43,6 @@ function Heading({ children }) {
   return <h3 className="mb-2 text-sm font-bold text-ink">{children}</h3>
 }
 
-function CodeBlock({ children, tone = 'text-ink' }) {
-  return (
-    <pre className={`overflow-x-auto whitespace-pre-wrap break-words rounded-md border border-line bg-sunken px-3.5 py-3 font-mono text-[13px] leading-6 ${tone}`}>
-      {children}
-    </pre>
-  )
-}
-
 /**
  * The problem as a player reads it: title, difficulty and topic, the
  * description split into its sections, then worked examples taken from the
@@ -113,7 +105,13 @@ export default function ProblemStatement({ question, exampleCount = 1, showTitle
         <section key={s.name} className="mt-6">
           <Heading>{LABELS[s.name] || s.name}</Heading>
           {CODE_SECTIONS.has(s.name) ? (
-            <CodeBlock>{s.content}</CodeBlock>
+            <div className="space-y-1 rounded-md border border-line bg-sunken px-3.5 py-3 font-mono text-[13px] leading-6 text-ink">
+              {s.content.split('\n').filter((l) => l.trim()).map((l, i) => (
+                <p key={i}>
+                  <Inline text={l.trim()} />
+                </p>
+              ))}
+            </div>
           ) : (
             <div className="space-y-1.5 leading-7 text-ink-2">
               {s.content.split('\n').filter((l) => l.trim()).map((l, i) => (
