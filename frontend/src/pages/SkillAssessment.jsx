@@ -1,8 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useEditorTheme, ThemeToggle } from '../context/ThemeContext'
 import api from '../services/api'
 import Editor from '@monaco-editor/react'
+import Logo from '../components/Logo'
+import Icon from '../components/Icons'
+import ProblemStatement from '../components/ProblemStatement'
+import { Spinner } from '../components/Analysis'
+import { registerEditorThemes, EDITOR_FONT } from '../utils/monacoTheme'
+import { parseTestCases } from '../utils/problem'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -10,45 +17,37 @@ import Editor from '@monaco-editor/react'
 const TOTAL_QUESTIONS = 5
 
 const SKILL_DIMENSIONS = [
-  { key: 'logic',           label: 'Logic',           icon: '🧩', desc: 'Basic reasoning & conditionals' },
-  { key: 'strings',         label: 'Strings',         icon: '🔤', desc: 'String manipulation & parsing' },
-  { key: 'problem_solving', label: 'Problem Solving', icon: '💡', desc: 'Hash maps, frequency counting' },
-  { key: 'algorithms',      label: 'Algorithms',      icon: '⚙️',  desc: 'Sorting, searching, two-pointers' },
-  { key: 'advanced',        label: 'Advanced',        icon: '🧠', desc: 'DP, recursion, optimization' },
+  { key: 'logic', label: 'Logic', desc: 'Basic reasoning and conditionals' },
+  { key: 'strings', label: 'Strings', desc: 'String manipulation and parsing' },
+  { key: 'problem_solving', label: 'Problem solving', desc: 'Hash maps and frequency counting' },
+  { key: 'algorithms', label: 'Algorithms', desc: 'Sorting, searching and two pointers' },
+  { key: 'advanced', label: 'Advanced', desc: 'Dynamic programming, recursion and optimisation' },
 ]
 
-const DIFF_STYLE = {
-  easy:   { label: 'Easy',   bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-400', bar: '#10b981', dot: 'bg-emerald-400' },
-  medium: { label: 'Medium', bg: 'bg-amber-500/10',   border: 'border-amber-500/30',   text: 'text-amber-400',   bar: '#f59e0b', dot: 'bg-amber-400'   },
-  hard:   { label: 'Hard',   bg: 'bg-rose-500/10',    border: 'border-rose-500/30',    text: 'text-rose-400',    bar: '#ef4444', dot: 'bg-rose-400'    },
-}
+const DIFF_COLOR = { easy: 'grass', medium: 'sun', hard: 'tomato' }
+const DIFF_LABEL = { easy: 'Easy', medium: 'Medium', hard: 'Hard' }
 
 const TIER_CONFIG = {
-  Beginner:     { icon: '🌱', color: '#6b7280', glow: '#6b728040', grad: 'from-gray-700 to-gray-800',       desc: 'Just getting started — great foundation ahead!' },
-  Intermediate: { icon: '⚡', color: '#10b981', glow: '#10b98140', grad: 'from-emerald-600 to-teal-700',    desc: 'Solid fundamentals — ready for real challenges!' },
-  Advanced:     { icon: '🔥', color: '#3b82f6', glow: '#3b82f640', grad: 'from-blue-600 to-indigo-700',     desc: 'Strong problem-solver — tackling complex algorithms!' },
-  Expert:       { icon: '💎', color: '#3b82f6', glow: '#3b82f640', grad: 'from-blue-600 to-purple-700',   desc: 'Elite coder — mastering advanced data structures!' },
-  Master:       { icon: '👑', color: '#f59e0b', glow: '#f59e0b40', grad: 'from-amber-500 to-orange-600',    desc: 'Top-tier competitive programmer — legendary!' },
+  Beginner: { color: 'sky', desc: 'You are at the start, and there is a solid foundation to build on.' },
+  Intermediate: { color: 'grass', desc: 'Your fundamentals are solid and you are ready for real challenges.' },
+  Advanced: { color: 'violet', desc: 'You solve problems well and are ready for complex algorithms.' },
+  Expert: { color: 'tangerine', desc: 'You are comfortable with advanced data structures.' },
+  Master: { color: 'tomato', desc: 'Top of the scale: you compete at a very high level.' },
 }
 
 const LANGUAGES = [
-  { value: 'python',     label: 'Python',     icon: '🐍', monaco: 'python'     },
-  { value: 'javascript', label: 'JavaScript', icon: '💛', monaco: 'javascript' },
-  { value: 'cpp',        label: 'C++',        icon: '⚡', monaco: 'cpp'        },
-  { value: 'java',       label: 'Java',       icon: '☕', monaco: 'java'       },
+  { value: 'python', label: 'Python', monaco: 'python' },
+  { value: 'javascript', label: 'JavaScript', monaco: 'javascript' },
+  { value: 'cpp', label: 'C++', monaco: 'cpp' },
+  { value: 'java', label: 'Java', monaco: 'java' },
 ]
 
-// Strip Sample Input / Sample Output sections from description text
-// They duplicate the example boxes shown from test cases
-function stripSampleSections(description) {
-  if (!description) return ''
-  // Remove everything from **Sample Input** or **Sample Output** up to the next **section** or end
-  return description
-    .replace(/\*\*Sample Input\*\*[\s\S]*?(?=\*\*[A-Z]|\s*$)/gi, '')
-    .replace(/\*\*Sample Output\*\*[\s\S]*?(?=\*\*[A-Z]|\s*$)/gi, '')
-    .trim()
-}
-function CircularTimer({ seconds, onExpire, paused, key: _key }) {
+const fill = (name) => `rgb(var(--${name}))`
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Per-question countdown
+// ─────────────────────────────────────────────────────────────────────────────
+function QuestionTimer({ seconds, onExpire, paused }) {
   const [remaining, setRemaining] = useState(seconds)
   const ref = useRef(null)
 
@@ -57,7 +56,7 @@ function CircularTimer({ seconds, onExpire, paused, key: _key }) {
   useEffect(() => {
     if (paused) { clearInterval(ref.current); return }
     ref.current = setInterval(() => {
-      setRemaining(prev => {
+      setRemaining((prev) => {
         if (prev <= 1) { clearInterval(ref.current); onExpire(); return 0 }
         return prev - 1
       })
@@ -65,64 +64,62 @@ function CircularTimer({ seconds, onExpire, paused, key: _key }) {
     return () => clearInterval(ref.current)
   }, [seconds, paused, onExpire])
 
-  const pct = remaining / seconds
-  const r = 52, cx = 60, cy = 60, circ = 2 * Math.PI * r
-  const color = pct > 0.5 ? '#10b981' : pct > 0.25 ? '#f59e0b' : '#ef4444'
-  const mins = Math.floor(remaining / 60), secs = remaining % 60
+  const pct = (remaining / seconds) * 100
+  const urgent = remaining <= seconds * 0.25
+  const mins = Math.floor(remaining / 60)
+  const secs = remaining % 60
 
   return (
-    <div className="flex flex-col items-center">
-      <svg width="120" height="120" viewBox="0 0 120 120">
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#1f2937" strokeWidth="7" />
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth="7"
-          strokeDasharray={`${circ * pct} ${circ}`} strokeLinecap="round"
-          transform={`rotate(-90 ${cx} ${cy})`}
-          style={{ transition: 'stroke-dasharray 1s linear, stroke 0.5s' }} />
-        <text x={cx} y={cy - 5} textAnchor="middle" fill="white" fontSize="20" fontWeight="800">
-          {mins}:{secs.toString().padStart(2, '0')}
-        </text>
-        <text x={cx} y={cy + 14} textAnchor="middle" fill="#4b5563" fontSize="10">remaining</text>
-      </svg>
+    <div className="flex items-center gap-3" role="timer" aria-label={`${mins} minutes ${secs} seconds left`}>
+      <span className="block h-1.5 w-24 overflow-hidden rounded-full bg-line">
+        <span className={`block h-full ${urgent ? 'bg-tomato' : 'bg-ink'}`} style={{ width: `${pct}%`, transition: 'width 1s linear' }} />
+      </span>
+      <span className={`numeral w-16 text-right text-2xl ${urgent ? 'text-tomato-ink' : ''}`}>
+        {mins}:{String(secs).padStart(2, '0')}
+      </span>
     </div>
   )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SKILL RADAR (SVG)
+// Skill radar (SVG)
 // ─────────────────────────────────────────────────────────────────────────────
 function SkillRadar({ scores }) {
   const dims = SKILL_DIMENSIONS
-  const n = dims.length, cx = 130, cy = 130, r = 100
+  const n = dims.length, cx = 150, cy = 140, r = 96
 
   const pts = dims.map((d, i) => {
     const angle = (2 * Math.PI * i) / n - Math.PI / 2
     const val = Math.min(1, (scores[d.key] || 0) / 100)
     return {
       x: cx + r * val * Math.cos(angle), y: cy + r * val * Math.sin(angle),
-      lx: cx + (r + 28) * Math.cos(angle), ly: cy + (r + 28) * Math.sin(angle),
+      lx: cx + (r + 24) * Math.cos(angle), ly: cy + (r + 20) * Math.sin(angle),
     }
   })
 
-  const poly = pts.map(p => `${p.x},${p.y}`).join(' ')
-
   return (
-    <svg width="260" height="260" viewBox="0 0 260 260">
-      {[0.25, 0.5, 0.75, 1].map(ring => {
-        const rpts = dims.map((_, i) => {
-          const a = (2 * Math.PI * i) / n - Math.PI / 2
-          return `${cx + r * ring * Math.cos(a)},${cy + r * ring * Math.sin(a)}`
-        }).join(' ')
-        return <polygon key={ring} points={rpts} fill="none" stroke="#1f2937" strokeWidth="1" />
-      })}
+    <svg viewBox="0 0 300 280" className="mx-auto block w-full max-w-xs" role="img" aria-label="Skill profile across five areas">
+      {[0.25, 0.5, 0.75, 1].map((ring) => (
+        <polygon
+          key={ring}
+          points={dims.map((_, i) => {
+            const a = (2 * Math.PI * i) / n - Math.PI / 2
+            return `${cx + r * ring * Math.cos(a)},${cy + r * ring * Math.sin(a)}`
+          }).join(' ')}
+          fill="none"
+          stroke="rgb(var(--line-strong))"
+          strokeWidth="1"
+        />
+      ))}
       {dims.map((_, i) => {
         const a = (2 * Math.PI * i) / n - Math.PI / 2
-        return <line key={i} x1={cx} y1={cy} x2={cx + r * Math.cos(a)} y2={cy + r * Math.sin(a)} stroke="#1f2937" strokeWidth="1" />
+        return <line key={i} x1={cx} y1={cy} x2={cx + r * Math.cos(a)} y2={cy + r * Math.sin(a)} stroke="rgb(var(--line))" />
       })}
-      <polygon points={poly} fill="#3b82f615" stroke="#3b82f6" strokeWidth="2" />
-      {pts.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="5" fill="#3b82f6" stroke="#1e1b4b" strokeWidth="2" />)}
+      <polygon points={pts.map((p) => `${p.x},${p.y}`).join(' ')} fill="rgb(var(--sky) / 0.25)" stroke="rgb(var(--ink))" strokeWidth="2" />
+      {pts.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="4" fill="rgb(var(--ink))" />)}
       {pts.map((p, i) => (
-        <text key={i} x={p.lx} y={p.ly} textAnchor="middle" dominantBaseline="middle" fill="#9ca3af" fontSize="10" fontWeight="600">
-          {dims[i].icon} {dims[i].label}
+        <text key={i} x={p.lx} y={p.ly} textAnchor="middle" dominantBaseline="middle" fontSize="11" fontWeight="600" fill="rgb(var(--ink-2))">
+          {dims[i].label}
         </text>
       ))}
     </svg>
@@ -130,257 +127,187 @@ function SkillRadar({ scores }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// LOADING QUESTION SCREEN
+// Page chrome shared by the non-quiz screens
 // ─────────────────────────────────────────────────────────────────────────────
-function LoadingQuestion({ slot, dimension }) {
-  const dim = SKILL_DIMENSIONS[slot] || SKILL_DIMENSIONS[0]
+function Shell({ children, wide = false }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 gap-8">
-      <div className="relative">
-        <div className="w-20 h-20 rounded-full border-4 border-blue-500/20" />
-        <div className="absolute inset-0 w-20 h-20 rounded-full border-4 border-blue-500 border-t-transparent animate-spin" />
-        <div className="absolute inset-0 flex items-center justify-center text-2xl">{dim.icon}</div>
-      </div>
-      <div className="text-center">
-        <p className="text-white text-xl font-bold mb-2">Generating Question {slot + 1} of {TOTAL_QUESTIONS}</p>
-        <p className="text-gray-500 text-sm">Testing your <span className="text-blue-400 font-semibold">{dim.label}</span> skills...</p>
-        <p className="text-gray-600 text-xs mt-2">AI is crafting a unique question just for you</p>
-      </div>
-      <div className="flex gap-2">
-        {Array.from({ length: TOTAL_QUESTIONS }).map((_, i) => (
-          <div key={i} className={`w-2 h-2 rounded-full transition-all ${i < slot ? 'bg-blue-500' : i === slot ? 'bg-blue-400 animate-pulse scale-150' : 'bg-gray-700'}`} />
-        ))}
-      </div>
+    <div className="min-h-screen bg-paper">
+      <header className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5 sm:px-8">
+        <Logo size={28} />
+        <ThemeToggle />
+      </header>
+      <main className={`mx-auto px-5 pb-20 sm:px-8 ${wide ? 'max-w-5xl' : 'max-w-3xl'}`}>{children}</main>
     </div>
   )
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// RESULT SCREEN
-// ─────────────────────────────────────────────────────────────────────────────
-function ResultScreen({ rating, tier, topicScores, questionResults, onContinue }) {
-  const cfg = TIER_CONFIG[tier?.name] || TIER_CONFIG.Beginner
-  const [shown, setShown] = useState(false)
-  const [count, setCount] = useState(0)
+function LoadingQuestion({ slot }) {
+  const dim = SKILL_DIMENSIONS[slot] || SKILL_DIMENSIONS[0]
+  return (
+    <Shell>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center" role="status">
+        <Spinner className="!h-8 !w-8" />
+        <p className="mt-6 text-2xl font-bold">Writing question {slot + 1} of {TOTAL_QUESTIONS}</p>
+        <p className="mt-2 text-ink-2">This one tests <span className="font-semibold text-ink">{dim.label.toLowerCase()}</span>. It is generated for you, so it takes a few seconds.</p>
+        <div className="mt-6 flex gap-2">
+          {Array.from({ length: TOTAL_QUESTIONS }).map((_, i) => (
+            <span key={i} className={`h-2.5 w-2.5 rounded-full ${i < slot ? 'bg-ink' : i === slot ? 'ring-2 ring-ink ring-offset-2 ring-offset-paper bg-ink' : 'bg-line-strong'}`} />
+          ))}
+        </div>
+      </div>
+    </Shell>
+  )
+}
 
-  useEffect(() => {
-    setTimeout(() => setShown(true), 80)
-    let n = 0
-    const step = Math.max(1, Math.ceil(rating / 80))
-    const iv = setInterval(() => {
-      n = Math.min(n + step, rating)
-      setCount(n)
-      if (n >= rating) clearInterval(iv)
-    }, 12)
-    return () => clearInterval(iv)
-  }, [rating])
+// ─────────────────────────────────────────────────────────────────────────────
+// Intro
+// ─────────────────────────────────────────────────────────────────────────────
+function IntroScreen({ onStart, onSkip }) {
+  return (
+    <Shell>
+      <h1 className="display mt-8 text-[clamp(2.6rem,6vw,4.5rem)]">Find your starting rating</h1>
+      <p className="measure mt-6 text-lg text-ink-2">
+        Five questions, written for you, that get harder as you do well. Your code is actually run against tests, and the
+        result sets your rating, so matchmaking starts from where you really are.
+      </p>
+
+      <dl className="mt-8 flex flex-wrap gap-x-10 gap-y-4">
+        {[['5', 'questions'], ['About 15', 'minutes'], ['Real', 'code execution'], ['Adaptive', 'difficulty']].map(([v, l]) => (
+          <div key={l}>
+            <dd className="numeral text-3xl">{v}</dd>
+            <dt className="text-sm text-ink-3">{l}</dt>
+          </div>
+        ))}
+      </dl>
+
+      <section className="mt-12">
+        <h2 className="border-b border-line pb-3 text-xl font-bold">What the five questions cover</h2>
+        <ol>
+          {SKILL_DIMENSIONS.map((d, i) => (
+            <li key={d.key} className="grid grid-cols-[2rem_9rem_1fr] items-baseline gap-3 border-b border-line py-3.5">
+              <span className="numeral text-2xl text-ink-3">{i + 1}</span>
+              <span className="font-semibold">{d.label}</span>
+              <span className="text-ink-2">{d.desc}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="mt-12">
+        <h2 className="text-xl font-bold">Where you could land</h2>
+        <ul className="mt-4 grid gap-2 sm:grid-cols-5">
+          {Object.entries(TIER_CONFIG).map(([name, cfg]) => (
+            <li key={name} className="flex items-center gap-2 rounded-md border border-line bg-panel px-3 py-2.5 text-sm font-semibold">
+              <span className="dot" style={{ background: fill(cfg.color) }} />
+              {name}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <div className="mt-12 flex flex-wrap items-center gap-4">
+        <button onClick={onStart} className="btn btn-primary btn-lg">Start the assessment</button>
+        <button onClick={onSkip} className="btn btn-quiet">Skip and use the default rating (1000, Intermediate)</button>
+      </div>
+    </Shell>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Result
+// ─────────────────────────────────────────────────────────────────────────────
+function ResultScreen({ rating, tier, questionResults, onContinue }) {
+  const cfg = TIER_CONFIG[tier?.name] || TIER_CONFIG.Beginner
 
   const totalPts = questionResults.reduce((s, r) => s + (r.pointsEarned || 0), 0)
-  const maxPts   = questionResults.reduce((s, r) => s + (r.maxPoints || 300), 0)
+  const maxPts = questionResults.reduce((s, r) => s + (r.maxPoints || 300), 0)
   const accuracy = maxPts > 0 ? Math.round((totalPts / maxPts) * 100) : 0
-  const solved   = questionResults.filter(r => r.passed).length
+  const solved = questionResults.filter((r) => r.passed).length
 
-  // Build skill scores from question results
   const skillScores = {}
-  questionResults.forEach(r => {
+  questionResults.forEach((r) => {
     const dim = r.skillDimension || 'logic'
     const score = r.totalTests > 0 ? Math.round((r.passedTests / r.totalTests) * 100) : 0
     skillScores[dim] = Math.max(skillScores[dim] || 0, score)
   })
 
   return (
-    <div className={`min-h-screen bg-gray-950 transition-opacity duration-700 ${shown ? 'opacity-100' : 'opacity-0'}`}>
-      {/* Ambient particles */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {Array.from({ length: 25 }).map((_, i) => (
-          <div key={i} className="absolute rounded-full animate-ping"
-            style={{ width: `${3 + (i % 5) * 2}px`, height: `${3 + (i % 5) * 2}px`,
-              left: `${(i * 37) % 100}%`, top: `${(i * 53) % 100}%`,
-              backgroundColor: ['#3b82f6','#10b981','#3b82f6','#f59e0b','#ef4444'][i % 5],
-              animationDelay: `${(i * 0.3) % 3}s`, animationDuration: `${2 + (i % 3)}s`, opacity: 0.12 }} />
+    <Shell wide>
+      <p className="mt-6 text-ink-2">Assessment complete</p>
+      <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2">
+        <h1 className="display text-[clamp(3.5rem,10vw,7rem)]">{tier?.name}</h1>
+        <span className="mt-2 h-10 w-10 rounded-full" style={{ background: fill(cfg.color) }} aria-hidden="true" />
+      </div>
+      <p className="measure mt-3 text-lg text-ink-2">{cfg.desc}</p>
+
+      <dl className="panel mt-10 grid grid-cols-2 divide-x divide-y divide-line sm:grid-cols-4 sm:divide-y-0">
+        {[
+          ['Starting rating', rating],
+          ['Questions solved', `${solved} of ${TOTAL_QUESTIONS}`],
+          ['Points', `${totalPts} of ${maxPts}`],
+          ['Accuracy', `${accuracy}%`],
+        ].map(([k, v]) => (
+          <div key={k} className="px-5 py-5">
+            <dd className="numeral text-4xl">{v}</dd>
+            <dt className="mt-2 text-sm text-ink-3">{k}</dt>
+          </div>
         ))}
-      </div>
+      </dl>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-6 py-12">
-        {/* Hero */}
-        <div className="text-center mb-12">
-          <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${cfg.grad} flex items-center justify-center mx-auto mb-6 shadow-2xl`}
-            style={{ boxShadow: `0 0 100px ${cfg.glow}` }}>
-            <span className="text-6xl">{cfg.icon}</span>
-          </div>
-          <p className="text-gray-500 text-xs uppercase tracking-widest mb-2">Assessment Complete</p>
-          <h1 className="text-6xl font-black mb-3" style={{ color: cfg.color }}>{tier?.name}</h1>
-          <p className="text-gray-400 text-base max-w-md mx-auto">{cfg.desc}</p>
-        </div>
+      <div className="mt-10 grid gap-8 lg:grid-cols-2">
+        <section className="panel p-6">
+          <h2 className="font-bold">Skill profile</h2>
+          <p className="mb-2 text-sm text-ink-3">Based on the tests your code passed.</p>
+          <SkillRadar scores={skillScores} />
+        </section>
 
-        {/* Stats */}
-        <div className="grid grid-cols-4 gap-4 mb-8">
-          {[
-            { label: 'Starting Rating', value: count,    suffix: '',  color: cfg.color },
-            { label: 'Questions Solved', value: `${solved}/${TOTAL_QUESTIONS}`, suffix: '', color: '#10b981' },
-            { label: 'Score',           value: `${totalPts}/${maxPts}`, suffix: '', color: '#3b82f6' },
-            { label: 'Accuracy',        value: accuracy, suffix: '%', color: '#f59e0b' },
-          ].map(s => (
-            <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-2xl p-5 text-center">
-              <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">{s.label}</p>
-              <p className="text-3xl font-black" style={{ color: s.color }}>{s.value}{s.suffix}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Radar + Question breakdown */}
-        <div className="grid grid-cols-2 gap-6 mb-8">
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 flex flex-col items-center">
-            <p className="text-white font-bold text-sm mb-1">Skill Profile</p>
-            <p className="text-gray-500 text-xs mb-4">Based on actual code execution</p>
-            <SkillRadar scores={skillScores} />
-          </div>
-
-          <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
-            <p className="text-white font-bold text-sm mb-4">Question Breakdown</p>
-            <div className="space-y-3">
-              {questionResults.map((r, i) => {
-                const ds = DIFF_STYLE[r.difficulty] || DIFF_STYLE.easy
-                const dim = SKILL_DIMENSIONS.find(d => d.key === r.skillDimension) || SKILL_DIMENSIONS[0]
-                const pct = r.totalTests > 0 ? Math.round((r.passedTests / r.totalTests) * 100) : 0
-                return (
-                  <div key={i} className="bg-gray-800/50 rounded-xl p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${r.passed ? 'bg-emerald-500/20 text-emerald-400' : r.passedTests > 0 ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'}`}>
-                        {r.passed ? '✓' : r.passedTests > 0 ? '~' : '✗'}
-                      </span>
-                      <span className="text-white text-xs font-medium flex-1 truncate">{r.title || `Question ${i + 1}`}</span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${ds.bg} ${ds.text}`}>{ds.label}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all duration-1000"
-                          style={{ width: `${pct}%`, backgroundColor: ds.bar }} />
-                      </div>
-                      <span className="text-gray-500 text-[10px] w-16 text-right">{r.passedTests}/{r.totalTests} tests · {r.pointsEarned}pts</span>
-                    </div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <span className="text-[10px]">{dim.icon}</span>
-                      <span className="text-gray-600 text-[10px]">{dim.label}</span>
-                      {r.timeTaken && <span className="text-gray-700 text-[10px] ml-auto">{r.timeTaken}s</span>}
-                    </div>
+        <section className="panel">
+          <h2 className="border-b border-line px-6 py-4 font-bold">Question by question</h2>
+          <ul className="divide-y divide-line">
+            {questionResults.map((r, i) => {
+              const pct = r.totalTests > 0 ? Math.round((r.passedTests / r.totalTests) * 100) : 0
+              const dim = SKILL_DIMENSIONS.find((d) => d.key === r.skillDimension) || SKILL_DIMENSIONS[0]
+              const status = r.passed ? 'grass' : r.passedTests > 0 ? 'sun' : 'tomato'
+              return (
+                <li key={i} className="px-6 py-3.5">
+                  <div className="flex items-center gap-3">
+                    <span className="dot" style={{ background: fill(status) }} />
+                    <span className="min-w-0 flex-1 truncate font-semibold">{r.title || `Question ${i + 1}`}</span>
+                    <span className="chip">{DIFF_LABEL[r.difficulty] || 'Easy'}</span>
                   </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* What's next */}
-        <div className="bg-gray-900/60 border border-gray-800 rounded-2xl p-6 mb-8">
-          <p className="text-white font-bold mb-4">What happens now</p>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { icon: '🎯', title: 'Personalized Practice', desc: 'Questions matched to your exact skill level and weak topics' },
-              { icon: '📈', title: 'Live Rating Updates', desc: 'Your ELO adjusts after every practice session and match' },
-              { icon: '🏆', title: 'Fair Matchmaking', desc: 'Compete against players with similar ratings only' },
-              { icon: '🔄', title: 'Continuous Calibration', desc: 'The system gets smarter about your skills over time' },
-            ].map((item, i) => (
-              <div key={i} className="flex items-start gap-3 bg-gray-800/40 rounded-xl p-4">
-                <span className="text-xl flex-shrink-0">{item.icon}</span>
-                <div>
-                  <p className="text-white text-xs font-semibold mb-0.5">{item.title}</p>
-                  <p className="text-gray-500 text-xs leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <button onClick={onContinue}
-          className="w-full py-5 rounded-2xl font-black text-white text-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-2xl"
-          style={{ background: `linear-gradient(135deg, ${cfg.color}dd, ${cfg.color}88)`, boxShadow: `0 20px 60px ${cfg.glow}` }}>
-          Start Coding as {tier?.name} →
-        </button>
+                  <div className="mt-2 flex items-center gap-3 pl-5">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-line">
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: fill(DIFF_COLOR[r.difficulty] || 'grass') }} />
+                    </div>
+                    <span className="tnum text-xs text-ink-3">{r.passedTests}/{r.totalTests} tests, {r.pointsEarned} pts</span>
+                  </div>
+                  <div className="mt-1 pl-5 text-xs text-ink-3">{dim.label}{r.timeTaken ? `, ${r.timeTaken}s` : ''}</div>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
       </div>
-    </div>
-  )
-}
 
-// ─────────────────────────────────────────────────────────────────────────────
-// INTRO SCREEN
-// ─────────────────────────────────────────────────────────────────────────────
-function IntroScreen({ onStart, onSkip }) {
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 px-6">
-      <div className="max-w-2xl w-full">
-        <div className="text-center mb-10">
-          <div className="relative w-24 h-24 mx-auto mb-6">
-            <div className="w-24 h-24 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-              <span className="text-5xl">🎯</span>
-            </div>
-            <div className="absolute -top-2 -right-2 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-black shadow-lg">AI</div>
-          </div>
-          <h1 className="text-5xl font-black text-white mb-3">Skill Assessment</h1>
-          <p className="text-gray-400 text-lg max-w-lg mx-auto leading-relaxed">
-            Write real code. We execute it. Every user gets <span className="text-blue-400 font-semibold">different AI-generated questions</span> — no two assessments are the same.
-          </p>
-        </div>
-
-        {/* How it works */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+      <section className="mt-10">
+        <h2 className="border-b border-line pb-3 text-xl font-bold">What happens now</h2>
+        <dl className="grid gap-x-10 sm:grid-cols-2">
           {[
-            { step: '01', icon: '🤖', title: 'AI Generates', desc: 'Unique questions crafted just for you — never repeated' },
-            { step: '02', icon: '💻', title: 'You Code', desc: 'Write real solutions in Python, JS, C++, or Java' },
-            { step: '03', icon: '⚡', title: 'We Execute', desc: 'Your code runs against test cases — no self-reporting' },
-          ].map(item => (
-            <div key={item.step} className="bg-gray-900 border border-gray-800 rounded-2xl p-5 text-center">
-              <div className="text-3xl mb-3">{item.icon}</div>
-              <p className="text-blue-400 text-xs font-bold mb-1">STEP {item.step}</p>
-              <p className="text-white font-semibold text-sm mb-1">{item.title}</p>
-              <p className="text-gray-500 text-xs leading-relaxed">{item.desc}</p>
+            ['Practice that fits', 'Questions are matched to your level and your weaker topics.'],
+            ['A rating that moves', 'Your rating changes after every practice session and match.'],
+            ['Fair matchmaking', 'You are paired with players at a similar rating.'],
+            ['Calibration over time', 'The system keeps learning how strong you are in each area.'],
+          ].map(([k, v]) => (
+            <div key={k} className="border-b border-line py-4">
+              <dt className="font-semibold">{k}</dt>
+              <dd className="text-ink-2">{v}</dd>
             </div>
           ))}
-        </div>
+        </dl>
+      </section>
 
-        {/* Skill dimensions tested */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 mb-6">
-          <p className="text-gray-400 text-xs uppercase tracking-wider mb-4">5 Skill Dimensions Tested</p>
-          <div className="grid grid-cols-5 gap-2">
-            {SKILL_DIMENSIONS.map(d => (
-              <div key={d.key} className="flex flex-col items-center gap-2 py-3 bg-gray-800/50 rounded-xl">
-                <span className="text-xl">{d.icon}</span>
-                <span className="text-xs font-semibold text-white">{d.label}</span>
-                <span className="text-[10px] text-gray-500 text-center leading-tight px-1">{d.desc}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Tier outcomes */}
-        <div className="flex gap-2 mb-8">
-          {Object.entries(TIER_CONFIG).map(([name, cfg]) => (
-            <div key={name} className="flex-1 flex flex-col items-center gap-1.5 py-3 bg-gray-900 border border-gray-800 rounded-xl">
-              <span className="text-xl">{cfg.icon}</span>
-              <span className="text-xs font-bold" style={{ color: cfg.color }}>{name}</span>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex gap-3 mb-3 text-center text-gray-600 text-xs">
-          {[['5', 'Questions'], ['~15min', 'Duration'], ['Real', 'Execution'], ['Adaptive', 'Difficulty']].map(([v, l]) => (
-            <div key={l} className="flex-1 bg-gray-900/50 border border-gray-800 rounded-xl py-2">
-              <p className="text-white font-bold text-sm">{v}</p>
-              <p className="text-gray-600 text-[10px]">{l}</p>
-            </div>
-          ))}
-        </div>
-
-        <button onClick={onStart}
-          className="w-full py-5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] mb-3 shadow-lg shadow-blue-500/20 mt-4">
-          Start My Assessment
-        </button>
-        <button onClick={onSkip}
-          className="w-full py-3 rounded-xl text-gray-600 hover:text-gray-400 text-sm transition-colors">
-          Skip — use default rating (1000 · Intermediate)
-        </button>
-      </div>
-    </div>
+      <button onClick={onContinue} className="btn btn-primary btn-lg mt-10">Start coding as {tier?.name}</button>
+    </Shell>
   )
 }
 
@@ -390,6 +317,7 @@ function IntroScreen({ onStart, onSkip }) {
 export default function SkillAssessment() {
   const { user, login } = useAuth()
   const navigate = useNavigate()
+  const editorTheme = useEditorTheme()
 
   // phase: intro | loading | quiz | running | submitting | result
   const [phase, setPhase] = useState('intro')
@@ -447,13 +375,12 @@ export default function SkillAssessment() {
       const { data } = await api.post('/skill-assessment/generate-question', {
         slot,
         difficulty_override: diffOverride || null,
-        exclude_titles: [...usedTitles, ...(prevResults || []).map(r => r.title).filter(Boolean)],
+        exclude_titles: [...usedTitles, ...(prevResults || []).map((r) => r.title).filter(Boolean)],
       })
 
       setCurrentQuestion(data)
       setCurrentDiff(data.difficulty || diffOverride || 'easy')
 
-      // Set starter code
       try {
         const sc = typeof data.starter_code === 'string'
           ? JSON.parse(data.starter_code)
@@ -461,12 +388,12 @@ export default function SkillAssessment() {
         setCode(sc[language] || sc.python || `# Write your solution here\n`)
       } catch { setCode(`# Write your solution here\n`) }
 
-      setUsedTitles(prev => [...prev, data.title].filter(Boolean))
+      setUsedTitles((prev) => [...prev, data.title].filter(Boolean))
       setStartTime(Date.now())
-      setTimerKey(k => k + 1)
+      setTimerKey((k) => k + 1)
       setPhase('quiz')
     } catch (err) {
-      setExecError(err.response?.data?.detail || 'Failed to generate question. Please try again.')
+      setExecError(err.response?.data?.detail || 'Could not generate the question. Try again.')
       setPhase('quiz')
     }
   }
@@ -484,7 +411,7 @@ export default function SkillAssessment() {
     setTimeout(() => submitQuestion(true), 2500)
   }, [currentQuestion, code, language, currentSlot, currentDiff, questionResults])
 
-  // ── Run tests (preview — first 2 test cases) ─────────────────────────────
+  // ── Run tests (preview: first 2 test cases) ──────────────────────────────
   async function runPreview() {
     if (!currentQuestion || running) return
     setRunning(true)
@@ -502,7 +429,7 @@ export default function SkillAssessment() {
         const exp = (tc.expected_output ?? tc.output ?? '').trim()
         results.push({ input: tc.input ?? tc.stdin ?? '', expected: exp, output: out, passed: out === exp })
       }
-      setRunResult({ preview: true, results, passedTests: results.filter(r => r.passed).length, totalTests: results.length })
+      setRunResult({ preview: true, results, passedTests: results.filter((r) => r.passed).length, totalTests: results.length })
     } catch (err) {
       setExecError(err.response?.data?.detail || 'Execution failed')
     } finally { setRunning(false) }
@@ -526,13 +453,13 @@ export default function SkillAssessment() {
         results.push({ input: tc.input ?? tc.stdin ?? '', expected: exp, output: out, passed: out === exp })
       }
 
-      const passedTests = results.filter(r => r.passed).length
-      const totalTests  = results.length
-      const passed      = passedTests === totalTests
-      const partial     = passedTests > 0 && !passed
-      const maxPoints   = currentSlot === 4 ? 500 : currentSlot === 3 ? 400 : currentSlot === 2 ? 300 : 200
+      const passedTests = results.filter((r) => r.passed).length
+      const totalTests = results.length
+      const passed = passedTests === totalTests
+      const partial = passedTests > 0 && !passed
+      const maxPoints = currentSlot === 4 ? 500 : currentSlot === 3 ? 400 : currentSlot === 2 ? 300 : 200
       const pointsEarned = passed ? maxPoints : partial ? Math.round(maxPoints * (passedTests / totalTests) * 0.7) : 0
-      const timeTaken   = fromTimer ? null : Math.round((Date.now() - startTime) / 1000)
+      const timeTaken = fromTimer ? null : Math.round((Date.now() - startTime) / 1000)
 
       const result = {
         slot: currentSlot,
@@ -550,9 +477,9 @@ export default function SkillAssessment() {
 
       // Adaptive difficulty for next question
       let nextDiff = currentDiff
-      if (passed && currentDiff === 'easy')   nextDiff = 'medium'
+      if (passed && currentDiff === 'easy') nextDiff = 'medium'
       else if (passed && currentDiff === 'medium') nextDiff = 'hard'
-      else if (!passed && !partial && currentDiff === 'hard')   nextDiff = 'medium'
+      else if (!passed && !partial && currentDiff === 'hard') nextDiff = 'medium'
       else if (!passed && !partial && currentDiff === 'medium') nextDiff = 'easy'
 
       // Move to next question after 2.5s
@@ -574,7 +501,7 @@ export default function SkillAssessment() {
   async function finishAssessment(results) {
     setPhase('submitting')
     try {
-      const payload = results.map(r => ({
+      const payload = results.map((r) => ({
         difficulty: r.difficulty,
         solved: r.passed,
         time_taken_seconds: r.timeTaken || 9999,
@@ -591,7 +518,7 @@ export default function SkillAssessment() {
       login(meRes.data, localStorage.getItem('token'))
       setPhase('result')
     } catch (err) {
-      setExecError('Failed to save results. Please try again.')
+      setExecError('Could not save your results. Try again.')
       setPhase('quiz')
     }
   }
@@ -608,28 +535,19 @@ export default function SkillAssessment() {
     } catch { navigate('/home') }
   }
 
-  // ── Parse test cases helper ───────────────────────────────────────────────
-  function parseTestCases(raw) {
-    try { const a = typeof raw === 'string' ? JSON.parse(raw) : raw; return Array.isArray(a) ? a : [] }
-    catch { return [] }
-  }
-
   // ── Render phases ─────────────────────────────────────────────────────────
   if (phase === 'intro') return <IntroScreen onStart={startAssessment} onSkip={handleSkip} />
 
   if (phase === 'loading') return <LoadingQuestion slot={currentSlot} />
 
   if (phase === 'submitting') return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 gap-8">
-      <div className="relative">
-        <div className="w-20 h-20 rounded-full border-4 border-blue-500/20" />
-        <div className="absolute inset-0 w-20 h-20 rounded-full border-4 border-blue-500 border-t-transparent animate-spin" />
+    <Shell>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center" role="status">
+        <Spinner className="!h-8 !w-8" />
+        <p className="mt-6 text-2xl font-bold">Working out your rating</p>
+        <p className="mt-2 text-ink-2">Scoring your answers across all five areas.</p>
       </div>
-      <div className="text-center">
-        <p className="text-white text-xl font-bold mb-2">Analyzing your performance...</p>
-        <p className="text-gray-500 text-sm">Calculating skill rating across all dimensions</p>
-      </div>
-    </div>
+    </Shell>
   )
 
   if (phase === 'result') return (
@@ -638,196 +556,157 @@ export default function SkillAssessment() {
   )
 
   if (!currentQuestion && phase === 'quiz') return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 gap-4">
-      {execError && <p className="text-red-400 text-sm">{execError}</p>}
-      <button onClick={() => loadQuestion(currentSlot, currentDiff, questionResults)}
-        className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold">
-        Retry
-      </button>
-    </div>
+    <Shell>
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 text-center">
+        {execError && <p role="alert" className="font-medium text-tomato-ink">{execError}</p>}
+        <button onClick={() => loadQuestion(currentSlot, currentDiff, questionResults)} className="btn btn-primary">Try again</button>
+      </div>
+    </Shell>
   )
 
-  // ── Quiz Screen ───────────────────────────────────────────────────────────
-  const ds = DIFF_STYLE[currentDiff] || DIFF_STYLE.easy
+  // ── Quiz screen ───────────────────────────────────────────────────────────
   const dim = SKILL_DIMENSIONS[currentSlot] || SKILL_DIMENSIONS[0]
-  const tcs = parseTestCases(currentQuestion?.test_cases || '[]')
   const timeLimit = currentDiff === 'hard' ? 600 : currentDiff === 'medium' ? 420 : 300
+  const maxPoints = currentSlot === 4 ? 500 : currentSlot === 3 ? 400 : currentSlot === 2 ? 300 : 200
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col" style={{ fontFamily: 'Inter, sans-serif' }}>
-      {/* ── Top Bar ── */}
-      <div className="border-b border-gray-800 px-5 py-3 flex items-center justify-between bg-gray-950/95 backdrop-blur sticky top-0 z-20">
-        <div className="flex items-center gap-3">
-          <span className="text-white font-black text-lg">CompileX</span>
-          <span className="text-gray-700">|</span>
-          <span className="text-gray-400 text-sm">Skill Assessment</span>
-          <div className={`px-2.5 py-1 rounded-full border text-xs font-bold ${ds.bg} ${ds.border} ${ds.text}`}>{ds.label}</div>
-          <div className="flex items-center gap-1.5 text-gray-500 text-xs">
-            <span>{dim.icon}</span><span>{dim.label}</span>
-          </div>
+    <div className="flex h-screen flex-col bg-paper">
+      <header className="flex h-14 shrink-0 items-center gap-4 border-b border-line px-4">
+        <Logo size={24} />
+        <span className="hidden text-sm text-ink-2 md:inline">Skill assessment, {dim.label.toLowerCase()}</span>
+
+        <ol className="mx-auto flex items-center gap-2" aria-label={`Question ${currentSlot + 1} of ${TOTAL_QUESTIONS}`}>
+          {Array.from({ length: TOTAL_QUESTIONS }).map((_, i) => {
+            const r = questionResults[i]
+            const done = i < questionResults.length
+            const color = done ? (r?.passed ? 'grass' : r?.partial ? 'sun' : 'tomato') : null
+            return (
+              <li
+                key={i}
+                className={`h-3.5 w-3.5 rounded-full border-2 ${i === currentSlot && !done ? 'border-ink bg-panel' : done ? 'border-transparent' : 'border-line-strong'}`}
+                style={done ? { background: fill(color) } : undefined}
+              />
+            )
+          })}
+        </ol>
+
+        <div className="seg" role="group" aria-label="Language">
+          {LANGUAGES.map((l) => (
+            <button key={l.value} aria-pressed={language === l.value} onClick={() => setLanguage(l.value)}>{l.label}</button>
+          ))}
         </div>
-        <div className="flex items-center gap-5">
-          {/* Progress */}
-          <div className="flex items-center gap-2">
-            {Array.from({ length: TOTAL_QUESTIONS }).map((_, i) => {
-              const r = questionResults[i]
-              return (
-                <div key={i} className={`transition-all duration-300 rounded-full ${
-                  i < questionResults.length
-                    ? r?.passed ? 'w-3 h-3 bg-emerald-500' : r?.partial ? 'w-3 h-3 bg-amber-500' : 'w-3 h-3 bg-red-500'
-                    : i === currentSlot ? 'w-4 h-4 bg-blue-500 ring-2 ring-blue-500/30' : 'w-3 h-3 bg-gray-700'
-                }`} />
-              )
-            })}
-            <span className="text-gray-500 text-xs ml-1">{currentSlot + 1}/{TOTAL_QUESTIONS}</span>
+        <ThemeToggle />
+      </header>
+
+      <div className="flex min-h-0 flex-1">
+        {/* Problem */}
+        <aside className="w-[420px] shrink-0 overflow-y-auto border-r border-line p-6">
+          <div className="mb-5 flex items-center justify-between">
+            <span className="chip">Question {currentSlot + 1} of {TOTAL_QUESTIONS}, {maxPoints} points</span>
+            <QuestionTimer key={timerKey} seconds={timeLimit} onExpire={handleTimerExpire} paused={running} />
           </div>
-          {/* Language */}
-          <div className="flex gap-1">
-            {LANGUAGES.map(l => (
-              <button key={l.value} onClick={() => setLanguage(l.value)}
-                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${language === l.value ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}>
-                {l.icon} {l.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
 
-      {/* ── Main Layout ── */}
-      <div className="flex-1 flex overflow-hidden" style={{ height: 'calc(100vh - 57px)' }}>
-        {/* Left: Problem Panel */}
-        <div className="w-[400px] flex-shrink-0 border-r border-gray-800 overflow-y-auto bg-gray-950">
-          <div className="p-5">
-            {/* Timer */}
-            <div className="flex justify-center mb-5">
-              <CircularTimer key={timerKey} seconds={timeLimit} onExpire={handleTimerExpire} paused={running} />
-            </div>
+          {timeExpired && (
+            <p role="alert" className="mb-4 flex items-start gap-2 rounded-md border border-tomato-ink/40 bg-tomato/10 p-3 text-sm font-medium">
+              <Icon name="clock" size={16} className="mt-0.5 text-tomato-ink" />
+              Time is up. Submitting the code you have.
+            </p>
+          )}
 
-            {timeExpired && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm text-center mb-4 animate-pulse">
-                ⏰ Time's up! Submitting your current code...
-              </div>
-            )}
+          <ProblemStatement question={{ ...currentQuestion, difficulty: currentDiff }} exampleCount={2} />
 
-            {/* Question header */}
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-gray-600 text-xs font-mono">Q{currentSlot + 1}</span>
-              <div className={`px-2 py-0.5 rounded text-[10px] font-bold ${ds.bg} ${ds.text}`}>{ds.label}</div>
-              <div className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400">
-                {currentSlot === 4 ? 500 : currentSlot === 3 ? 400 : currentSlot === 2 ? 300 : 200} pts
-              </div>
-            </div>
+          {currentQuestion?.constraints && (
+            <section className="mt-6">
+              <h3 className="mb-2 text-sm font-bold">Constraints</h3>
+              <p className="whitespace-pre-line text-sm leading-6 text-ink-2">{currentQuestion.constraints}</p>
+            </section>
+          )}
 
-            <h2 className="text-xl font-bold text-white mb-3">{currentQuestion?.title}</h2>
-            <p className="text-gray-300 text-sm leading-relaxed mb-5 whitespace-pre-line">{stripSampleSections(currentQuestion?.description)}</p>
-
-            {/* Test cases preview */}
-            {tcs.slice(0, 2).map((tc, i) => (
-              <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-3 mb-2 font-mono text-xs">
-                <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-1.5">Example {i + 1}</p>
-                <div className="text-gray-400 mb-1">Input: <span className="text-cyan-400 whitespace-pre-wrap">{tc.input ?? tc.stdin ?? ''}</span></div>
-                <div className="text-gray-400">Output: <span className="text-green-400">{tc.expected_output ?? tc.output ?? ''}</span></div>
-              </div>
-            ))}
-
-            {/* Constraints */}
-            {currentQuestion?.constraints && (
-              <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-3 mb-4">
-                <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-1">Constraints</p>
-                <p className="text-gray-400 text-xs whitespace-pre-line">{currentQuestion.constraints}</p>
-              </div>
-            )}
-
-            {/* Previous results mini-list */}
-            {questionResults.length > 0 && (
-              <div className="mt-5 pt-5 border-t border-gray-800">
-                <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-2">Previous</p>
+          {questionResults.length > 0 && (
+            <section className="mt-8 border-t border-line pt-5">
+              <h3 className="mb-2 text-sm font-bold">Earlier questions</h3>
+              <ul className="space-y-1.5">
                 {questionResults.map((r, i) => (
-                  <div key={i} className="flex items-center gap-2 mb-1.5">
-                    <span className={`text-xs font-bold ${r.passed ? 'text-emerald-400' : r.partial ? 'text-amber-400' : 'text-red-400'}`}>
-                      {r.passed ? '✓' : r.partial ? '~' : '✗'}
-                    </span>
-                    <span className="text-gray-500 text-xs truncate flex-1">{r.title}</span>
-                    <span className="text-gray-700 text-[10px]">{r.pointsEarned}pts</span>
-                  </div>
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <span className="dot" style={{ background: fill(r.passed ? 'grass' : r.partial ? 'sun' : 'tomato') }} />
+                    <span className="flex-1 truncate text-ink-2">{r.title}</span>
+                    <span className="tnum text-ink-3">{r.pointsEarned} pts</span>
+                  </li>
                 ))}
-              </div>
-            )}
-          </div>
-        </div>
+              </ul>
+            </section>
+          )}
+        </aside>
 
-        {/* Right: Editor + Output */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-hidden">
+        {/* Editor and output */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1">
             <Editor
               height="100%"
-              language={LANGUAGES.find(l => l.value === language)?.monaco || 'python'}
+              language={LANGUAGES.find((l) => l.value === language)?.monaco || 'python'}
               value={code}
-              onChange={v => setCode(v || '')}
-              onMount={e => { editorRef.current = e }}
-              theme="vs-dark"
+              onChange={(v) => setCode(v || '')}
+              beforeMount={registerEditorThemes}
+              onMount={(e) => { editorRef.current = e }}
+              theme={editorTheme}
               options={{
                 fontSize: 14, minimap: { enabled: false },
                 scrollBeyondLastLine: false, padding: { top: 16 },
-                fontFamily: 'JetBrains Mono, Fira Code, Consolas, monospace',
-                lineNumbers: 'on', renderLineHighlight: 'all',
+                fontFamily: EDITOR_FONT,
+                lineNumbers: 'on', renderLineHighlight: 'line',
               }}
             />
           </div>
 
-          {/* Output panel */}
-          <div className="border-t border-gray-800 bg-gray-900 flex flex-col" style={{ minHeight: '180px', maxHeight: '260px' }}>
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800 flex-shrink-0">
-              <div className="flex items-center gap-3">
-                {execError && <span className="text-red-400 text-xs">{execError}</span>}
+          <div className="flex h-60 shrink-0 flex-col border-t border-line bg-panel">
+            <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-2.5">
+              <div className="min-w-0 text-sm font-semibold">
+                {execError && <span className="text-tomato-ink">{execError}</span>}
                 {runResult && !running && (
-                  <span className={`text-xs font-bold ${runResult.passed ? 'text-emerald-400' : runResult.passedTests > 0 ? 'text-amber-400' : 'text-red-400'}`}>
-                    {runResult.passed ? '✓ All tests passed!' : `${runResult.passedTests}/${runResult.totalTests} tests passed`}
-                    {runResult.preview && <span className="text-gray-600 font-normal ml-1">(preview)</span>}
+                  <span className={runResult.passed ? 'text-grass-ink' : runResult.passedTests > 0 ? 'text-sun-ink' : 'text-tomato-ink'}>
+                    {runResult.passed ? 'All tests passed' : `${runResult.passedTests} of ${runResult.totalTests} tests passed`}
+                    {runResult.preview && <span className="ml-1.5 font-normal text-ink-3">(first two examples)</span>}
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                <button onClick={runPreview} disabled={running}
-                  className="px-4 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold transition-all disabled:opacity-40 flex items-center gap-1.5">
-                  {running && !runResult ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '▶'}
-                  Run
+              <div className="flex gap-2">
+                <button onClick={runPreview} disabled={running} className="btn btn-secondary btn-sm">
+                  {running && !runResult ? <Spinner /> : <Icon name="play" size={12} />}
+                  Run examples
                 </button>
-                <button onClick={() => submitQuestion(false)} disabled={running}
-                  className="px-5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-black transition-all disabled:opacity-40 flex items-center gap-1.5">
-                  {running ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡'}
-                  Submit
+                <button onClick={() => submitQuestion(false)} disabled={running} className="btn btn-primary btn-sm">
+                  {running ? <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-paper/30 border-t-paper" /> : <Icon name="check" size={14} strokeWidth={2.4} />}
+                  Submit answer
                 </button>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
               {!runResult && !running && (
-                <p className="text-gray-700 text-xs text-center py-6">Click Run to test with examples, or Submit to evaluate all test cases</p>
+                <p className="py-6 text-center text-sm text-ink-3">Run examples to try your code on the first two cases, or submit to run every case.</p>
               )}
               {running && (
-                <div className="flex items-center gap-3 py-6 justify-center">
-                  <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-gray-500 text-xs">Executing your code...</span>
+                <div className="flex items-center justify-center gap-3 py-6 text-sm text-ink-2" role="status">
+                  <Spinner /> Running your code…
                 </div>
               )}
               {runResult && !running && (
-                <div className="space-y-2">
+                <ul className="space-y-2">
                   {runResult.results.map((r, i) => (
-                    <div key={i} className={`rounded-xl p-3 border text-xs font-mono ${r.passed ? 'bg-emerald-500/5 border-emerald-500/20' : 'bg-red-500/5 border-red-500/20'}`}>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className={r.passed ? 'text-emerald-400 font-bold' : 'text-red-400 font-bold'}>{r.passed ? '✓' : '✗'}</span>
-                        <span className="text-gray-500">Test {i + 1}</span>
+                    <li key={i} className={`rounded-md border p-3 font-mono text-xs ${r.passed ? 'border-grass-ink/30 bg-grass/5' : 'border-tomato-ink/30 bg-tomato/5'}`}>
+                      <div className="flex items-center gap-2 font-sans text-sm font-semibold">
+                        <Icon name={r.passed ? 'check-circle' : 'x-circle'} size={16} className={r.passed ? 'text-grass-ink' : 'text-tomato-ink'} />
+                        Test {i + 1}
                       </div>
                       {!r.passed && (
-                        <div className="space-y-0.5 mt-1.5 pl-4">
-                          <div className="text-gray-500">Expected: <span className="text-green-400">{r.expected}</span></div>
-                          <div className="text-gray-500">Got: <span className="text-red-400">{r.output || '(no output)'}</span></div>
+                        <div className="mt-2 space-y-0.5 pl-6 text-ink-2">
+                          <div>Expected <span className="text-grass-ink">{r.expected}</span></div>
+                          <div>Got <span className="text-tomato-ink">{r.output || '(no output)'}</span></div>
                         </div>
                       )}
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </div>
           </div>
