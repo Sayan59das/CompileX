@@ -232,60 +232,6 @@ const ACTIVITY_ICONS = {
   ),
 }
 
-// Add global styles for animations
-const GAME_STYLES = `
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes slideRight {
-    from { opacity: 0; transform: translateX(-20px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  @keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
-  @keyframes glow {
-    0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
-    50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.6); }
-  }
-  @keyframes shake {
-    0%, 100% { transform: rotate(0deg); }
-    20% { transform: rotate(-15deg); }
-    40% { transform: rotate(15deg); }
-    60% { transform: rotate(-10deg); }
-    80% { transform: rotate(10deg); }
-  }
-  @keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-6px); }
-  }
-  .animate-slide-up { animation: slideUp 0.5s ease-out; }
-  .animate-slide-down { animation: slideDown 0.5s ease-out; }
-  .animate-slide-right { animation: slideRight 0.5s ease-out; }
-  .animate-fade-in { animation: fadeIn 0.4s ease-out; }
-  .animate-scale-in { animation: scaleIn 0.4s ease-out; }
-  .animate-pulse { animation: pulse 2s ease-in-out infinite; }
-  .animate-glow { animation: glow 2s ease-in-out infinite; }
-  .transition-all { transition: all 0.3s ease; }
-  .hover-lift:hover { transform: translateY(-2px); }
-  .hover-scale:hover { transform: scale(1.05); }
-  .hover-glow:hover { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
-`
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Complexity Visualization Chart (pure SVG, no external library)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1284,7 +1230,7 @@ export default function Game() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-hero-glow pointer-events-none" />
-        <div className="relative text-center animate-slide-up">
+        <div className="relative text-center ">
           <div className="text-5xl mb-4">📊</div>
           <h2 className="text-3xl font-extrabold text-white mb-1">Round {currentRound} Complete</h2>
           <p className="text-slate-400 mb-6">{isLastRound ? 'Final standings' : `${totalRounds - currentRound} round(s) remaining`}</p>
@@ -1312,7 +1258,7 @@ export default function Game() {
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.15) 0%, transparent 70%)' }} />
 
-        <div className="relative w-full max-w-lg animate-slide-up">
+        <div className="relative w-full max-w-lg ">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="text-6xl mb-3">🏆</div>
@@ -1403,12 +1349,10 @@ export default function Game() {
 
   return (
     <div className="h-screen flex overflow-hidden relative" style={{ background: '#000000', fontFamily: "'Inter', system-ui, sans-serif" }}>
-      <style>{GAME_STYLES}</style>
-
       {/* Animated Background */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[120px] animate-float-slow" />
-        <div className="absolute bottom-0 right-1/4 w-[700px] h-[700px] bg-cyan-500/15 rounded-full blur-[130px] animate-float-slower" style={{ animationDelay: '3s' }} />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[120px] " />
+        <div className="absolute bottom-0 right-1/4 w-[700px] h-[700px] bg-cyan-500/15 rounded-full blur-[130px] " style={{ animationDelay: '3s' }} />
         <div className="absolute inset-0 opacity-[0.08]" style={{ 
           backgroundImage: 'linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px)', 
           backgroundSize: '50px 50px' 
@@ -1418,12 +1362,12 @@ export default function Game() {
       {/* ── Time Up Popup ─────────────────────────────────────────────────── */}
       {timeUp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}>
-          <div className="rounded-2xl p-8 flex flex-col items-center gap-4 animate-scale-in relative"
+          <div className="rounded-2xl p-8 flex flex-col items-center gap-4 relative"
             style={{ background: 'linear-gradient(135deg,#1a1a2e,#16213e)', border: '1px solid rgba(248,113,113,0.4)', boxShadow: '0 0 60px rgba(248,113,113,0.3)', minWidth: 280 }}>
             <div className="absolute -inset-1 bg-gradient-to-r from-rose-600/20 to-cyan-600/20 rounded-2xl blur-xl" />
             <div className="relative">
               {/* Ringing clock emoji with shake animation */}
-              <div style={{ fontSize: 64, animation: 'shake 0.4s ease-in-out infinite' }}>⏰</div>
+              <div style={{ fontSize: 64 }}>⏰</div>
             </div>
             <div className="text-2xl font-bold text-white relative">Time's Up!</div>
             <div className="text-sm text-slate-400 text-center relative">
@@ -1445,7 +1389,7 @@ export default function Game() {
       {waitingForOthers && !showCompletionPopup && !gameOver && (
         <div className="fixed inset-0 z-[85] flex items-center justify-center"
           style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)' }}>
-          <div className="relative w-full max-w-sm mx-4 rounded-2xl overflow-hidden animate-scale-in"
+          <div className="relative w-full max-w-sm mx-4 rounded-2xl overflow-hidden "
             style={{
               background: 'linear-gradient(145deg,#0f0f1a,#1a1a2e)',
               border: '1px solid rgba(99,102,241,0.3)',
@@ -1492,7 +1436,7 @@ export default function Game() {
       {showCompletionPopup && !gameOver && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center"
           style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(16px)' }}>
-          <div className="relative w-full max-w-md mx-4 rounded-3xl overflow-hidden animate-scale-in"
+          <div className="relative w-full max-w-md mx-4 rounded-3xl overflow-hidden "
             style={{
               background: 'linear-gradient(145deg,#0f0f1a,#1a1a2e)',
               border: '1px solid rgba(99,102,241,0.35)',
@@ -1636,7 +1580,7 @@ export default function Game() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowCustomWarning(false)}
-                  className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 hover:scale-105"
+                  className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 "
                   style={{ 
                     background: 'rgba(255,255,255,0.05)', 
                     color: '#94a3b8',
@@ -1651,7 +1595,7 @@ export default function Game() {
                     setShowCustomWarning(false)
                     setRightPanelTab('tests')
                   }}
-                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 hover:scale-105"
+                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 "
                   style={{
                     background: '#3b82f6',
                     color: 'white',
@@ -1667,11 +1611,11 @@ export default function Game() {
       )}
 
       {/* LEFT: Activity Bar with Icons */}
-      <div className="w-14 flex flex-col items-center py-3 gap-1 shrink-0 animate-slide-right relative" style={{ background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+      <div className="w-14 flex flex-col items-center py-3 gap-1 shrink-0 relative" style={{ background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
         {/* Problem Icon */}
         <button
           onClick={() => setActivePanel(activePanel === 'problem' ? 'right' : 'problem')}
-          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative group"
+          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 relative group"
           style={{ 
             color: activePanel === 'problem' ? '#60a5fa' : '#64748b',
             background: activePanel === 'problem' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
@@ -1686,7 +1630,7 @@ export default function Game() {
         {/* AI Code Analyzer Icon */}
         <button
           onClick={() => setActivePanel('ai-analyzer')}
-          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative group"
+          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 relative group"
           style={{ 
             color: activePanel === 'ai-analyzer' ? '#60a5fa' : '#64748b',
             background: activePanel === 'ai-analyzer' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
@@ -1697,7 +1641,7 @@ export default function Game() {
         >
           {ACTIVITY_ICONS.aiAnalyzer}
           {debugHint && debugHint.logic_correctness !== undefined && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center animate-scale-in"
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center "
               style={{ 
                 background: debugHint.logic_correctness >= 70 ? '#10b981' : debugHint.logic_correctness >= 40 ? '#f59e0b' : '#ef4444',
                 color: 'white',
@@ -1711,7 +1655,7 @@ export default function Game() {
         {/* Complexity Analyzer Icon */}
         <button
           onClick={() => setActivePanel('complexity')}
-          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative group"
+          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 relative group"
           style={{ 
             color: activePanel === 'complexity' ? '#60a5fa' : '#64748b',
             background: activePanel === 'complexity' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
@@ -1726,7 +1670,7 @@ export default function Game() {
         {/* Leaderboard Icon */}
         <button
           onClick={() => setActivePanel('leaderboard')}
-          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative group"
+          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 relative group"
           style={{ 
             color: activePanel === 'leaderboard' ? '#60a5fa' : '#64748b',
             background: activePanel === 'leaderboard' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
@@ -1742,7 +1686,7 @@ export default function Game() {
         
         {/* Players Icon */}
         <button
-          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative group"
+          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 relative group"
           style={{ 
             color: '#64748b',
             background: 'transparent',
@@ -1756,7 +1700,7 @@ export default function Game() {
 
       {/* AI Code Analyzer Panel - Conditional */}
       {activePanel === 'ai-analyzer' && (
-        <div className="flex flex-col overflow-hidden animate-slide-right relative" style={{ width: `${aiAnalyzerWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex flex-col overflow-hidden relative" style={{ width: `${aiAnalyzerWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
           
           {/* Resize Handle */}
           <div
@@ -1857,7 +1801,7 @@ export default function Game() {
                       }
                     }}
                     disabled={loadingHint}
-                    className="px-2 py-1 rounded text-[10px] font-medium transition-all hover:scale-105"
+                    className="px-2 py-1 rounded text-[10px] font-medium transition-all "
                     style={{ background: 'rgba(59, 130, 246,0.2)', color: '#60a5fa' }}
                   >
                     {loadingHint ? '⏳' : '🔄'} Analyze
@@ -2046,7 +1990,7 @@ export default function Game() {
                         key={prompt}
                         onClick={() => sendGrokMessage(prompt)}
                         disabled={grokLoading}
-                        className="px-2 py-1 rounded-full text-[10px] transition-all hover:scale-105 active:scale-95 disabled:opacity-40"
+                        className="px-2 py-1 rounded-full text-[10px] transition-all active:scale-95 disabled:opacity-40"
                         style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.25)' }}
                       >
                         {prompt}
@@ -2076,7 +2020,7 @@ export default function Game() {
                     <button
                       onClick={() => sendGrokMessage()}
                       disabled={grokLoading || !grokInput.trim()}
-                      className="m-1.5 w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                      className="m-1.5 w-7 h-7 rounded-lg flex items-center justify-center transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
                       style={{ background: grokInput.trim() ? 'linear-gradient(135deg,#2563eb,#a855f7)' : 'rgba(59, 130, 246,0.2)' }}
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -2095,7 +2039,7 @@ export default function Game() {
 
       {/* Complexity Analyzer Panel */}
       {activePanel === 'complexity' && (
-        <div className="flex flex-col overflow-hidden animate-slide-right relative" style={{ width: `${complexityWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex flex-col overflow-hidden relative" style={{ width: `${complexityWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
           
           {/* Resize Handle */}
           <div
@@ -2138,7 +2082,7 @@ export default function Game() {
                 } finally { setLoadingComplexity(false) }
               }}
               disabled={loadingComplexity || !question || !editorCode}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ background: 'rgba(59, 130, 246,0.2)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.4)' }}
             >
               {loadingComplexity
@@ -2384,7 +2328,7 @@ export default function Game() {
                         const text = `Time: ${complexityData.time_complexity?.worst} | Space: ${complexityData.space_complexity?.worst}\n${complexityData.analysis || ''}`
                         navigator.clipboard?.writeText(text).catch(() => {})
                       }}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all hover:scale-105 active:scale-95"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all active:scale-95"
                       style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.3)' }}
                     >
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
@@ -2400,7 +2344,7 @@ export default function Game() {
 
       {/* Leaderboard Panel */}
       {activePanel === 'leaderboard' && (
-        <div className="flex flex-col overflow-hidden animate-slide-right relative" style={{ width: `${leaderboardWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex flex-col overflow-hidden relative" style={{ width: `${leaderboardWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
           
           {/* Resize Handle */}
           <div
@@ -2457,7 +2401,7 @@ export default function Game() {
                   const medals = ['🥇', '🥈', '🥉']
                   return (
                     <div key={entry.player_id ?? entry.id ?? i}
-                      className="rounded-xl p-3 transition-all duration-300 hover:scale-[1.02]"
+                      className="rounded-xl p-3 transition-all duration-300 "
                       style={{
                         background: isMe ? 'rgba(59, 130, 246,0.15)' : 'rgba(255,255,255,0.03)',
                         border: isMe ? '1px solid rgba(59, 130, 246,0.3)' : '1px solid rgba(255,255,255,0.05)',
@@ -2523,7 +2467,7 @@ export default function Game() {
 
       {/* LEFT: Problem Panel */}
       {activePanel === 'problem' && (
-        <div className="flex flex-col overflow-hidden animate-slide-right relative" style={{ width: `${problemWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex flex-col overflow-hidden relative" style={{ width: `${problemWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
           
           {/* Resize Handle */}
           <div
@@ -2539,10 +2483,10 @@ export default function Game() {
           </div>
           
           {/* Header */}
-          <div className="px-5 py-4 shrink-0 animate-slide-down relative" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="px-5 py-4 shrink-0 relative" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-xs transition-all duration-300 hover:scale-110 hover:rotate-6" 
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-xs transition-all duration-300 " 
                   style={{ background: 'linear-gradient(135deg,#3b82f6,#06b6d4)' }}>
                   C
                 </div>
@@ -2550,11 +2494,11 @@ export default function Game() {
               </div>
               <div className="flex items-center gap-2">
                 {totalRounds > 1 && (
-                  <span className="text-xs px-2 py-1 rounded-md font-medium transition-all duration-300 hover:scale-105 animate-fade-in" style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.3)' }}>
+                  <span className="text-xs px-2 py-1 rounded-md font-medium transition-all duration-300 " style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.3)' }}>
                     R{currentRound}/{totalRounds}
                   </span>
                 )}
-                <span className="text-xs px-2 py-1 rounded-md font-medium transition-all duration-300 hover:scale-105 animate-fade-in" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}>
+                <span className="text-xs px-2 py-1 rounded-md font-medium transition-all duration-300 " style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}>
                   Q{totalQuestionsAnswered + 1}/{questionsPerRound * totalRounds}
                 </span>
                 <Timer startedAt={questionStartedAt || startedAt} timeLimit={timeLimit} onExpire={handleTimeUp} />
@@ -2570,17 +2514,17 @@ export default function Game() {
           {/* Question content */}
           <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ padding: '24px' }}>
             {!question ? (
-              <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
+              <div className="flex flex-col items-center justify-center h-full text-center ">
                 <div className="relative mb-6">
-                  <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-full blur-2xl animate-pulse-slow" />
-                  <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-300 hover:scale-110" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
+                  <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-full blur-2xl-slow" />
+                  <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-300 " style={{ background: 'rgba(59, 130, 246,0.1)' }}>
                     <span className="text-4xl animate-pulse">{lobby?.created_by && user?.id && lobby.created_by === user.id ? '🎯' : '⏳'}</span>
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2 animate-slide-up">
+                <h3 className="text-xl font-bold text-white mb-2 ">
                   {lobby?.created_by && user?.id && lobby.created_by === user.id ? 'Ready to Code?' : 'Waiting for Host…'}
                 </h3>
-                <p className="text-slate-400 text-sm mb-8 max-w-xs animate-slide-up" style={{ animationDelay: '0.1s' }}>
+                <p className="text-slate-400 text-sm mb-8 max-w-xs " style={{ animationDelay: '0.1s' }}>
                   {lobby?.created_by && user?.id && lobby.created_by === user.id
                     ? 'Generate a problem to begin the challenge'
                     : 'The host is generating the first question. Hang tight!'}
@@ -2589,14 +2533,14 @@ export default function Game() {
                 {lobby?.created_by && user?.id && lobby.created_by === user.id && (
                   <div className="w-full max-w-sm relative">
                     <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-2xl blur-xl" />
-                    <div className="relative p-5 rounded-xl animate-scale-in transition-all duration-300 hover:-translate-y-1" style={{ background: '#101018', border: '1px solid rgba(255,255,255,0.07)', animationDelay: '0.2s' }}>
+                    <div className="relative p-5 rounded-xl transition-all duration-300 " style={{ background: '#101018', border: '1px solid rgba(255,255,255,0.07)', animationDelay: '0.2s' }}>
                       <div className="mb-4">
                         <label className="block text-xs text-slate-400 mb-2 text-center">Difficulty</label>
                         <div className="flex gap-2">
                           {['easy', 'medium', 'hard'].map(d => (
                             <button key={d}
                               onClick={() => setDifficulty(d)}
-                              className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all duration-300 capitalize hover:scale-105"
+                              className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all duration-300 capitalize "
                               style={{
                                 background: difficulty === d ? DIFFICULTY_COLORS[d].bg : 'rgba(255,255,255,0.03)',
                                 color: difficulty === d ? DIFFICULTY_COLORS[d].text : '#64748b',
@@ -2620,7 +2564,7 @@ export default function Game() {
                       <button
                         onClick={generateQuestion}
                         disabled={generating}
-                        className="relative w-full py-3 rounded-lg text-sm font-semibold text-white transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105 overflow-hidden group"
+                        className="relative w-full py-3 rounded-lg text-sm font-semibold text-white transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden group"
                         style={{ opacity: generating ? 0.5 : 1 }}
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600" />
@@ -2643,11 +2587,11 @@ export default function Game() {
                 )}
               </div>
             ) : (
-              <div className="animate-fade-in">
+              <div className="">
                 <div className="mb-6">
                   <div className="flex items-start justify-between mb-3">
-                    <h1 className="text-2xl font-bold text-white leading-tight pr-4 animate-slide-up">{question.title}</h1>
-                    <span className="shrink-0 px-3 py-1 rounded-full text-xs font-semibold capitalize animate-scale-in transition-all hover-scale"
+                    <h1 className="text-2xl font-bold text-white leading-tight pr-4 ">{question.title}</h1>
+                    <span className="shrink-0 px-3 py-1 rounded-full text-xs font-semibold capitalize transition-all "
                       style={{
                         background: DIFFICULTY_COLORS[question.difficulty]?.bg || 'rgba(255,255,255,0.1)',
                         color: DIFFICULTY_COLORS[question.difficulty]?.text || '#94a3b8',
@@ -2657,19 +2601,19 @@ export default function Game() {
                     </span>
                   </div>
                   {question.topic && (
-                    <span className="inline-block px-2 py-1 rounded text-xs font-medium animate-slide-right transition-all hover-scale" style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa' }}>
+                    <span className="inline-block px-2 py-1 rounded text-xs font-medium transition-all " style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa' }}>
                       #{question.topic}
                     </span>
                   )}
                 </div>
 
-                <div className="animate-slide-up" style={{ fontSize: '14px', lineHeight: '1.8', animationDelay: '0.1s' }}>
+                <div className="" style={{ fontSize: '14px', lineHeight: '1.8', animationDelay: '0.1s' }}>
                   {renderMarkdown(question.description)}
                 </div>
 
                 {/* Diagram for tree/graph questions */}
                 {question.diagram && (
-                  <div className="mt-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                  <div className="mt-6 " style={{ animationDelay: '0.2s' }}>
                     <div className="text-xs font-semibold text-blue-300 uppercase tracking-wider mb-3 flex items-center gap-2">
                       <span style={{ 
                         width: '3px', 
@@ -2723,7 +2667,7 @@ export default function Game() {
                       <button
                         onClick={generateQuestion}
                         disabled={generating}
-                        className="relative px-4 rounded-lg text-sm font-medium text-white transition-all duration-300 shrink-0 h-9 hover:scale-105 overflow-hidden group"
+                        className="relative px-4 rounded-lg text-sm font-medium text-white transition-all duration-300 shrink-0 h-9 overflow-hidden group"
                         style={{ opacity: generating ? 0.5 : 1 }}
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600" />
@@ -2760,13 +2704,13 @@ export default function Game() {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Editor Header */}
-        <div className="h-11 flex items-center px-4 gap-4 shrink-0 animate-slide-down relative" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="h-11 flex items-center px-4 gap-4 shrink-0 relative" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div className="flex items-center gap-1">
             {LANGUAGES.map(l => (
               <button
                 key={l.value}
                 onClick={() => changeLang(l.value)}
-                className="px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 hover:scale-105"
+                className="px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 "
                 style={{
                   background: lang === l.value ? 'rgba(59, 130, 246,0.2)' : 'transparent',
                   color: lang === l.value ? '#60a5fa' : '#64748b',
@@ -2784,7 +2728,7 @@ export default function Game() {
             <button
               onClick={runCode}
               disabled={runningCustom || !question}
-              className="px-4 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 flex items-center gap-1.5 hover:scale-105"
+              className="px-4 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 flex items-center gap-1.5 "
               style={{
                 background: useCustomInput ? 'rgba(59, 130, 246,0.2)' : 'rgba(255,255,255,0.06)',
                 color: useCustomInput ? '#60a5fa' : '#94a3b8',
@@ -2799,7 +2743,7 @@ export default function Game() {
             <button
               onClick={submitCode}
               disabled={submitting || !question}
-              className="relative px-5 py-1.5 rounded-lg text-xs font-semibold text-white transition-all duration-300 flex items-center gap-1.5 hover:scale-105 overflow-hidden group"
+              className="relative px-5 py-1.5 rounded-lg text-xs font-semibold text-white transition-all duration-300 flex items-center gap-1.5 overflow-hidden group"
               style={{
                 opacity: (!question || submitting) ? 0.5 : 1,
               }}
@@ -2815,7 +2759,7 @@ export default function Game() {
           
           {/* Logic Analysis Display */}
           {result && result.logic_analysis && (
-            <div className="ml-4 px-4 py-2 rounded-lg flex items-center gap-3 animate-fade-in" 
+            <div className="ml-4 px-4 py-2 rounded-lg flex items-center gap-3 " 
               style={{ 
                 background: result.logic_analysis.logic_correctness >= 70 
                   ? 'rgba(16,185,129,0.15)' 
@@ -2926,7 +2870,7 @@ export default function Game() {
         </div>
 
         {/* Bottom Panel */}
-        <div className="shrink-0 flex flex-col animate-slide-up relative transition-all duration-300" style={{ height: bottomPanelMinimized ? '40px' : '300px', background: '#101018', borderTop: '2px solid rgba(59, 130, 246,0.3)' }}>
+        <div className="shrink-0 flex flex-col relative transition-all duration-300" style={{ height: bottomPanelMinimized ? '40px' : '300px', background: '#101018', borderTop: '2px solid rgba(59, 130, 246,0.3)' }}>
 
           {/* Tabs Header */}
           <div className="flex items-center justify-between px-2 shrink-0 h-10" style={{ borderBottom: bottomPanelMinimized ? 'none' : '1px solid rgba(255,255,255,0.07)' }}>
@@ -2939,7 +2883,7 @@ export default function Game() {
                     setRightPanelTab('tests')
                   }
                 }}
-                className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 hover:scale-105 relative"
+                className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 relative"
                 style={{ color: rightPanelTab === 'tests' ? '#60a5fa' : '#64748b' }}
               >
                 {rightPanelTab === 'tests' && (
@@ -2956,7 +2900,7 @@ export default function Game() {
               </button>
               <button
                 onClick={() => setRightPanelTab('custom')}
-                className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 hover:scale-105 relative"
+                className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 relative"
                 style={{ color: rightPanelTab === 'custom' ? '#60a5fa' : '#64748b' }}
               >
                 {rightPanelTab === 'custom' && (
@@ -2972,7 +2916,7 @@ export default function Game() {
               </button>
               <button
                 onClick={() => setRightPanelTab('console')}
-                className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 hover:scale-105 relative"
+                className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 relative"
                 style={{ color: rightPanelTab === 'console' ? '#60a5fa' : '#64748b' }}
               >
                 {rightPanelTab === 'console' && (
@@ -2984,7 +2928,7 @@ export default function Game() {
               {result && result.logic_analysis && (
                 <button
                   onClick={() => setRightPanelTab('logic')}
-                  className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 hover:scale-105 animate-fade-in relative"
+                  className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 relative"
                   style={{ color: rightPanelTab === 'logic' ? '#60a5fa' : '#64748b' }}
                 >
                   {rightPanelTab === 'logic' && (
@@ -3021,7 +2965,7 @@ export default function Game() {
               </button>
               <button
                 onClick={() => setBottomPanelMinimized(!bottomPanelMinimized)}
-                className="px-3 py-1.5 rounded text-slate-500 hover:text-blue-400 transition-all duration-300 text-xs flex items-center gap-1 hover:scale-110"
+                className="px-3 py-1.5 rounded text-slate-500 hover:text-blue-400 transition-all duration-300 text-xs flex items-center gap-1 "
                 title={bottomPanelMinimized ? "Maximize panel" : "Minimize panel"}
               >
                 <svg 

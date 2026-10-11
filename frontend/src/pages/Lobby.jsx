@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext'
 function PulseDot() {
   return (
     <span className="relative flex w-2.5 h-2.5">
-      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
+      <span className=" absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60" />
       <span className="relative inline-flex rounded-full w-2.5 h-2.5 bg-emerald-400" />
     </span>
   )
@@ -30,7 +30,7 @@ function Avatar({ name, size = 'md', isYou = false }) {
 function StatCard({ label, value, icon }) {
   return (
     <div className="flex flex-col items-center py-4 px-3 rounded-2xl bg-white/[0.03] border border-white/[0.07] hover:border-blue-500/25 hover:bg-blue-500/5 transition-all duration-300 group">
-      <span className="text-lg mb-1 group-hover:scale-110 transition-transform duration-300">{icon}</span>
+      <span className="text-lg mb-1 transition-transform duration-300">{icon}</span>
       <span className="text-xl font-black text-white">{value}</span>
       <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest mt-0.5">{label}</span>
     </div>
@@ -122,28 +122,21 @@ export default function Lobby() {
   return (
     <>
       <style>{`
-        @keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-25px) scale(1.06)}}
-        @keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-        @keyframes playerIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:translateX(0)}}
-        @keyframes codePulse{0%,100%{letter-spacing:.15em;text-shadow:0 0 20px rgba(59, 130, 246,0.4)}50%{letter-spacing:.22em;text-shadow:0 0 40px rgba(59, 130, 246,0.7)}}
-        .slide-up{animation:slideUp 0.5s cubic-bezier(0.16,1,0.3,1) forwards;}
-        .player-in{animation:playerIn 0.35s ease-out forwards;}
       `}</style>
 
       <div className="min-h-screen bg-[#040811] relative overflow-hidden" style={{ fontFamily: 'Inter, sans-serif' }}>
         {/* Background */}
         <div className="fixed inset-0 -z-10 pointer-events-none">
           <div className="absolute inset-0" style={{ backgroundImage: 'linear-gradient(rgba(59, 130, 246,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246,0.04) 1px, transparent 1px)', backgroundSize: '64px 64px' }} />
-          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/8 rounded-full blur-[120px]" style={{ animation: 'orbFloat 20s ease-in-out infinite' }} />
-          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-cyan-600/6 rounded-full blur-[100px]" style={{ animation: 'orbFloat 26s ease-in-out infinite reverse', animationDelay: '-8s' }} />
+          <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-600/8 rounded-full blur-[120px]"  />
+          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-cyan-600/6 rounded-full blur-[100px]"  />
         </div>
 
         {/* Nav */}
-        <nav className="border-b border-white/[0.05] bg-white/[0.02] backdrop-blur-sm px-6 py-3.5" style={{ animation: 'fadeIn 0.4s ease' }}>
+        <nav className="border-b border-white/[0.05] bg-white/[0.02] backdrop-blur-sm px-6 py-3.5">
           <div className="max-w-xl mx-auto flex items-center justify-between">
             <button onClick={() => nav('/home')} className="flex items-center gap-2.5 group">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center shadow-lg shadow-blue-500/20 transition-all duration-300">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
               </div>
               <span className="font-black text-white text-base tracking-tight">CompileX</span>
@@ -159,7 +152,7 @@ export default function Lobby() {
         <div className="max-w-xl mx-auto px-4 py-8 space-y-4">
 
           {/* Title */}
-          <div className="slide-up text-center pt-2 pb-2">
+          <div className="text-center pt-2 pb-2">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.07] text-xs font-bold text-slate-400 mb-4">
               <span>{modeIcon[lobby?.game_mode] || '⚔️'}</span>
               {modeLabel[lobby?.game_mode] || 'Match'}
@@ -169,14 +162,14 @@ export default function Lobby() {
           </div>
 
           {/* Lobby code */}
-          <div className="slide-up" style={{ animationDelay: '0.06s' }}>
+          <div className="" style={{ animationDelay: '0.06s' }}>
             <button onClick={copyCode}
-              className="relative w-full py-7 rounded-2xl border transition-all duration-300 overflow-hidden group hover:scale-[1.01] active:scale-[0.99]"
+              className="relative w-full py-7 rounded-2xl border transition-all duration-300 overflow-hidden group active:scale-[0.99]"
               style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246,0.08), rgba(244,114,182,0.05))', borderColor: copied ? 'rgba(59, 130, 246,0.5)' : 'rgba(255,255,255,0.08)' }}>
               {/* Shimmer on hover */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.04] to-transparent -translate-x-full transition-transform duration-700" />
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3">Lobby Code</p>
-              <p className="font-mono font-black text-5xl tracking-[0.18em] text-white" style={{ animation: 'codePulse 3s ease-in-out infinite', background: 'linear-gradient(135deg, #60a5fa, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              <p className="font-mono font-black text-5xl tracking-[0.18em] text-white" style={{ background: 'linear-gradient(135deg, #60a5fa, #22d3ee)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                 {code}
               </p>
               <p className={`text-xs mt-3 font-semibold transition-colors duration-300 ${copied ? 'text-emerald-400' : 'text-slate-600 group-hover:text-slate-400'}`}>
@@ -186,7 +179,7 @@ export default function Lobby() {
           </div>
 
           {/* Match config */}
-          <div className="slide-up" style={{ animationDelay: '0.12s' }}>
+          <div className="" style={{ animationDelay: '0.12s' }}>
             <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] p-5">
               <div className="flex items-center justify-between mb-4">
                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Match Config</p>
@@ -209,7 +202,7 @@ export default function Lobby() {
           </div>
 
           {/* Players */}
-          <div className="slide-up" style={{ animationDelay: '0.18s' }}>
+          <div className="" style={{ animationDelay: '0.18s' }}>
             <div className="rounded-2xl border border-white/[0.07] bg-white/[0.02] overflow-hidden">
               <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.05]">
                 <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Players</p>
@@ -236,7 +229,7 @@ export default function Lobby() {
                   players.map((p, i) => {
                     const isYou = p.username === user.username
                     return (
-                      <div key={p.id ?? i} className="player-in flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 hover:bg-white/[0.04]"
+                      <div key={p.id ?? i} className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 hover:bg-white/[0.04]"
                         style={{ animationDelay: `${i * 60}ms`, background: isYou ? 'rgba(59, 130, 246,0.06)' : 'transparent', border: isYou ? '1px solid rgba(59, 130, 246,0.2)' : '1px solid transparent' }}>
                         <Avatar name={p.username} isYou={isYou} />
                         <div className="flex-1 min-w-0">
@@ -253,15 +246,15 @@ export default function Lobby() {
           </div>
 
           {/* Action */}
-          <div className="slide-up pb-8" style={{ animationDelay: '0.24s' }}>
+          <div className="pb-8" style={{ animationDelay: '0.24s' }}>
             {isHost ? (
               <>
                 <button onClick={startGame}
-                  className="relative w-full py-4 rounded-2xl font-black text-white text-base overflow-hidden group transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] hover:shadow-xl hover:shadow-blue-500/20">
+                  className="relative w-full py-4 rounded-2xl font-black text-white text-base overflow-hidden group transition-all duration-300 active:scale-[0.98] hover:shadow-xl hover:shadow-blue-500/20">
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600" />
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   {/* Shimmer */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-600" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full transition-transform duration-600" />
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     <span className="text-lg group-hover:animate-bounce">🚀</span>
                     Launch Match

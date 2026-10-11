@@ -148,7 +148,7 @@ function LoadingQuestion({ slot, dimension }) {
       </div>
       <div className="flex gap-2">
         {Array.from({ length: TOTAL_QUESTIONS }).map((_, i) => (
-          <div key={i} className={`w-2 h-2 rounded-full transition-all ${i < slot ? 'bg-blue-500' : i === slot ? 'bg-blue-400 animate-pulse scale-150' : 'bg-gray-700'}`} />
+          <div key={i} className={`w-2 h-2 rounded-full transition-all ${i < slot ? 'bg-blue-500' : i === slot ? 'bg-blue-400 scale-150' : 'bg-gray-700'}`} />
         ))}
       </div>
     </div>
@@ -190,16 +190,6 @@ function ResultScreen({ rating, tier, topicScores, questionResults, onContinue }
 
   return (
     <div className={`min-h-screen bg-gray-950 transition-opacity duration-700 ${shown ? 'opacity-100' : 'opacity-0'}`}>
-      {/* Ambient particles */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {Array.from({ length: 25 }).map((_, i) => (
-          <div key={i} className="absolute rounded-full animate-ping"
-            style={{ width: `${3 + (i % 5) * 2}px`, height: `${3 + (i % 5) * 2}px`,
-              left: `${(i * 37) % 100}%`, top: `${(i * 53) % 100}%`,
-              backgroundColor: ['#3b82f6','#10b981','#3b82f6','#f59e0b','#ef4444'][i % 5],
-              animationDelay: `${(i * 0.3) % 3}s`, animationDuration: `${2 + (i % 3)}s`, opacity: 0.12 }} />
-        ))}
-      </div>
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 py-12">
         {/* Hero */}
@@ -293,7 +283,7 @@ function ResultScreen({ rating, tier, topicScores, questionResults, onContinue }
         </div>
 
         <button onClick={onContinue}
-          className="w-full py-5 rounded-2xl font-black text-white text-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-2xl"
+          className="w-full py-5 rounded-2xl font-black text-white text-xl transition-all duration-200 active:scale-[0.98] shadow-2xl"
           style={{ background: `linear-gradient(135deg, ${cfg.color}dd, ${cfg.color}88)`, boxShadow: `0 20px 60px ${cfg.glow}` }}>
           Start Coding as {tier?.name} →
         </button>
@@ -372,7 +362,7 @@ function IntroScreen({ onStart, onSkip }) {
         </div>
 
         <button onClick={onStart}
-          className="w-full py-5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] mb-3 shadow-lg shadow-blue-500/20 mt-4">
+          className="w-full py-5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xl transition-all duration-200 active:scale-[0.98] mb-3 shadow-lg shadow-blue-500/20 mt-4">
           Start My Assessment
         </button>
         <button onClick={onSkip}
@@ -673,7 +663,7 @@ export default function SkillAssessment() {
               const r = questionResults[i]
               return (
                 <div key={i} className={`transition-all duration-300 rounded-full ${
-                  i < questionResults.length
+ i < questionResults.length
                     ? r?.passed ? 'w-3 h-3 bg-emerald-500' : r?.partial ? 'w-3 h-3 bg-amber-500' : 'w-3 h-3 bg-red-500'
                     : i === currentSlot ? 'w-4 h-4 bg-blue-500 ring-2 ring-blue-500/30' : 'w-3 h-3 bg-gray-700'
                 }`} />
