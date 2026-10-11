@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
+import Icon from '../components/Icons'
 
 const diffColor = {
   easy: 'text-emerald bg-emerald/10 border-emerald/20',
@@ -136,7 +137,7 @@ export default function TournamentDetail() {
         {matchLobbyCode && (
           <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-6 animate-pulse">
             <div className="flex items-center gap-3">
-              <span className="text-2xl">⚔️</span>
+              <Icon name="duel" size={26} className="text-emerald-400" />
               <div>
                 <div className="text-emerald-400 font-bold">Your match is ready!</div>
                 <div className="text-xs text-slate-400">Lobby: <span className="font-mono text-emerald-300">{matchLobbyCode}</span></div>
@@ -218,7 +219,7 @@ export default function TournamentDetail() {
                   disabled={starting || (t.participants?.length ?? t.participant_count) < 2}
                   className="py-2.5 px-6 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-medium hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {starting ? 'Starting...' : '🚀 Start Tournament'}
+                  {starting ? 'Starting...' : 'Start Tournament'}
                 </button>
                 {(t.participants?.length ?? t.participant_count) < 2 && (
                   <span className="text-xs text-amber-400 text-center">Need at least 2 participants</span>

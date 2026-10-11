@@ -4,13 +4,14 @@ import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 
 const modeIcon = {
-  multiplayer: '👥',
-  '1v1': '⚔️',
-  tournament: '🏆',
-  solo: '🧠',
+  multiplayer: 'users',
+  '1v1': 'duel',
+  tournament: 'trophy',
+  solo: 'target',
 }
 
 import AnimatedBackgroundCSS from '../components/AnimatedBackgroundCSS'
+import Icon from '../components/Icons'
 
 export default function MatchHistory() {
   const { user } = useAuth()
@@ -85,7 +86,7 @@ export default function MatchHistory() {
                 </div>
               </div>
               
-              <h2 className="text-2xl font-black text-white mb-3 tracking-tight">No Battles Yet</h2>
+              <h2 className="text-2xl font-extrabold text-white mb-3 tracking-tight">No Battles Yet</h2>
               <p className="text-slate-400 max-w-md mx-auto mb-8 leading-relaxed">
                 Your match history is currently empty. Step into the arena, compete against others, and start building your legacy!
               </p>
@@ -118,7 +119,7 @@ export default function MatchHistory() {
                     }`}
                   >
                     <div className="text-2xl w-10 text-center shrink-0 transition-transform duration-300 ">
-                      {modeIcon[m.game_mode] || '🎮'}
+                      <Icon name={modeIcon[m.game_mode] || 'play'} size={22} className="mx-auto text-slate-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-0.5">
@@ -132,7 +133,7 @@ export default function MatchHistory() {
                     </div>
                     <div className="text-right shrink-0">
                       <div className="text-lg font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">{m.player_score}</div>
-                      <div className="text-[10px] text-slate-500 uppercase tracking-wider">pts</div>
+                      <div className="text-[10px] text-slate-500">pts</div>
                     </div>
                   </div>
                 )
