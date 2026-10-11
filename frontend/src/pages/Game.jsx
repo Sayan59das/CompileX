@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import Editor from '@monaco-editor/react'
+import Icon from '../components/Icons'
 import { connectSocket } from '../services/socket'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
@@ -10,11 +11,11 @@ import { attachProtectedRegion } from '../utils/protectedRegion'
 import MathText from '../components/MathText'
 
 const LANGUAGES = [
-  { value: 'python', label: 'Python', monaco: 'python', icon: '🐍', color: '#3776ab' },
-  { value: 'javascript', label: 'JavaScript', monaco: 'javascript', icon: '📜', color: '#f7df1e' },
-  { value: 'cpp', label: 'C++', monaco: 'cpp', icon: '⚡', color: '#00599c' },
-  { value: 'java', label: 'Java', monaco: 'java', icon: '☕', color: '#ed8b00' },
-  { value: 'c', label: 'C', monaco: 'c', icon: '🔧', color: '#a8b9cc' },
+  { value: 'python', label: 'Python', monaco: 'python' },
+  { value: 'javascript', label: 'JavaScript', monaco: 'javascript' },
+  { value: 'cpp', label: 'C++', monaco: 'cpp' },
+  { value: 'java', label: 'Java', monaco: 'java' },
+  { value: 'c', label: 'C', monaco: 'c' },
 ]
 
 const STARTER = {
@@ -420,11 +421,11 @@ export default function Game() {
 
   function _perfectSuggestions() {
     const pool = [
-      '✅ Perfect score! All test cases passed.',
-      '🎉 Flawless solution — every test case passed!',
-      '✅ All tests green! Your logic is correct.',
-      '🏆 Perfect! Submit to lock in your score.',
-      '✅ 100% — excellent work!',
+      'Perfect score! All test cases passed.',
+      'Flawless solution — every test case passed!',
+      'All tests green! Your logic is correct.',
+      'Perfect! Submit to lock in your score.',
+      '100% — excellent work!',
     ]
     return [pool[Math.floor(Math.random() * pool.length)]]
   }
@@ -438,32 +439,32 @@ export default function Game() {
 
     if (pct === 0) {
       pool.push(
-        `❌ All ${total} test cases failing — check your core algorithm logic`,
-        `🔍 Start by tracing through the sample input manually`,
-        `⚠️ Your output format may be wrong — check the expected output carefully`,
-        `💡 Make sure you're reading the input correctly (check the Input Format section)`,
-        `🧪 Add print statements to see what your code actually produces`,
+        `All ${total} test cases failing — check your core algorithm logic`,
+        `Start by tracing through the sample input manually`,
+        `Your output format may be wrong — check the expected output carefully`,
+        `Make sure you're reading the input correctly (check the Input Format section)`,
+        `Add print statements to see what your code actually produces`,
       )
     } else if (pct < 50) {
       pool.push(
-        `❌ ${failed} test case${failed > 1 ? 's' : ''} failing — your approach handles some cases but misses others`,
-        `🔍 Check edge cases: empty input, single element, all-same values`,
-        `⚠️ Your logic works for simple cases but breaks on complex ones`,
-        `💡 Look at the first failing test — what's different about that input?`,
-        `🧪 Compare your output format with the expected output exactly`,
+        `${failed} test case${failed > 1 ? 's' : ''} failing — your approach handles some cases but misses others`,
+        `Check edge cases: empty input, single element, all-same values`,
+        `Your logic works for simple cases but breaks on complex ones`,
+        `Look at the first failing test — what's different about that input?`,
+        `Compare your output format with the expected output exactly`,
       )
     } else if (pct < 100) {
       pool.push(
-        `⚠️ ${failed} edge case${failed > 1 ? 's' : ''} still failing — you're close!`,
-        `🔍 Check: negative numbers, zero values, maximum constraints`,
-        `💡 Your main logic is right — look for off-by-one errors or boundary conditions`,
-        `🧪 Click a failing test case to compare expected vs actual output`,
-        `⚠️ Check if your solution handles the minimum and maximum input sizes`,
+        `${failed} edge case${failed > 1 ? 's' : ''} still failing — you're close!`,
+        `Check: negative numbers, zero values, maximum constraints`,
+        `Your main logic is right — look for off-by-one errors or boundary conditions`,
+        `Click a failing test case to compare expected vs actual output`,
+        `Check if your solution handles the minimum and maximum input sizes`,
       )
     }
 
     // Always add a "click failing test" hint
-    pool.push(`🧪 Click a failing test case below to see the exact input, expected, and actual output`)
+    pool.push(`Click a failing test case below to see the exact input, expected, and actual output`)
 
     // Shuffle and pick 2–3 unique suggestions
     const shuffled = pool.sort(() => Math.random() - 0.5)
@@ -919,7 +920,7 @@ export default function Game() {
       setGrokMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
     } catch (err) {
       const errMsg = err.response?.data?.detail || 'Failed to get AI response. Please try again.'
-      setGrokMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${errMsg}` }])
+      setGrokMessages(prev => [...prev, { role: 'assistant', content: `${errMsg}` }])
     } finally {
       setGrokLoading(false)
     }
@@ -1231,7 +1232,7 @@ export default function Game() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-hero-glow pointer-events-none" />
         <div className="relative text-center ">
-          <div className="text-5xl mb-4">📊</div>
+          <Icon name="bars" size={44} className="mb-4" />
           <h2 className="text-3xl font-extrabold text-white mb-1">Round {currentRound} Complete</h2>
           <p className="text-slate-400 mb-6">{isLastRound ? 'Final standings' : `${totalRounds - currentRound} round(s) remaining`}</p>
           <div className="glass rounded-2xl p-6 w-full max-w-sm mx-auto glow mb-6">
@@ -1261,10 +1262,10 @@ export default function Game() {
         <div className="relative w-full max-w-lg ">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="text-6xl mb-3">🏆</div>
+            <Icon name="trophy" size={52} className="mb-3" />
             <h2 className="text-4xl font-extrabold text-white mb-1">Game Over!</h2>
             {myRank === 1
-              ? <p className="text-amber-400 font-semibold">You won! 🎉</p>
+              ? <p className="text-amber-400 font-semibold">You won!</p>
               : myRank
               ? <p className="text-slate-400">You finished #{myRank}</p>
               : <p className="text-slate-400">Final standings</p>
@@ -1275,7 +1276,7 @@ export default function Game() {
           <div className="rounded-2xl overflow-hidden mb-6"
             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
             {/* Table header */}
-            <div className="grid grid-cols-12 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500"
+            <div className="grid grid-cols-12 px-5 py-3 text-[11px] font-semibold text-slate-500"
               style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <span className="col-span-1">#</span>
               <span className="col-span-7">Player</span>
@@ -1288,7 +1289,7 @@ export default function Game() {
             ) : (
               leaderboard.map((entry, i) => {
                 const isMe = (entry.player_id ?? entry.id) === playerId
-                const medals = ['🥇', '🥈', '🥉']
+                const medals = ['1', '2', '3']
                 return (
                   <div key={entry.player_id ?? entry.id ?? i}
                     className="grid grid-cols-12 px-5 py-4 items-center transition-all"
@@ -1367,7 +1368,7 @@ export default function Game() {
             <div className="absolute -inset-1 bg-gradient-to-r from-rose-600/20 to-cyan-600/20 rounded-2xl blur-xl" />
             <div className="relative">
               {/* Ringing clock emoji with shake animation */}
-              <div style={{ fontSize: 64 }}>⏰</div>
+              <Icon name="clock" size={14} className="" />
             </div>
             <div className="text-2xl font-bold text-white relative">Time's Up!</div>
             <div className="text-sm text-slate-400 text-center relative">
@@ -1448,7 +1449,7 @@ export default function Game() {
             <div className="p-8">
               {/* Header */}
               <div className="text-center mb-6">
-                <div className="text-6xl mb-3">⚡</div>
+                <Icon name="bolt" size={52} className="mb-3" />
                 <h2 className="text-2xl font-extrabold text-white mb-2">You're Fast!</h2>
                 <p className="text-slate-400 text-sm leading-relaxed">
                   You've completed all {questionsPerRound * totalRounds} question{questionsPerRound * totalRounds !== 1 ? 's' : ''}.
@@ -1487,11 +1488,11 @@ export default function Game() {
               {/* Live leaderboard */}
               <div className="rounded-2xl overflow-hidden mb-6"
                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <div className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2"
+                <div className="px-4 py-2.5 text-[10px] font-bold text-slate-500 flex items-center gap-2"
                   style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                  <span>🏆</span> Live Standings
+                  <Icon name="trophy" size={14} className="" /> Live Standings
                 </div>
-                <div className="grid grid-cols-12 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-600"
+                <div className="grid grid-cols-12 px-4 py-2 text-[10px] font-bold text-slate-600"
                   style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                   <span className="col-span-1">#</span>
                   <span className="col-span-7">Player</span>
@@ -1504,7 +1505,7 @@ export default function Game() {
                 ) : (
                   leaderboard.map((entry, i) => {
                     const isMe = (entry.player_id ?? entry.id) === playerId
-                    const medals = ['🥇', '🥈', '🥉']
+                    const medals = ['1', '2', '3']
                     return (
                       <div key={entry.player_id ?? entry.id ?? i}
                         className="grid grid-cols-12 px-4 py-3 items-center"
@@ -1718,7 +1719,7 @@ export default function Game() {
           {/* Header */}
           <div className="px-4 py-3 shrink-0" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="flex items-center gap-2">
-              <span className="text-xl">🤖</span>
+              <Icon name="message" size={20} className="" />
               <div>
                 <div className="text-sm font-bold text-white">AI Code Analyzer</div>
                 <div className="text-[10px] text-slate-500">Real-time feedback</div>
@@ -1731,14 +1732,14 @@ export default function Game() {
           {!question ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                <span className="text-3xl">🎯</span>
+                <Icon name="target" size={30} className="" />
               </div>
               <div className="text-sm text-slate-400">Generate a problem to start</div>
             </div>
           ) : !editorCode || editorCode === STARTER[lang] || editorCode === generateCodeTemplate(question, lang) ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                <span className="text-3xl">✍️</span>
+                <Icon name="pencil" size={30} className="" />
               </div>
               <div className="text-sm text-slate-400 px-4">Start writing code to get AI analysis</div>
             </div>
@@ -1747,7 +1748,7 @@ export default function Game() {
               {/* Code Correctness */}
               <div className="rounded-xl p-4" style={{ background: 'rgba(59, 130, 246,0.1)', border: '1px solid rgba(59, 130, 246,0.3)' }}>
                 <div className="flex items-center justify-between mb-3">
-                  <div className="text-xs font-semibold text-blue-300 uppercase tracking-wider">Code Analysis</div>
+                  <div className="text-xs font-semibold text-blue-300">Code Analysis</div>
                   <button 
                     onClick={async () => {
                       if (!question || !editorCode) return
@@ -1804,7 +1805,7 @@ export default function Game() {
                     className="px-2 py-1 rounded text-[10px] font-medium transition-all "
                     style={{ background: 'rgba(59, 130, 246,0.2)', color: '#60a5fa' }}
                   >
-                    {loadingHint ? '⏳' : '🔄'} Analyze
+                    {loadingHint ? 'Analyzing…' : 'Analyze'}
                   </button>
                 </div>
 
@@ -1845,7 +1846,7 @@ export default function Game() {
 
                     {/* Predicted Score */}
                     <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                      <div className="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider mb-1">Predicted Score</div>
+                      <div className="text-[10px] text-emerald-400 font-semibold mb-1">Predicted Score</div>
                       <div className="flex items-baseline gap-2">
                         {debugHint.is_pre_submission ? (
                           <span className="text-sm text-slate-400">Run tests first</span>
@@ -1862,7 +1863,7 @@ export default function Game() {
                     {/* AI Analysis */}
                     {debugHint.analysis && (
                       <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)' }}>
-                        <div className="text-[10px] text-blue-300 font-semibold uppercase tracking-wider mb-2">AI Feedback</div>
+                        <div className="text-[10px] text-blue-300 font-semibold mb-2">AI Feedback</div>
                         <div className="text-xs text-slate-300 leading-relaxed">{debugHint.analysis}</div>
                       </div>
                     )}
@@ -1870,8 +1871,8 @@ export default function Game() {
                     {/* Suggestions */}
                     {debugHint.suggestions && debugHint.suggestions.length > 0 && (
                       <div className="rounded-lg p-3" style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.2)' }}>
-                        <div className="text-[10px] text-yellow-300 font-semibold uppercase tracking-wider mb-2 flex items-center gap-1">
-                          <span>💡</span> Hints to Improve
+                        <div className="text-[10px] text-yellow-300 font-semibold mb-2 flex items-center gap-1">
+                          <Icon name="bulb" size={14} className="" /> Hints to Improve
                         </div>
                         <ul className="space-y-1.5">
                           {debugHint.suggestions.slice(0, 3).map((suggestion, idx) => (
@@ -1907,7 +1908,7 @@ export default function Game() {
               {/* Test Results (if available) */}
               {testCaseDetails.length > 0 && (
                 <div className="rounded-xl p-4" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                  <div className="text-xs font-semibold text-emerald-300 uppercase tracking-wider mb-3">Test Results</div>
+                  <div className="text-xs font-semibold text-emerald-300 mb-3">Test Results</div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-slate-400">Tests Passed</span>
                     <span className="text-lg font-bold" style={{ color: passedCount === totalTests ? '#34d399' : '#fbbf24' }}>
@@ -1922,9 +1923,9 @@ export default function Game() {
                 {/* Chat header */}
                 <div className="px-3 py-2.5 flex items-center justify-between" style={{ background: 'rgba(59, 130, 246,0.12)', borderBottom: '1px solid rgba(59, 130, 246,0.2)' }}>
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[11px]" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[11px]" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}><Icon name="message" size={11} className="text-white" /></div>
                     <span className="text-xs font-bold text-white">Ask AI Coach</span>
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase" style={{ background: 'rgba(59, 130, 246,0.25)', color: '#60a5fa' }}>NVIDIA</span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ background: 'rgba(59, 130, 246,0.25)', color: '#60a5fa' }}>NVIDIA</span>
                   </div>
                   {grokMessages.length > 0 && (
                     <button
@@ -1941,7 +1942,7 @@ export default function Game() {
                 <div className="overflow-y-auto p-3 space-y-3" style={{ maxHeight: '320px', minHeight: grokMessages.length === 0 ? '0px' : '120px' }}>
                   {grokMessages.length === 0 && (
                     <div className="text-center py-4">
-                      <div className="text-2xl mb-2">✦</div>
+                      <Icon name="message" size={24} className="mx-auto mb-2 text-slate-500" />
                       <div className="text-[11px] text-slate-400 mb-1">Ask anything about your code</div>
                       <div className="text-[10px] text-slate-600">e.g. "Why is my solution O(n²)?" or "How do I fix this bug?"</div>
                     </div>
@@ -1949,7 +1950,7 @@ export default function Game() {
                   {grokMessages.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       {msg.role === 'assistant' && (
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}><Icon name="message" size={11} className="text-white" /></div>
                       )}
                       <div
                         className="rounded-xl px-3 py-2 text-[11px] leading-relaxed max-w-[85%]"
@@ -1964,7 +1965,7 @@ export default function Game() {
                   ))}
                   {grokLoading && (
                     <div className="flex justify-start">
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}><Icon name="message" size={11} className="text-white" /></div>
                       <div className="rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
                         <div className="flex gap-1 items-center h-4">
                           <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -2087,7 +2088,7 @@ export default function Game() {
             >
               {loadingComplexity
                 ? <><span className="animate-spin inline-block">⏳</span> Analyzing…</>
-                : <><span>⚡</span> Analyze</>}
+                : <><Icon name="bolt" size={14} className="" /> Analyze</>}
             </button>
           </div>
 
@@ -2096,21 +2097,21 @@ export default function Game() {
             {!question ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-12">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                  <span className="text-2xl">🎯</span>
+                  <Icon name="target" size={24} className="" />
                 </div>
                 <div className="text-sm text-slate-400">Generate a problem to start</div>
               </div>
             ) : !editorCode || editorCode === STARTER[lang] || editorCode === generateCodeTemplate(question, lang) ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-12">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                  <span className="text-2xl">✍️</span>
+                  <Icon name="pencil" size={24} className="" />
                 </div>
                 <div className="text-sm text-slate-400 px-4">Write some code, then click Analyze</div>
               </div>
             ) : !complexityData ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-12">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                  <span className="text-2xl">⚡</span>
+                  <Icon name="bolt" size={24} className="" />
                 </div>
                 <div className="text-sm text-slate-400 mb-1">Ready to analyze</div>
                 <div className="text-[11px] text-slate-500">Click Analyze to check time & space complexity</div>
@@ -2124,7 +2125,7 @@ export default function Game() {
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
                       </svg>
-                      <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">Execution Statistics</span>
+                      <span className="text-[11px] font-semibold text-slate-300">Execution Statistics</span>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -2176,10 +2177,10 @@ export default function Game() {
                 {/* ── Verdict Badge ── */}
                 {complexityData.verdict && complexityData.verdict !== 'unknown' && (() => {
                   const verdictConfig = {
-                    optimal:          { bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.35)', color: '#34d399', icon: '✅', label: 'Optimal' },
-                    acceptable:       { bg: 'rgba(251,191,36,0.10)', border: 'rgba(251,191,36,0.35)', color: '#fbbf24', icon: '🟡', label: 'Acceptable' },
-                    needs_improvement:{ bg: 'rgba(249,115,22,0.10)', border: 'rgba(249,115,22,0.35)', color: '#fb923c', icon: '⚠️', label: 'Needs Improvement' },
-                    poor:             { bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.35)',  color: '#f87171', icon: '🔴', label: 'Poor' },
+                    optimal:          { bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.35)', color: '#34d399', icon: 'check-circle', label: 'Optimal' },
+                    acceptable:       { bg: 'rgba(251,191,36,0.10)', border: 'rgba(251,191,36,0.35)', color: '#fbbf24', icon: 'info', label: 'Acceptable' },
+                    needs_improvement:{ bg: 'rgba(249,115,22,0.10)', border: 'rgba(249,115,22,0.35)', color: '#fb923c', icon: 'alert', label: 'Needs improvement' },
+                    poor:             { bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.35)',  color: '#f87171', icon: 'x-circle', label: 'Poor' },
                   }
                   const cfg = verdictConfig[complexityData.verdict] || verdictConfig.acceptable
                   return (
@@ -2258,7 +2259,7 @@ export default function Game() {
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
                     </svg>
-                    <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">Complexity Visualization</span>
+                    <span className="text-[11px] font-semibold text-slate-300">Complexity Visualization</span>
                   </div>
                   <div style={{ overflowX: 'auto' }}>
                     <ComplexityChart userComplexity={complexityData.time_complexity?.worst} />
@@ -2273,7 +2274,7 @@ export default function Game() {
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
                       </svg>
-                      <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">Complexity Analysis</span>
+                      <span className="text-[11px] font-semibold text-slate-300">Complexity Analysis</span>
                     </div>
                     <p className="text-[11px] text-slate-300 leading-relaxed">{complexityData.analysis}</p>
                   </div>
@@ -2286,7 +2287,7 @@ export default function Game() {
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
                       </svg>
-                      <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">Improvement Suggestions</span>
+                      <span className="text-[11px] font-semibold text-slate-300">Improvement Suggestions</span>
                     </div>
                     <div className="space-y-2">
                       {complexityData.structured_suggestions.map((s, i) => {
@@ -2300,7 +2301,7 @@ export default function Game() {
                           <div key={i} className="rounded-lg p-2.5" style={{ background: ps.bg, border: `1px solid ${ps.border}` }}>
                             <div className="flex items-start justify-between gap-2 mb-1">
                               <span className="text-[11px] font-semibold text-white leading-tight">{s.title}</span>
-                              <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase" style={{ background: ps.badge, color: ps.badgeText }}>{ps.label}</span>
+                              <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ background: ps.badge, color: ps.badgeText }}>{ps.label}</span>
                             </div>
                             <p className="text-[10px] text-slate-400 leading-relaxed">{s.description}</p>
                           </div>
@@ -2376,7 +2377,7 @@ export default function Game() {
           {/* Header */}
           <div className="px-4 py-3 shrink-0" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="flex items-center gap-2">
-              <span className="text-xl">🏆</span>
+              <Icon name="trophy" size={20} className="" />
               <div>
                 <div className="text-sm font-bold text-white">Leaderboard</div>
                 <div className="text-[10px] text-slate-500">Match rankings</div>
@@ -2389,7 +2390,7 @@ export default function Game() {
             {leaderboard.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(251,191,36,0.1)' }}>
-                  <span className="text-3xl">📊</span>
+                  <Icon name="bars" size={30} className="" />
                 </div>
                 <div className="text-sm text-slate-400">No scores yet</div>
                 <div className="text-xs text-slate-500 mt-1">Start solving to see rankings</div>
@@ -2398,7 +2399,7 @@ export default function Game() {
               <div className="space-y-2">
                 {leaderboard.map((entry, i) => {
                   const isMe = (entry.player_id ?? entry.id) === playerId
-                  const medals = ['🥇', '🥈', '🥉']
+                  const medals = ['1', '2', '3']
                   return (
                     <div key={entry.player_id ?? entry.id ?? i}
                       className="rounded-xl p-3 transition-all duration-300 "
@@ -2518,7 +2519,7 @@ export default function Game() {
                 <div className="relative mb-6">
                   <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-full blur-2xl-slow" />
                   <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-300 " style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                    <span className="text-4xl animate-pulse">{lobby?.created_by && user?.id && lobby.created_by === user.id ? '🎯' : '⏳'}</span>
+                    <Icon name={lobby?.created_by && user?.id && lobby.created_by === user.id ? 'target' : 'clock'} size={36} className="text-blue-400" />
                   </div>
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2 ">
@@ -2577,7 +2578,7 @@ export default function Game() {
                             </>
                           ) : (
                             <>
-                              <span>✨</span> Generate Problem
+                              Generate problem
                             </>
                           )}
                         </span>
@@ -2614,7 +2615,7 @@ export default function Game() {
                 {/* Diagram for tree/graph questions */}
                 {question.diagram && (
                   <div className="mt-6 " style={{ animationDelay: '0.2s' }}>
-                    <div className="text-xs font-semibold text-blue-300 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <div className="text-xs font-semibold text-blue-300 mb-3 flex items-center gap-2">
                       <span style={{ 
                         width: '3px', 
                         height: '14px', 
@@ -2671,7 +2672,7 @@ export default function Game() {
                         style={{ opacity: generating ? 0.5 : 1 }}
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600" />
-                        <span className="relative z-10">{generating ? '...' : '✨'}</span>
+                        <span className="relative z-10">{generating ? '…' : 'Swap'}</span>
                       </button>
                     </div>
                   </div>
@@ -2689,7 +2690,7 @@ export default function Game() {
             <div className="flex items-center gap-2 ml-auto">
               <div className="text-right">
                 <div className="text-xs font-semibold text-white">{user?.username}</div>
-                <div className="text-[10px] text-slate-500">PLAYER</div>
+                <div className="text-[10px] text-slate-500">Player</div>
               </div>
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" 
                 style={{ background: 'linear-gradient(135deg,#3b82f6,#06b6d4)' }}>
@@ -2774,7 +2775,7 @@ export default function Game() {
               }}
             >
               <div className="flex items-center gap-2">
-                <span className="text-lg">🤖</span>
+                <Icon name="message" size={18} className="" />
                 <div>
                   <div className="text-xs font-semibold" 
                     style={{ 
@@ -2934,7 +2935,7 @@ export default function Game() {
                   {rightPanelTab === 'logic' && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#3b82f6' }} />
                   )}
-                  <span>🤖</span>
+                  <Icon name="message" size={14} className="" />
                   Logic Analysis
                   <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" 
                     style={{ 
@@ -3040,7 +3041,7 @@ export default function Game() {
                           
                           {testCaseDetails[selectedTestCase].passed !== null && (
                             <div className="w-full max-w-sm rounded-lg p-4" style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                              <div className="text-[11px] font-semibold uppercase tracking-wider mb-2 text-center"
+                              <div className="text-[11px] font-semibold mb-2 text-center"
                                 style={{ color: testCaseDetails[selectedTestCase].passed ? '#34d399' : '#f87171' }}>
                                 {testCaseDetails[selectedTestCase].passed ? '✓ Test Passed' : '✗ Test Failed'}
                               </div>
@@ -3049,7 +3050,7 @@ export default function Game() {
                                   <button onClick={getDebugHint} disabled={loadingHint}
                                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                                     style={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
-                                    {loadingHint ? '⏳ Analyzing...' : '💡 Get Debug Hint'}
+                                    {loadingHint ? '⏳ Analyzing...' : 'Get Debug Hint'}
                                   </button>
                                 </div>
                               )}
@@ -3057,15 +3058,15 @@ export default function Game() {
                                 <div className="mt-3 rounded-xl p-4 text-xs space-y-2"
                                   style={{ background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)' }}>
                                   <div className="flex items-center gap-2 font-bold" style={{ color: '#fbbf24' }}>
-                                    💡 AI Mentor
+                                    AI mentor
                                     <span className="font-normal text-slate-400">- {testCaseHint.status}</span>
                                   </div>
                                   {testCaseHint.line && (
-                                    <div style={{ color: '#f87171' }}>📍 Line: {testCaseHint.line}</div>
+                                    <div style={{ color: '#f87171' }}>Line: {testCaseHint.line}</div>
                                   )}
-                                  <div style={{ color: '#e2e8f0' }}>💬 {testCaseHint.message}</div>
+                                  <div style={{ color: '#e2e8f0' }}>{testCaseHint.message}</div>
                                   <div className="pt-1 font-semibold" style={{ color: '#a5b4fc' }}>
-                                    💡 Hint: {testCaseHint.hint}
+                                    Hint: {testCaseHint.hint}
                                   </div>
                                 </div>
                               )}
@@ -3075,14 +3076,14 @@ export default function Game() {
                       ) : (
                         <>
                           <div>
-                            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Input</div>
+                            <div className="text-[11px] font-semibold text-slate-400 mb-2">Input</div>
                         <div className="rounded-lg p-3 font-mono text-sm whitespace-pre-wrap" 
                           style={{ background: 'rgba(30,30,50,0.8)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.08)' }}>
                           {testCaseDetails[selectedTestCase].input || '(empty)'}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Expected Output</div>
+                        <div className="text-[11px] font-semibold text-slate-400 mb-2">Expected Output</div>
                         <div className="rounded-lg p-3 font-mono text-sm whitespace-pre-wrap" 
                           style={{ background: 'rgba(30,30,50,0.8)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)' }}>
                           {testCaseDetails[selectedTestCase].expected_output || '(empty)'}
@@ -3090,7 +3091,7 @@ export default function Game() {
                       </div>
                       {testCaseDetails[selectedTestCase].passed !== null && (
                         <div>
-                          <div className="text-[11px] font-semibold uppercase tracking-wider mb-2"
+                          <div className="text-[11px] font-semibold mb-2"
                             style={{ color: testCaseDetails[selectedTestCase].error ? '#f87171' : testCaseDetails[selectedTestCase].passed ? '#34d399' : '#f87171' }}>
                             Your Output
                           </div>
@@ -3114,7 +3115,7 @@ export default function Game() {
                       )}
                       {testCaseDetails[selectedTestCase].passed !== null ? (
                         <div>
-                          <div className="text-[11px] font-semibold uppercase tracking-wider mb-2"
+                          <div className="text-[11px] font-semibold mb-2"
                             style={{ color: testCaseDetails[selectedTestCase].passed ? '#34d399' : '#f87171' }}>
                             {testCaseDetails[selectedTestCase].passed ? '✓ Test Passed' : '✗ Test Failed'}
                           </div>
@@ -3124,21 +3125,21 @@ export default function Game() {
                               <button onClick={getDebugHint} disabled={loadingHint}
                                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                                 style={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
-                                {loadingHint ? '⏳ Analyzing...' : '🤖 Get Debug Hint'}
+                                {loadingHint ? 'Analyzing…' : 'Get debug hint'}
                               </button>
                               {testCaseHint && (
                                 <div className="mt-3 rounded-xl p-4 text-xs space-y-2"
                                   style={{ background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)' }}>
                                   <div className="flex items-center gap-2 font-bold" style={{ color: '#fbbf24' }}>
-                                    🤖 AI Mentor
+                                    AI mentor
                                     <span className="font-normal text-slate-400">— {testCaseHint.status}</span>
                                   </div>
                                   {testCaseHint.line && (
-                                    <div style={{ color: '#f87171' }}>📍 Line: {testCaseHint.line}</div>
+                                    <div style={{ color: '#f87171' }}>Line: {testCaseHint.line}</div>
                                   )}
-                                  <div style={{ color: '#e2e8f0' }}>💬 {testCaseHint.message}</div>
+                                  <div style={{ color: '#e2e8f0' }}>{testCaseHint.message}</div>
                                   <div className="pt-1 font-semibold" style={{ color: '#a5b4fc' }}>
-                                    💡 Hint: {testCaseHint.hint}
+                                    Hint: {testCaseHint.hint}
                                   </div>
                                 </div>
                               )}
@@ -3183,7 +3184,7 @@ export default function Game() {
                   </label>
                 </div>
                 <div className="mb-4">
-                  <label className="text-[11px] font-semibold uppercase tracking-wider mb-2 block"
+                  <label className="text-[11px] font-semibold mb-2 block"
                     style={{ color: useCustomInput ? '#94a3b8' : '#64748b' }}>
                     Custom Input
                   </label>
@@ -3229,7 +3230,7 @@ export default function Game() {
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Output</span>
+                        <span className="text-[11px] font-semibold text-slate-400">Output</span>
                         {consoleOutput[0]?.runType && (
                           <span className="px-2 py-0.5 rounded text-[10px] font-medium"
                             style={{
@@ -3250,17 +3251,17 @@ export default function Game() {
                         <div className="px-3 py-2 flex items-center gap-2" 
                           style={{ background: res.error ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)' }}>
                           <span className="text-xs font-semibold" style={{ color: res.error ? '#f87171' : '#34d399' }}>
-                            {res.error ? '❌ Error' : `✅ Test ${i + 1}`}
+                            {res.error ? 'Error' : `Test ${i + 1}`}
                           </span>
                         </div>
                         {res.input && (
                           <div className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                            <div className="text-[10px] text-slate-500 uppercase mb-1">Input</div>
+                            <div className="text-[10px] text-slate-500 mb-1">Input</div>
                             <div className="text-xs font-mono text-slate-300 whitespace-pre-wrap">{res.input}</div>
                           </div>
                         )}
                         <div className="px-3 py-3">
-                          <div className="text-[10px] text-slate-500 uppercase mb-1">Output</div>
+                          <div className="text-[10px] text-slate-500 mb-1">Output</div>
                           <div className="text-sm font-mono whitespace-pre-wrap" style={{ color: res.error ? '#f87171' : '#34d399' }}>
                             {res.error || res.output || '(no output)'}
                           </div>
@@ -3304,7 +3305,7 @@ export default function Game() {
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl">🤖</span>
+                        <Icon name="message" size={24} className="" />
                         <div>
                           <div className="text-sm font-bold text-white">AI Logic Analysis</div>
                           <div className="text-xs text-slate-400">Partial credit awarded</div>
@@ -3332,7 +3333,7 @@ export default function Game() {
 
                   {/* Score Breakdown */}
                   <div className="rounded-xl p-4" style={{ background: 'rgba(59, 130, 246,0.1)', border: '1px solid rgba(59, 130, 246,0.3)' }}>
-                    <div className="text-xs font-semibold text-blue-300 mb-3 uppercase tracking-wider">Score Breakdown</div>
+                    <div className="text-xs font-semibold text-blue-300 mb-3">Score Breakdown</div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-400">Tests Passed</span>
@@ -3348,7 +3349,7 @@ export default function Game() {
                   {/* Detailed Breakdown */}
                   {result.logic_analysis.breakdown && (
                     <div className="rounded-xl p-4" style={{ background: 'rgba(30,30,50,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                      <div className="text-xs font-semibold text-slate-300 mb-3 uppercase tracking-wider">Detailed Analysis</div>
+                      <div className="text-xs font-semibold text-slate-300 mb-3">Detailed Analysis</div>
                       <div className="space-y-3">
                         {Object.entries(result.logic_analysis.breakdown).map(([key, value]) => (
                           <div key={key}>
@@ -3384,8 +3385,8 @@ export default function Game() {
                   {/* Suggestions */}
                   {result.logic_analysis.suggestions && result.logic_analysis.suggestions.length > 0 && (
                     <div className="rounded-xl p-4" style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)' }}>
-                      <div className="text-xs font-semibold text-blue-300 mb-3 uppercase tracking-wider flex items-center gap-2">
-                        <span>💡</span> Suggestions for Improvement
+                      <div className="text-xs font-semibold text-blue-300 mb-3 flex items-center gap-2">
+                        <Icon name="bulb" size={14} className="" /> Suggestions for Improvement
                       </div>
                       <ul className="space-y-2">
                         {result.logic_analysis.suggestions.map((suggestion, idx) => (
@@ -3407,12 +3408,8 @@ export default function Game() {
         {/* Status Bar */}
         <div className="h-6 flex items-center px-3 text-[11px] shrink-0" style={{ background: '#1e1e2e', borderTop: '1px solid rgba(255,255,255,0.06)', color: '#64748b' }}>
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1.5">
-              <span style={{ color: currentLang.color }}>{currentLang.icon}</span>
-              {currentLang.label}
-            </span>
+            <span>{currentLang.label}</span>
             <span>UTF-8</span>
-            <span>JavaScript</span>
           </div>
           <div className="flex-1" />
           <div className="flex items-center gap-4">
