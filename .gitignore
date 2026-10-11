@@ -1,0 +1,74 @@
+# ── Dependencies ──────────────────────────────────────────────────────────────
+node_modules/
+jspm_packages/
+
+# ── Build output ──────────────────────────────────────────────────────────────
+dist/
+build/
+out/
+.next/
+.nuxt/
+
+# ── Environment variables ─────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+
+# ── Database ──────────────────────────────────────────────────────────────────
+*.db
+*.sqlite3
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Test output ───────────────────────────────────────────────────────────────
+results.log
+ws_out.txt
+ws_err.txt
+imp_out.txt
+min_out.txt
+*.log
+# Stub renderer written by backend/tests/test_videogen.py
+backend/tests/_videogen_stub/
+
+# ── Build caches ──────────────────────────────────────────────────────────────
+.cache/
+.parcel-cache/
+.pytest_cache/
+*.tsbuildinfo
+.nyc_output/
+
+# ── Firebase ─────────────────────────────────────────────────────────────────
+firebase-service-account.json
+**/firebase-service-account.json
+
+# ── ML model weights (use Git LFS or store separately) ───────────────────────
+*.pt
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+npm-debug.log*
+yarn-debug.log*
+*.tgz
+.yarn-integrity
+
+# Vite dev-server cache
+.vite/
+**/.vite/
+
+# ── Claude Code local memory (personal notes, keep out of the public repo) ──
+.claude/memory/

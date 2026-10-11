@@ -1,0 +1,363 @@
+{
+  "topic": "binary search",
+  "title": "Binary Search: Halving Your Way to the Answer",
+  "objective": "By the end of this lesson you will understand how binary search works and know when to use it.",
+  "complexity": "Time O(log n), space O(1) for the iterative version; requires the input to be sorted.",
+  "challenge": "With duplicates in the list, how would you modify this function so it always returns the leftmost index of the target instead of any matching index?",
+  "analogy": {
+    "name": "Looking up a word in a paper dictionary",
+    "mapping": "The sorted dictionary is the sorted array, flipping to the middle is choosing the midpoint, and deciding to look earlier or later in the book is discarding half the search space."
+  },
+  "mistakes": [
+    "Running binary search on unsorted data, which returns wrong answers silently",
+    "Writing lo = mid instead of lo = mid + 1, causing an infinite loop",
+    "Using while lo < hi instead of lo <= hi, which misses a one-element window",
+    "Forgetting to return -1 when the target is absent"
+  ],
+  "acts": [
+    {
+      "act": "hook",
+      "heading": "Twenty Guesses, One Million Numbers",
+      "narration": "I'm thinking of a number between one and a million. You get twenty guesses, and after each one I'll only tell you higher or lower. Sounds impossible.",
+      "beats": [
+        {
+          "narration": "If you guess one at a time, one, two, three, four, you'd need about a million tries and an extremely patient friend.",
+          "visual": "A number line from 1 to 1,000,000 with a tiny marker crawling from the left, a counter ticking upward painfully slowly."
+        },
+        {
+          "narration": "But twenty guesses is more than enough. The secret is that a good guess doesn't just test one number, it throws away half the world.",
+          "visual": "The same number line collapsing: the range halves again and again, a counter showing one million, five hundred thousand, two fifty thousand, and so on down to one."
+        }
+      ]
+    },
+    {
+      "act": "intuition",
+      "heading": "You Already Do This With Dictionaries",
+      "narration": "You already know this trick, because you've used a paper dictionary.",
+      "beats": [
+        {
+          "narration": "To find the word orbit, you don't start at aardvark and read forward. You flop the book open near the middle, land in the M's, and instantly know orbit is to the right. Half the dictionary is gone, and you never even looked at it.",
+          "visual": "A thick dictionary opening at the middle page marked M, the left half greying out and sliding away."
+        },
+        {
+          "narration": "Then you split what's left, and split again. Each flip costs one look and buys you half the remaining pages. That only works because the words are in order. In a dictionary with randomly shuffled words, landing on M tells you absolutely nothing.",
+          "visual": "Side by side: a sorted dictionary shrinking neatly by halves, versus a shuffled one where a page lands and nothing greys out."
+        }
+      ]
+    },
+    {
+      "act": "mechanism",
+      "heading": "Two Boundaries and a Midpoint",
+      "narration": "Let's turn that instinct into a machine. Take a sorted array and mark two boundaries.",
+      "beats": [
+        {
+          "narration": "Low sits at the first index, high sits at the last. Everything between them is the region where our target could still be hiding. Everything outside is already ruled out.",
+          "visual": "A sorted array of eight boxes; a green arrow labelled low under index zero, a red arrow labelled high under index seven, the whole span shaded as the live search region."
+        },
+        {
+          "narration": "Now compute the midpoint: low plus high, divided by two, rounded down. Peek at that box. Three things can happen.",
+          "visual": "A yellow spotlight dropping on the middle box, with the arithmetic low plus high over two shown beneath it."
+        },
+        {
+          "narration": "If it equals the target, we're done, and we return that index. If it's too small, the target must live to the right, so low jumps to mid plus one. If it's too big, high drops to mid minus one.",
+          "visual": "Three branching mini-panels showing the same array: one flashing green with a checkmark, one with the left half fading and low leaping right, one with the right half fading and high leaping left."
+        },
+        {
+          "narration": "Repeat while low is still less than or equal to high. If those boundaries ever cross, the region is empty, the target was never there, and we report failure. Because the region halves every single round, a list of a million takes about twenty rounds. That's the logarithm hiding inside the algorithm.",
+          "visual": "A loop animation of the window shrinking, then crossing arrows and a red not-found badge, followed by a chart of list size against steps flattening out into a log curve."
+        }
+      ]
+    },
+    {
+      "act": "trace",
+      "heading": "Hunting for 38 in Eight Numbers",
+      "narration": "Let's run it for real on eight sorted numbers, and watch the window collapse.",
+      "beats": [
+        {
+          "narration": "Our list is two, five, eight, twelve, sixteen, twenty three, thirty eight, fifty six. We're hunting for thirty eight, which lives at index six, though the code doesn't know that yet.",
+          "visual": "The eight-element array laid out with index labels underneath, the value 38 faintly glowing."
+        },
+        {
+          "narration": "Watch three things as we step through: low, high, and mid. Every loop, mid lands, we compare, and one boundary leaps.",
+          "visual": "A live state panel showing low, high and mid appearing beside the array, ready to update."
+        },
+        {
+          "narration": "Three comparisons, eight elements, done. Now follow the code line by line.",
+          "visual": "The code panel sliding in beside the array, first line highlighted."
+        }
+      ]
+    },
+    {
+      "act": "summary",
+      "heading": "Halve, Compare, Repeat",
+      "narration": "So the intuition is the dictionary flip: never scan, always split.",
+      "beats": [
+        {
+          "narration": "The algorithm is four moves. Set low and high to the ends. Loop while they haven't crossed. Check the midpoint. Move whichever boundary lets you delete the half that cannot contain your target. That gives O of log n time and O of one extra space, which is why a billion-item list still only needs about thirty peeks.",
+          "visual": "A four-step checklist animating in, then a comparison bar chart: linear search at one billion steps towering over binary search at thirty."
+        },
+        {
+          "narration": "Three traps catch people. Binary search on unsorted data returns confident nonsense, so sort first or don't bother. Writing low equals mid instead of mid plus one gives you an infinite loop, because the window stops shrinking. And using less than instead of less than or equal in the loop condition quietly misses answers sitting in a one-element window.",
+          "visual": "Three red warning cards, each showing the buggy line and the failure it causes, the infinite loop one visibly spinning forever."
+        },
+        {
+          "narration": "Here's your challenge. If the list has duplicates, plain binary search returns some matching index, not necessarily the first one. How would you change the code to always return the leftmost match? Hint: when you find the target, don't return yet.",
+          "visual": "An array with three copies of the number seven, a question mark hovering over which index gets returned."
+        }
+      ]
+    }
+  ],
+  "code": {
+    "lines": [
+      "def binary_search(nums, target):",
+      "    lo = 0",
+      "    hi = len(nums) - 1",
+      "    while lo <= hi:",
+      "        mid = (lo + hi) // 2",
+      "        if nums[mid] == target:",
+      "            return mid",
+      "        if nums[mid] < target:",
+      "            lo = mid + 1",
+      "        else:",
+      "            hi = mid - 1",
+      "    return -1",
+      "data = [2, 5, 8, 12, 16, 23, 38, 56]",
+      "print(binary_search(data, 38))"
+    ],
+    "variables": [
+      "lo",
+      "hi",
+      "mid"
+    ],
+    "walkthrough": [
+      {
+        "lines": [
+          13
+        ],
+        "narration": "We start at the bottom. The list is sorted, and we ask for the index of thirty eight.",
+        "state": [
+          {
+            "name": "lo",
+            "value": "unset"
+          },
+          {
+            "name": "hi",
+            "value": "unset"
+          },
+          {
+            "name": "mid",
+            "value": "unset"
+          }
+        ]
+      },
+      {
+        "lines": [
+          1,
+          2
+        ],
+        "narration": "Inside the function, low starts at zero and high starts at seven, the last index. The whole array is in play.",
+        "state": [
+          {
+            "name": "lo",
+            "value": "0"
+          },
+          {
+            "name": "hi",
+            "value": "7"
+          },
+          {
+            "name": "mid",
+            "value": "unset"
+          }
+        ]
+      },
+      {
+        "lines": [
+          3,
+          4
+        ],
+        "narration": "Low is less than high, so we enter the loop. Zero plus seven is seven, divided by two and rounded down gives mid equals three.",
+        "state": [
+          {
+            "name": "lo",
+            "value": "0"
+          },
+          {
+            "name": "hi",
+            "value": "7"
+          },
+          {
+            "name": "mid",
+            "value": "3"
+          }
+        ]
+      },
+      {
+        "lines": [
+          5,
+          7
+        ],
+        "narration": "The value at index three is twelve. Not equal to thirty eight, and twelve is smaller, so everything from index zero to three is useless.",
+        "state": [
+          {
+            "name": "lo",
+            "value": "0"
+          },
+          {
+            "name": "hi",
+            "value": "7"
+          },
+          {
+            "name": "mid",
+            "value": "3"
+          }
+        ]
+      },
+      {
+        "lines": [
+          8
+        ],
+        "narration": "Low jumps to four. Four elements just vanished from the search in a single comparison.",
+        "state": [
+          {
+            "name": "lo",
+            "value": "4"
+          },
+          {
+            "name": "hi",
+            "value": "7"
+          },
+          {
+            "name": "mid",
+            "value": "3"
+          }
+        ]
+      },
+      {
+        "lines": [
+          3,
+          4
+        ],
+        "narration": "Round two. Four plus seven is eleven, halved and floored gives mid equals five.",
+        "state": [
+          {
+            "name": "lo",
+            "value": "4"
+          },
+          {
+            "name": "hi",
+            "value": "7"
+          },
+          {
+            "name": "mid",
+            "value": "5"
+          }
+        ]
+      },
+      {
+        "lines": [
+          5,
+          7,
+          8
+        ],
+        "narration": "Index five holds twenty three. Still too small, so low climbs to six. Only two candidates remain.",
+        "state": [
+          {
+            "name": "lo",
+            "value": "6"
+          },
+          {
+            "name": "hi",
+            "value": "7"
+          },
+          {
+            "name": "mid",
+            "value": "5"
+          }
+        ]
+      },
+      {
+        "lines": [
+          3,
+          4
+        ],
+        "narration": "Round three. Six plus seven is thirteen, floored halving gives mid equals six.",
+        "state": [
+          {
+            "name": "lo",
+            "value": "6"
+          },
+          {
+            "name": "hi",
+            "value": "7"
+          },
+          {
+            "name": "mid",
+            "value": "6"
+          }
+        ]
+      },
+      {
+        "lines": [
+          5,
+          6
+        ],
+        "narration": "Index six holds thirty eight. That's our target, so we return six immediately.",
+        "state": [
+          {
+            "name": "lo",
+            "value": "6"
+          },
+          {
+            "name": "hi",
+            "value": "7"
+          },
+          {
+            "name": "mid",
+            "value": "6"
+          }
+        ]
+      },
+      {
+        "lines": [],
+        "narration": "The program prints six. Three comparisons instead of seven, and that gap explodes as the list grows.",
+        "state": [
+          {
+            "name": "lo",
+            "value": "6"
+          },
+          {
+            "name": "hi",
+            "value": "7"
+          },
+          {
+            "name": "mid",
+            "value": "6"
+          }
+        ]
+      },
+      {
+        "lines": [
+          3,
+          11
+        ],
+        "narration": "And if we had searched for something like forty, low would eventually pass high, the loop would end, and line eleven would hand back negative one meaning not found.",
+        "state": [
+          {
+            "name": "lo",
+            "value": "7"
+          },
+          {
+            "name": "hi",
+            "value": "6"
+          },
+          {
+            "name": "mid",
+            "value": "6"
+          }
+        ]
+      }
+    ],
+    "parses": true
+  }
+}

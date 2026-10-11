@@ -1,0 +1,270 @@
+{
+  "topic": "hash tables",
+  "title": "Hash Tables: Computing the Address",
+  "objective": "By the end of this lesson you will understand how hash tables work and know when to use them.",
+  "complexity": "Average case O of 1 for insert, lookup and delete. Worst case O of n when all keys collide in one bucket. Space O of n.",
+  "challenge": "If your table has four slots and you insert a thousand keys, what happens to lookup time, and what should the table do about it?",
+  "analogy": {
+    "name": "Theatre coat check",
+    "mapping": "Your coat is the value, your ticket number is the hash of your key, and the numbered hook is the array slot. The attendant never searches the rack; the number tells them exactly where to reach."
+  },
+  "mistakes": [
+    "Using a mutable object as a key, or changing a key after it is stored, so its hash no longer points to its bucket.",
+    "Assuming a hash table preserves insertion order or is sorted.",
+    "Never resizing, so buckets grow into long chains and lookups degrade to linear time.",
+    "Assuming Python's hash of a string is stable across separate program runs."
+  ],
+  "acts": [
+    {
+      "act": "hook",
+      "heading": "One Million Names, One Lookup",
+      "narration": "Imagine a phone book with a million names, and you need one number, right now.",
+      "beats": [
+        {
+          "narration": "Scanning name by name could take a million comparisons. Even sorted, binary search still needs about twenty steps. Can we do it in one?",
+          "visual": "A long vertical list of names; a magnifying glass crawls down it, counter ticking up to 1,000,000, then a binary search version halving the list with a counter stopping at 20."
+        },
+        {
+          "narration": "Hash tables get you there. One jump, no searching. Here is the trick.",
+          "visual": "The list collapses into a short row of numbered boxes; a single glowing arrow leaps directly into one box, counter reading 1."
+        }
+      ]
+    },
+    {
+      "act": "intuition",
+      "heading": "The Coat Check Trick",
+      "narration": "Think about the coat check at a theatre.",
+      "beats": [
+        {
+          "narration": "You hand over your coat and get ticket forty two. Later the attendant does not search every hook. The number is the location.",
+          "visual": "A person hands a coat over a counter, receives a ticket stamped 42, and the attendant walks straight to hook 42 on a numbered rack."
+        },
+        {
+          "narration": "A hash table does the same thing. It turns your key, like a word, into a number, and that number is a shelf position. Computing beats searching.",
+          "visual": "The word \"cat\" flows into a small machine labelled hash, a number pops out, and an arrow drops into slot 2 of a numbered array."
+        }
+      ]
+    },
+    {
+      "act": "mechanism",
+      "heading": "Hash, Modulo, Jump",
+      "narration": "So how do we turn a word into a shelf number?",
+      "beats": [
+        {
+          "narration": "A hash function chews up the key and spits out a big integer. Same key in, same number out, every time.",
+          "visual": "Letters of \"cat\" feed into a gear-filled box; a large number 312 emerges. The word is fed again and the same 312 appears."
+        },
+        {
+          "narration": "Take that number modulo the number of slots, the remainder after dividing, and you get an index inside the array.",
+          "visual": "312 divided by 4 shown as division, remainder 0 highlighted, and an arrow pointing at slot 0 of a four-slot array."
+        },
+        {
+          "narration": "Store the key and value there. To look it up, hash again and jump straight to that slot. No scanning.",
+          "visual": "A key-value tile drops into slot 0; then a lookup arrow re-hashes and lands on slot 0 with a green check."
+        },
+        {
+          "narration": "But two different keys can land in the same slot. That is a collision, and it is completely normal. Each slot holds a small list, and we scan only that tiny list.",
+          "visual": "A second tile aims at slot 0, the slot expands into a chain of two linked tiles, and a tiny arrow walks the chain of two."
+        },
+        {
+          "narration": "Keep the array roomy, and those chains stay about one item long, so lookups stay constant time.",
+          "visual": "The array grows from four slots to eight; long chains redistribute into single tiles across the wider array."
+        }
+      ]
+    },
+    {
+      "act": "trace",
+      "heading": "Building One in Python",
+      "narration": "Let us build a tiny hash table in Python and watch it work.",
+      "beats": [
+        {
+          "narration": "Four empty buckets, a hash made by summing letter codes, and two functions: put and get.",
+          "visual": "Code panel on the left, a four-slot bucket diagram on the right, all buckets empty."
+        },
+        {
+          "narration": "Watch cat and act collide, share a bucket, and still be found correctly.",
+          "visual": "Two tiles labelled cat and act both flying toward bucket 0, forming a chain that a lookup arrow walks."
+        }
+      ]
+    },
+    {
+      "act": "summary",
+      "heading": "Recap and Challenge",
+      "narration": "Intuition first: do not search for the address, compute it.",
+      "beats": [
+        {
+          "narration": "Hash the key, take the remainder, jump to the bucket, scan its short chain. Average insert and lookup are O of one. Worst case, if every key collides, O of n.",
+          "visual": "Four-step flow diagram: key, hash number, modulo, bucket. Beside it, average O of 1 in green and worst case O of n in red."
+        },
+        {
+          "narration": "Common traps: changing a key after storing it, assuming the order of items is stable, and trusting hash values to be the same across program runs. Now a challenge. If your table has four slots and you store a thousand keys, what happens to lookup time, and what should the table do about it?",
+          "visual": "Three warning cards fading in, then a four-slot table drowning under enormous chains with a question mark above it."
+        }
+      ]
+    }
+  ],
+  "code": {
+    "lines": [
+      "def put(table, key, value):",
+      "    i = sum(ord(c) for c in key) % len(table)",
+      "    for pair in table[i]:",
+      "        if pair[0] == key:",
+      "            pair[1] = value",
+      "            return",
+      "    table[i].append([key, value])",
+      "def get(table, key):",
+      "    i = sum(ord(c) for c in key) % len(table)",
+      "    for pair in table[i]:",
+      "        if pair[0] == key:",
+      "            return pair[1]",
+      "    return None",
+      "table = [[] for _ in range(4)]",
+      "put(table, \"cat\", 9)",
+      "put(table, \"act\", 4)",
+      "print(get(table, \"act\"))",
+      "print(get(table, \"cat\"))"
+    ],
+    "variables": [
+      "table",
+      "i",
+      "pair"
+    ],
+    "walkthrough": [
+      {
+        "lines": [
+          13
+        ],
+        "narration": "We create a table of four empty buckets.",
+        "state": [
+          {
+            "name": "table",
+            "value": "[[], [], [], []]"
+          }
+        ]
+      },
+      {
+        "lines": [
+          14,
+          1
+        ],
+        "narration": "Storing cat. Its letter codes sum to 312, and 312 modulo 4 is 0.",
+        "state": [
+          {
+            "name": "i",
+            "value": "0"
+          },
+          {
+            "name": "table",
+            "value": "[[], [], [], []]"
+          }
+        ]
+      },
+      {
+        "lines": [
+          2,
+          6
+        ],
+        "narration": "Bucket zero is empty, so we append the pair cat nine.",
+        "state": [
+          {
+            "name": "table",
+            "value": "[[['cat', 9]], []"
+          }
+        ]
+      },
+      {
+        "lines": [
+          15,
+          1
+        ],
+        "narration": "Now act. Same letters, same sum, same slot zero. A collision.",
+        "state": [
+          {
+            "name": "i",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "lines": [
+          2,
+          3
+        ],
+        "narration": "We scan the bucket. The pair there has key cat, which is not act.",
+        "state": [
+          {
+            "name": "pair",
+            "value": "['cat', 9]"
+          }
+        ]
+      },
+      {
+        "lines": [
+          6
+        ],
+        "narration": "No match, so act four joins the same bucket as a chain.",
+        "state": [
+          {
+            "name": "table",
+            "value": "[[['cat', 9], ['act'"
+          }
+        ]
+      },
+      {
+        "lines": [
+          16,
+          8
+        ],
+        "narration": "Looking up act. Hash again, land straight on bucket zero.",
+        "state": [
+          {
+            "name": "i",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "lines": [
+          9,
+          10
+        ],
+        "narration": "First pair is cat. Not what we want, keep walking the chain.",
+        "state": [
+          {
+            "name": "pair",
+            "value": "['cat', 9]"
+          }
+        ]
+      },
+      {
+        "lines": [
+          10,
+          11
+        ],
+        "narration": "Second pair matches act, so we return four and print it.",
+        "state": [
+          {
+            "name": "pair",
+            "value": "['act', 4]"
+          }
+        ]
+      },
+      {
+        "lines": [
+          17,
+          8,
+          9,
+          10
+        ],
+        "narration": "Looking up cat hits bucket zero and matches on the very first pair, printing nine.",
+        "state": [
+          {
+            "name": "pair",
+            "value": "['cat', 9]"
+          }
+        ]
+      }
+    ],
+    "parses": true
+  }
+}

@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtual environment
+venv/
+.venv/
+
+# Manim output
+media/
+_v/
+
+# Claude-generated scene modules (reproducible from plans/)
+scenes_generated/
+
+# Environment / secrets
+.env
+
+# Local Claude Code settings
+.claude/settings.local.json

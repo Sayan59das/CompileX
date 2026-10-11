@@ -1,0 +1,4 @@
+# Disable Git LFS for deployment
+*.csv !filter !diff !merge
+*.db !filter !diff !merge
+*.sqlite !filter !diff !merge

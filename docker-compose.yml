@@ -1,0 +1,106 @@
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: compilex-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - SECRET_KEY=${SECRET_KEY}
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=1440
+      - AI_SERVICE_URL=http://ai:8001
+      - AI_SERVICE_TIMEOUT=30
+      - AI_RATE_LIMIT_PER_MINUTE=10
+      - AI_BACKEND=ai_service
+      - NVIDIA_API_KEY=${NVIDIA_API_KEY}
+      - COMPLEXITY_NVIDIA_API_KEY=${COMPLEXITY_NVIDIA_API_KEY}
+      - OLLAMA_BASE_URL=http://ollama:11434/v1
+      - OLLAMA_MODEL=llama3
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - CODE_EXECUTION_TIMEOUT=10
+      - MAX_MEMORY_MB=256
+    volumes:
+      - ./backend:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      ai:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - compilex-network
+
+  ai:
+    build:
+      context: ./question-service
+      dockerfile: Dockerfile
+    container_name: compilex-ai
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./question-service:/app
+    restart: unless-stopped
+    networks:
+      - compilex-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: compilex-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - compilex-network
+
+  db:
+    image: postgres:15-alpine
+    container_name: compilex-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - compilex-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: compilex-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - compilex-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  compilex-network:
+    driver: bridge
