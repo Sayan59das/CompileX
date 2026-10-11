@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useLocation, useNavigate } from 'react-router-dom'
 import Editor from '@monaco-editor/react'
-import Icon from '../components/Icons'
 import { connectSocket } from '../services/socket'
 import api from '../services/api'
 import { useAuth } from '../context/AuthContext'
@@ -11,11 +10,11 @@ import { attachProtectedRegion } from '../utils/protectedRegion'
 import MathText from '../components/MathText'
 
 const LANGUAGES = [
-  { value: 'python', label: 'Python', monaco: 'python' },
-  { value: 'javascript', label: 'JavaScript', monaco: 'javascript' },
-  { value: 'cpp', label: 'C++', monaco: 'cpp' },
-  { value: 'java', label: 'Java', monaco: 'java' },
-  { value: 'c', label: 'C', monaco: 'c' },
+  { value: 'python', label: 'Python', monaco: 'python', icon: '🐍', color: '#3776ab' },
+  { value: 'javascript', label: 'JavaScript', monaco: 'javascript', icon: '📜', color: '#f7df1e' },
+  { value: 'cpp', label: 'C++', monaco: 'cpp', icon: '⚡', color: '#00599c' },
+  { value: 'java', label: 'Java', monaco: 'java', icon: '☕', color: '#ed8b00' },
+  { value: 'c', label: 'C', monaco: 'c', icon: '🔧', color: '#a8b9cc' },
 ]
 
 const STARTER = {
@@ -233,6 +232,60 @@ const ACTIVITY_ICONS = {
   ),
 }
 
+// Add global styles for animations
+const GAME_STYLES = `
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slideRight {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  @keyframes glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.6); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: rotate(0deg); }
+    20% { transform: rotate(-15deg); }
+    40% { transform: rotate(15deg); }
+    60% { transform: rotate(-10deg); }
+    80% { transform: rotate(10deg); }
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+  .animate-slide-up { animation: slideUp 0.5s ease-out; }
+  .animate-slide-down { animation: slideDown 0.5s ease-out; }
+  .animate-slide-right { animation: slideRight 0.5s ease-out; }
+  .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+  .animate-scale-in { animation: scaleIn 0.4s ease-out; }
+  .animate-pulse { animation: pulse 2s ease-in-out infinite; }
+  .animate-glow { animation: glow 2s ease-in-out infinite; }
+  .transition-all { transition: all 0.3s ease; }
+  .hover-lift:hover { transform: translateY(-2px); }
+  .hover-scale:hover { transform: scale(1.05); }
+  .hover-glow:hover { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
+`
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Complexity Visualization Chart (pure SVG, no external library)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -421,11 +474,11 @@ export default function Game() {
 
   function _perfectSuggestions() {
     const pool = [
-      'Perfect score! All test cases passed.',
-      'Flawless solution — every test case passed!',
-      'All tests green! Your logic is correct.',
-      'Perfect! Submit to lock in your score.',
-      '100% — excellent work!',
+      '✅ Perfect score! All test cases passed.',
+      '🎉 Flawless solution — every test case passed!',
+      '✅ All tests green! Your logic is correct.',
+      '🏆 Perfect! Submit to lock in your score.',
+      '✅ 100% — excellent work!',
     ]
     return [pool[Math.floor(Math.random() * pool.length)]]
   }
@@ -439,32 +492,32 @@ export default function Game() {
 
     if (pct === 0) {
       pool.push(
-        `All ${total} test cases failing — check your core algorithm logic`,
-        `Start by tracing through the sample input manually`,
-        `Your output format may be wrong — check the expected output carefully`,
-        `Make sure you're reading the input correctly (check the Input Format section)`,
-        `Add print statements to see what your code actually produces`,
+        `❌ All ${total} test cases failing — check your core algorithm logic`,
+        `🔍 Start by tracing through the sample input manually`,
+        `⚠️ Your output format may be wrong — check the expected output carefully`,
+        `💡 Make sure you're reading the input correctly (check the Input Format section)`,
+        `🧪 Add print statements to see what your code actually produces`,
       )
     } else if (pct < 50) {
       pool.push(
-        `${failed} test case${failed > 1 ? 's' : ''} failing — your approach handles some cases but misses others`,
-        `Check edge cases: empty input, single element, all-same values`,
-        `Your logic works for simple cases but breaks on complex ones`,
-        `Look at the first failing test — what's different about that input?`,
-        `Compare your output format with the expected output exactly`,
+        `❌ ${failed} test case${failed > 1 ? 's' : ''} failing — your approach handles some cases but misses others`,
+        `🔍 Check edge cases: empty input, single element, all-same values`,
+        `⚠️ Your logic works for simple cases but breaks on complex ones`,
+        `💡 Look at the first failing test — what's different about that input?`,
+        `🧪 Compare your output format with the expected output exactly`,
       )
     } else if (pct < 100) {
       pool.push(
-        `${failed} edge case${failed > 1 ? 's' : ''} still failing — you're close!`,
-        `Check: negative numbers, zero values, maximum constraints`,
-        `Your main logic is right — look for off-by-one errors or boundary conditions`,
-        `Click a failing test case to compare expected vs actual output`,
-        `Check if your solution handles the minimum and maximum input sizes`,
+        `⚠️ ${failed} edge case${failed > 1 ? 's' : ''} still failing — you're close!`,
+        `🔍 Check: negative numbers, zero values, maximum constraints`,
+        `💡 Your main logic is right — look for off-by-one errors or boundary conditions`,
+        `🧪 Click a failing test case to compare expected vs actual output`,
+        `⚠️ Check if your solution handles the minimum and maximum input sizes`,
       )
     }
 
     // Always add a "click failing test" hint
-    pool.push(`Click a failing test case below to see the exact input, expected, and actual output`)
+    pool.push(`🧪 Click a failing test case below to see the exact input, expected, and actual output`)
 
     // Shuffle and pick 2–3 unique suggestions
     const shuffled = pool.sort(() => Math.random() - 0.5)
@@ -920,7 +973,7 @@ export default function Game() {
       setGrokMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
     } catch (err) {
       const errMsg = err.response?.data?.detail || 'Failed to get AI response. Please try again.'
-      setGrokMessages(prev => [...prev, { role: 'assistant', content: `${errMsg}` }])
+      setGrokMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${errMsg}` }])
     } finally {
       setGrokLoading(false)
     }
@@ -937,6 +990,7 @@ export default function Game() {
         setTestCaseDetails(data.test_case_details.map((tc, i) => ({ ...tc, hidden: i > 0 })))
         setSelectedTestCase(0)
         setRightPanelTab('tests')
+        setActivePanel('right')
       }
 
       // Update AI analyzer panel directly from submission response
@@ -1047,6 +1101,7 @@ export default function Game() {
         }))
         setConsoleOutput(enrichedResults)
         setRightPanelTab('console')
+        setActivePanel('right')
       } else {
         // Test cases mode: update test case details with actual output
         const results = data.results || []
@@ -1065,6 +1120,7 @@ export default function Game() {
         })
         setTestCaseDetails(updatedTestCases)
         setRightPanelTab('tests')
+        setActivePanel('right')
       }
     } catch (err) {
       if (useCustomInput) {
@@ -1228,8 +1284,8 @@ export default function Game() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-hero-glow pointer-events-none" />
-        <div className="relative text-center ">
-          <Icon name="bars" size={44} className="mb-4" />
+        <div className="relative text-center animate-slide-up">
+          <div className="text-5xl mb-4">📊</div>
           <h2 className="text-3xl font-extrabold text-white mb-1">Round {currentRound} Complete</h2>
           <p className="text-slate-400 mb-6">{isLastRound ? 'Final standings' : `${totalRounds - currentRound} round(s) remaining`}</p>
           <div className="glass rounded-2xl p-6 w-full max-w-sm mx-auto glow mb-6">
@@ -1256,13 +1312,13 @@ export default function Game() {
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.15) 0%, transparent 70%)' }} />
 
-        <div className="relative w-full max-w-lg ">
+        <div className="relative w-full max-w-lg animate-slide-up">
           {/* Header */}
           <div className="text-center mb-8">
-            <Icon name="trophy" size={52} className="mb-3" />
+            <div className="text-6xl mb-3">🏆</div>
             <h2 className="text-4xl font-extrabold text-white mb-1">Game Over!</h2>
             {myRank === 1
-              ? <p className="text-amber-400 font-semibold">You won!</p>
+              ? <p className="text-amber-400 font-semibold">You won! 🎉</p>
               : myRank
               ? <p className="text-slate-400">You finished #{myRank}</p>
               : <p className="text-slate-400">Final standings</p>
@@ -1273,7 +1329,7 @@ export default function Game() {
           <div className="rounded-2xl overflow-hidden mb-6"
             style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
             {/* Table header */}
-            <div className="grid grid-cols-12 px-5 py-3 text-[11px] font-semibold text-slate-500"
+            <div className="grid grid-cols-12 px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500"
               style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
               <span className="col-span-1">#</span>
               <span className="col-span-7">Player</span>
@@ -1286,7 +1342,7 @@ export default function Game() {
             ) : (
               leaderboard.map((entry, i) => {
                 const isMe = (entry.player_id ?? entry.id) === playerId
-                const medals = ['1', '2', '3']
+                const medals = ['🥇', '🥈', '🥉']
                 return (
                   <div key={entry.player_id ?? entry.id ?? i}
                     className="grid grid-cols-12 px-5 py-4 items-center transition-all"
@@ -1347,10 +1403,12 @@ export default function Game() {
 
   return (
     <div className="h-screen flex overflow-hidden relative" style={{ background: '#000000', fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <style>{GAME_STYLES}</style>
+
       {/* Animated Background */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[120px] " />
-        <div className="absolute bottom-0 right-1/4 w-[700px] h-[700px] bg-cyan-500/15 rounded-full blur-[130px] " style={{ animationDelay: '3s' }} />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[120px] animate-float-slow" />
+        <div className="absolute bottom-0 right-1/4 w-[700px] h-[700px] bg-cyan-500/15 rounded-full blur-[130px] animate-float-slower" style={{ animationDelay: '3s' }} />
         <div className="absolute inset-0 opacity-[0.08]" style={{ 
           backgroundImage: 'linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px)', 
           backgroundSize: '50px 50px' 
@@ -1360,12 +1418,12 @@ export default function Game() {
       {/* ── Time Up Popup ─────────────────────────────────────────────────── */}
       {timeUp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}>
-          <div className="rounded-2xl p-8 flex flex-col items-center gap-4 relative"
+          <div className="rounded-2xl p-8 flex flex-col items-center gap-4 animate-scale-in relative"
             style={{ background: 'linear-gradient(135deg,#1a1a2e,#16213e)', border: '1px solid rgba(248,113,113,0.4)', boxShadow: '0 0 60px rgba(248,113,113,0.3)', minWidth: 280 }}>
             <div className="absolute -inset-1 bg-gradient-to-r from-rose-600/20 to-cyan-600/20 rounded-2xl blur-xl" />
             <div className="relative">
               {/* Ringing clock emoji with shake animation */}
-              <Icon name="clock" size={14} className="" />
+              <div style={{ fontSize: 64, animation: 'shake 0.4s ease-in-out infinite' }}>⏰</div>
             </div>
             <div className="text-2xl font-bold text-white relative">Time's Up!</div>
             <div className="text-sm text-slate-400 text-center relative">
@@ -1387,7 +1445,7 @@ export default function Game() {
       {waitingForOthers && !showCompletionPopup && !gameOver && (
         <div className="fixed inset-0 z-[85] flex items-center justify-center"
           style={{ background: 'rgba(0,0,0,0.75)', backdropFilter: 'blur(12px)' }}>
-          <div className="relative w-full max-w-sm mx-4 rounded-2xl overflow-hidden "
+          <div className="relative w-full max-w-sm mx-4 rounded-2xl overflow-hidden animate-scale-in"
             style={{
               background: 'linear-gradient(145deg,#0f0f1a,#1a1a2e)',
               border: '1px solid rgba(99,102,241,0.3)',
@@ -1434,7 +1492,7 @@ export default function Game() {
       {showCompletionPopup && !gameOver && (
         <div className="fixed inset-0 z-[90] flex items-center justify-center"
           style={{ background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(16px)' }}>
-          <div className="relative w-full max-w-md mx-4 rounded-3xl overflow-hidden "
+          <div className="relative w-full max-w-md mx-4 rounded-3xl overflow-hidden animate-scale-in"
             style={{
               background: 'linear-gradient(145deg,#0f0f1a,#1a1a2e)',
               border: '1px solid rgba(99,102,241,0.35)',
@@ -1446,7 +1504,7 @@ export default function Game() {
             <div className="p-8">
               {/* Header */}
               <div className="text-center mb-6">
-                <Icon name="bolt" size={52} className="mb-3" />
+                <div className="text-6xl mb-3">⚡</div>
                 <h2 className="text-2xl font-extrabold text-white mb-2">You're Fast!</h2>
                 <p className="text-slate-400 text-sm leading-relaxed">
                   You've completed all {questionsPerRound * totalRounds} question{questionsPerRound * totalRounds !== 1 ? 's' : ''}.
@@ -1485,11 +1543,11 @@ export default function Game() {
               {/* Live leaderboard */}
               <div className="rounded-2xl overflow-hidden mb-6"
                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                <div className="px-4 py-2.5 text-[10px] font-bold text-slate-500 flex items-center gap-2"
+                <div className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2"
                   style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                  <Icon name="trophy" size={14} className="" /> Live Standings
+                  <span>🏆</span> Live Standings
                 </div>
-                <div className="grid grid-cols-12 px-4 py-2 text-[10px] font-bold text-slate-500"
+                <div className="grid grid-cols-12 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-600"
                   style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                   <span className="col-span-1">#</span>
                   <span className="col-span-7">Player</span>
@@ -1502,7 +1560,7 @@ export default function Game() {
                 ) : (
                   leaderboard.map((entry, i) => {
                     const isMe = (entry.player_id ?? entry.id) === playerId
-                    const medals = ['1', '2', '3']
+                    const medals = ['🥇', '🥈', '🥉']
                     return (
                       <div key={entry.player_id ?? entry.id ?? i}
                         className="grid grid-cols-12 px-4 py-3 items-center"
@@ -1578,7 +1636,7 @@ export default function Game() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowCustomWarning(false)}
-                  className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 "
+                  className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 hover:scale-105"
                   style={{ 
                     background: 'rgba(255,255,255,0.05)', 
                     color: '#94a3b8',
@@ -1593,7 +1651,7 @@ export default function Game() {
                     setShowCustomWarning(false)
                     setRightPanelTab('tests')
                   }}
-                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 "
+                  className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 hover:scale-105"
                   style={{
                     background: '#3b82f6',
                     color: 'white',
@@ -1609,11 +1667,11 @@ export default function Game() {
       )}
 
       {/* LEFT: Activity Bar with Icons */}
-      <div className="w-14 flex flex-col items-center py-3 gap-1 shrink-0 relative" style={{ background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+      <div className="w-14 flex flex-col items-center py-3 gap-1 shrink-0 animate-slide-right relative" style={{ background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
         {/* Problem Icon */}
         <button
           onClick={() => setActivePanel(activePanel === 'problem' ? 'right' : 'problem')}
-          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 relative group"
+          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative group"
           style={{ 
             color: activePanel === 'problem' ? '#60a5fa' : '#64748b',
             background: activePanel === 'problem' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
@@ -1628,7 +1686,7 @@ export default function Game() {
         {/* AI Code Analyzer Icon */}
         <button
           onClick={() => setActivePanel('ai-analyzer')}
-          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 relative group"
+          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative group"
           style={{ 
             color: activePanel === 'ai-analyzer' ? '#60a5fa' : '#64748b',
             background: activePanel === 'ai-analyzer' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
@@ -1639,7 +1697,7 @@ export default function Game() {
         >
           {ACTIVITY_ICONS.aiAnalyzer}
           {debugHint && debugHint.logic_correctness !== undefined && (
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center "
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center animate-scale-in"
               style={{ 
                 background: debugHint.logic_correctness >= 70 ? '#10b981' : debugHint.logic_correctness >= 40 ? '#f59e0b' : '#ef4444',
                 color: 'white',
@@ -1653,7 +1711,7 @@ export default function Game() {
         {/* Complexity Analyzer Icon */}
         <button
           onClick={() => setActivePanel('complexity')}
-          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 relative group"
+          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative group"
           style={{ 
             color: activePanel === 'complexity' ? '#60a5fa' : '#64748b',
             background: activePanel === 'complexity' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
@@ -1668,7 +1726,7 @@ export default function Game() {
         {/* Leaderboard Icon */}
         <button
           onClick={() => setActivePanel('leaderboard')}
-          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 relative group"
+          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative group"
           style={{ 
             color: activePanel === 'leaderboard' ? '#60a5fa' : '#64748b',
             background: activePanel === 'leaderboard' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
@@ -1684,7 +1742,7 @@ export default function Game() {
         
         {/* Players Icon */}
         <button
-          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 relative group"
+          className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative group"
           style={{ 
             color: '#64748b',
             background: 'transparent',
@@ -1698,7 +1756,7 @@ export default function Game() {
 
       {/* AI Code Analyzer Panel - Conditional */}
       {activePanel === 'ai-analyzer' && (
-        <div className="flex flex-col overflow-hidden relative" style={{ width: `${aiAnalyzerWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex flex-col overflow-hidden animate-slide-right relative" style={{ width: `${aiAnalyzerWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
           
           {/* Resize Handle */}
           <div
@@ -1716,7 +1774,7 @@ export default function Game() {
           {/* Header */}
           <div className="px-4 py-3 shrink-0" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="flex items-center gap-2">
-              <Icon name="message" size={20} className="" />
+              <span className="text-xl">🤖</span>
               <div>
                 <div className="text-sm font-bold text-white">AI Code Analyzer</div>
                 <div className="text-[10px] text-slate-500">Real-time feedback</div>
@@ -1729,14 +1787,14 @@ export default function Game() {
           {!question ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                <Icon name="target" size={30} className="" />
+                <span className="text-3xl">🎯</span>
               </div>
               <div className="text-sm text-slate-400">Generate a problem to start</div>
             </div>
           ) : !editorCode || editorCode === STARTER[lang] || editorCode === generateCodeTemplate(question, lang) ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                <Icon name="pencil" size={30} className="" />
+                <span className="text-3xl">✍️</span>
               </div>
               <div className="text-sm text-slate-400 px-4">Start writing code to get AI analysis</div>
             </div>
@@ -1745,7 +1803,7 @@ export default function Game() {
               {/* Code Correctness */}
               <div className="rounded-xl p-4" style={{ background: 'rgba(59, 130, 246,0.1)', border: '1px solid rgba(59, 130, 246,0.3)' }}>
                 <div className="flex items-center justify-between mb-3">
-                  <div className="text-xs font-semibold text-blue-300">Code Analysis</div>
+                  <div className="text-xs font-semibold text-blue-300 uppercase tracking-wider">Code Analysis</div>
                   <button 
                     onClick={async () => {
                       if (!question || !editorCode) return
@@ -1799,10 +1857,10 @@ export default function Game() {
                       }
                     }}
                     disabled={loadingHint}
-                    className="px-2 py-1 rounded text-[10px] font-medium transition-all "
+                    className="px-2 py-1 rounded text-[10px] font-medium transition-all hover:scale-105"
                     style={{ background: 'rgba(59, 130, 246,0.2)', color: '#60a5fa' }}
                   >
-                    {loadingHint ? 'Analyzing…' : 'Analyze'}
+                    {loadingHint ? '⏳' : '🔄'} Analyze
                   </button>
                 </div>
 
@@ -1843,7 +1901,7 @@ export default function Game() {
 
                     {/* Predicted Score */}
                     <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                      <div className="text-[10px] text-emerald-400 font-semibold mb-1">Predicted Score</div>
+                      <div className="text-[10px] text-emerald-400 font-semibold uppercase tracking-wider mb-1">Predicted Score</div>
                       <div className="flex items-baseline gap-2">
                         {debugHint.is_pre_submission ? (
                           <span className="text-sm text-slate-400">Run tests first</span>
@@ -1860,7 +1918,7 @@ export default function Game() {
                     {/* AI Analysis */}
                     {debugHint.analysis && (
                       <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)' }}>
-                        <div className="text-[10px] text-blue-300 font-semibold mb-2">AI Feedback</div>
+                        <div className="text-[10px] text-blue-300 font-semibold uppercase tracking-wider mb-2">AI Feedback</div>
                         <div className="text-xs text-slate-300 leading-relaxed">{debugHint.analysis}</div>
                       </div>
                     )}
@@ -1868,8 +1926,8 @@ export default function Game() {
                     {/* Suggestions */}
                     {debugHint.suggestions && debugHint.suggestions.length > 0 && (
                       <div className="rounded-lg p-3" style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.2)' }}>
-                        <div className="text-[10px] text-yellow-300 font-semibold mb-2 flex items-center gap-1">
-                          <Icon name="bulb" size={14} className="" /> Hints to Improve
+                        <div className="text-[10px] text-yellow-300 font-semibold uppercase tracking-wider mb-2 flex items-center gap-1">
+                          <span>💡</span> Hints to Improve
                         </div>
                         <ul className="space-y-1.5">
                           {debugHint.suggestions.slice(0, 3).map((suggestion, idx) => (
@@ -1905,7 +1963,7 @@ export default function Game() {
               {/* Test Results (if available) */}
               {testCaseDetails.length > 0 && (
                 <div className="rounded-xl p-4" style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                  <div className="text-xs font-semibold text-emerald-300 mb-3">Test Results</div>
+                  <div className="text-xs font-semibold text-emerald-300 uppercase tracking-wider mb-3">Test Results</div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-slate-400">Tests Passed</span>
                     <span className="text-lg font-bold" style={{ color: passedCount === totalTests ? '#34d399' : '#fbbf24' }}>
@@ -1920,9 +1978,9 @@ export default function Game() {
                 {/* Chat header */}
                 <div className="px-3 py-2.5 flex items-center justify-between" style={{ background: 'rgba(59, 130, 246,0.12)', borderBottom: '1px solid rgba(59, 130, 246,0.2)' }}>
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[11px]" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}><Icon name="message" size={11} className="text-white" /></div>
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[11px]" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
                     <span className="text-xs font-bold text-white">Ask AI Coach</span>
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ background: 'rgba(59, 130, 246,0.25)', color: '#60a5fa' }}>NVIDIA</span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase" style={{ background: 'rgba(59, 130, 246,0.25)', color: '#60a5fa' }}>NVIDIA</span>
                   </div>
                   {grokMessages.length > 0 && (
                     <button
@@ -1939,15 +1997,15 @@ export default function Game() {
                 <div className="overflow-y-auto p-3 space-y-3" style={{ maxHeight: '320px', minHeight: grokMessages.length === 0 ? '0px' : '120px' }}>
                   {grokMessages.length === 0 && (
                     <div className="text-center py-4">
-                      <Icon name="message" size={24} className="mx-auto mb-2 text-slate-500" />
+                      <div className="text-2xl mb-2">✦</div>
                       <div className="text-[11px] text-slate-400 mb-1">Ask anything about your code</div>
-                      <div className="text-[10px] text-slate-500">e.g. "Why is my solution O(n²)?" or "How do I fix this bug?"</div>
+                      <div className="text-[10px] text-slate-600">e.g. "Why is my solution O(n²)?" or "How do I fix this bug?"</div>
                     </div>
                   )}
                   {grokMessages.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       {msg.role === 'assistant' && (
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}><Icon name="message" size={11} className="text-white" /></div>
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
                       )}
                       <div
                         className="rounded-xl px-3 py-2 text-[11px] leading-relaxed max-w-[85%]"
@@ -1962,7 +2020,7 @@ export default function Game() {
                   ))}
                   {grokLoading && (
                     <div className="flex justify-start">
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}><Icon name="message" size={11} className="text-white" /></div>
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
                       <div className="rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
                         <div className="flex gap-1 items-center h-4">
                           <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -1988,7 +2046,7 @@ export default function Game() {
                         key={prompt}
                         onClick={() => sendGrokMessage(prompt)}
                         disabled={grokLoading}
-                        className="px-2 py-1 rounded-full text-[10px] transition-all active:scale-95 disabled:opacity-40"
+                        className="px-2 py-1 rounded-full text-[10px] transition-all hover:scale-105 active:scale-95 disabled:opacity-40"
                         style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.25)' }}
                       >
                         {prompt}
@@ -2018,7 +2076,7 @@ export default function Game() {
                     <button
                       onClick={() => sendGrokMessage()}
                       disabled={grokLoading || !grokInput.trim()}
-                      className="m-1.5 w-7 h-7 rounded-lg flex items-center justify-center transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
+                      className="m-1.5 w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
                       style={{ background: grokInput.trim() ? 'linear-gradient(135deg,#2563eb,#a855f7)' : 'rgba(59, 130, 246,0.2)' }}
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -2026,7 +2084,7 @@ export default function Game() {
                       </svg>
                     </button>
                   </div>
-                  <div className="text-[9px] text-slate-500 mt-1 px-1">Shift+Enter for new line · Powered by NVIDIA NIM</div>
+                  <div className="text-[9px] text-slate-600 mt-1 px-1">Shift+Enter for new line · Powered by NVIDIA NIM</div>
                 </div>
               </div>
             </>
@@ -2037,7 +2095,7 @@ export default function Game() {
 
       {/* Complexity Analyzer Panel */}
       {activePanel === 'complexity' && (
-        <div className="flex flex-col overflow-hidden relative" style={{ width: `${complexityWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex flex-col overflow-hidden animate-slide-right relative" style={{ width: `${complexityWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
           
           {/* Resize Handle */}
           <div
@@ -2080,12 +2138,12 @@ export default function Game() {
                 } finally { setLoadingComplexity(false) }
               }}
               disabled={loadingComplexity || !question || !editorCode}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ background: 'rgba(59, 130, 246,0.2)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.4)' }}
             >
               {loadingComplexity
                 ? <><span className="animate-spin inline-block">⏳</span> Analyzing…</>
-                : <><Icon name="bolt" size={14} className="" /> Analyze</>}
+                : <><span>⚡</span> Analyze</>}
             </button>
           </div>
 
@@ -2094,21 +2152,21 @@ export default function Game() {
             {!question ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-12">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                  <Icon name="target" size={24} className="" />
+                  <span className="text-2xl">🎯</span>
                 </div>
                 <div className="text-sm text-slate-400">Generate a problem to start</div>
               </div>
             ) : !editorCode || editorCode === STARTER[lang] || editorCode === generateCodeTemplate(question, lang) ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-12">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                  <Icon name="pencil" size={24} className="" />
+                  <span className="text-2xl">✍️</span>
                 </div>
                 <div className="text-sm text-slate-400 px-4">Write some code, then click Analyze</div>
               </div>
             ) : !complexityData ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-12">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                  <Icon name="bolt" size={24} className="" />
+                  <span className="text-2xl">⚡</span>
                 </div>
                 <div className="text-sm text-slate-400 mb-1">Ready to analyze</div>
                 <div className="text-[11px] text-slate-500">Click Analyze to check time & space complexity</div>
@@ -2122,7 +2180,7 @@ export default function Game() {
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
                       </svg>
-                      <span className="text-[11px] font-semibold text-slate-300">Execution Statistics</span>
+                      <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">Execution Statistics</span>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
                       <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -2137,7 +2195,7 @@ export default function Game() {
                               : `${complexityData.execution_stats.memory_kb.toFixed(1)} KB`
                             : '—'}
                         </div>
-                        <div className="text-[9px] text-slate-500">max 1.6 MB</div>
+                        <div className="text-[9px] text-slate-600">max 1.6 MB</div>
                       </div>
                       <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
                         <div className="flex items-center justify-center gap-1 mb-1">
@@ -2149,7 +2207,7 @@ export default function Game() {
                             ? `${Math.round(complexityData.execution_stats.cpu_time_ms)} ms`
                             : '—'}
                         </div>
-                        <div className="text-[9px] text-slate-500">
+                        <div className="text-[9px] text-slate-600">
                           max {complexityData.execution_stats.cpu_time_ms != null ? `${Math.round(complexityData.execution_stats.cpu_time_ms)} ms` : '—'}
                         </div>
                       </div>
@@ -2163,7 +2221,7 @@ export default function Game() {
                             ? `${Math.round(complexityData.execution_stats.wall_time_ms)} ms`
                             : '—'}
                         </div>
-                        <div className="text-[9px] text-slate-500">
+                        <div className="text-[9px] text-slate-600">
                           avg of {complexityData.execution_stats.total_tests ?? '—'} tests
                         </div>
                       </div>
@@ -2174,10 +2232,10 @@ export default function Game() {
                 {/* ── Verdict Badge ── */}
                 {complexityData.verdict && complexityData.verdict !== 'unknown' && (() => {
                   const verdictConfig = {
-                    optimal:          { bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.35)', color: '#34d399', icon: 'check-circle', label: 'Optimal' },
-                    acceptable:       { bg: 'rgba(251,191,36,0.10)', border: 'rgba(251,191,36,0.35)', color: '#fbbf24', icon: 'info', label: 'Acceptable' },
-                    needs_improvement:{ bg: 'rgba(249,115,22,0.10)', border: 'rgba(249,115,22,0.35)', color: '#fb923c', icon: 'alert', label: 'Needs improvement' },
-                    poor:             { bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.35)',  color: '#f87171', icon: 'x-circle', label: 'Poor' },
+                    optimal:          { bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.35)', color: '#34d399', icon: '✅', label: 'Optimal' },
+                    acceptable:       { bg: 'rgba(251,191,36,0.10)', border: 'rgba(251,191,36,0.35)', color: '#fbbf24', icon: '🟡', label: 'Acceptable' },
+                    needs_improvement:{ bg: 'rgba(249,115,22,0.10)', border: 'rgba(249,115,22,0.35)', color: '#fb923c', icon: '⚠️', label: 'Needs Improvement' },
+                    poor:             { bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.35)',  color: '#f87171', icon: '🔴', label: 'Poor' },
                   }
                   const cfg = verdictConfig[complexityData.verdict] || verdictConfig.acceptable
                   return (
@@ -2221,31 +2279,31 @@ export default function Game() {
                     <div>
                       <div className="text-[9px] text-slate-500 mb-0.5">Best</div>
                       <div className="text-[11px] font-mono font-bold text-emerald-400">{complexityData.time_complexity?.best}</div>
-                      <div className="text-[9px] text-slate-500">time</div>
+                      <div className="text-[9px] text-slate-600">time</div>
                     </div>
                     <div>
                       <div className="text-[9px] text-slate-500 mb-0.5">Avg</div>
                       <div className="text-[11px] font-mono font-bold text-yellow-400">{complexityData.time_complexity?.average}</div>
-                      <div className="text-[9px] text-slate-500">time</div>
+                      <div className="text-[9px] text-slate-600">time</div>
                     </div>
                     <div>
                       <div className="text-[9px] text-slate-500 mb-0.5">Worst</div>
                       <div className="text-[11px] font-mono font-bold text-rose-400">{complexityData.time_complexity?.worst}</div>
-                      <div className="text-[9px] text-slate-500">time</div>
+                      <div className="text-[9px] text-slate-600">time</div>
                     </div>
                   </div>
                   <div className="border-t border-white/5 pt-2 grid grid-cols-3 gap-1 text-center">
                     <div>
                       <div className="text-[11px] font-mono font-bold text-emerald-400">{complexityData.space_complexity?.best}</div>
-                      <div className="text-[9px] text-slate-500">space</div>
+                      <div className="text-[9px] text-slate-600">space</div>
                     </div>
                     <div>
                       <div className="text-[11px] font-mono font-bold text-yellow-400">{complexityData.space_complexity?.average}</div>
-                      <div className="text-[9px] text-slate-500">space</div>
+                      <div className="text-[9px] text-slate-600">space</div>
                     </div>
                     <div>
                       <div className="text-[11px] font-mono font-bold text-rose-400">{complexityData.space_complexity?.worst}</div>
-                      <div className="text-[9px] text-slate-500">space</div>
+                      <div className="text-[9px] text-slate-600">space</div>
                     </div>
                   </div>
                 </div>
@@ -2256,7 +2314,7 @@ export default function Game() {
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
                     </svg>
-                    <span className="text-[11px] font-semibold text-slate-300">Complexity Visualization</span>
+                    <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">Complexity Visualization</span>
                   </div>
                   <div style={{ overflowX: 'auto' }}>
                     <ComplexityChart userComplexity={complexityData.time_complexity?.worst} />
@@ -2271,7 +2329,7 @@ export default function Game() {
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
                       </svg>
-                      <span className="text-[11px] font-semibold text-slate-300">Complexity Analysis</span>
+                      <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">Complexity Analysis</span>
                     </div>
                     <p className="text-[11px] text-slate-300 leading-relaxed">{complexityData.analysis}</p>
                   </div>
@@ -2284,7 +2342,7 @@ export default function Game() {
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
                       </svg>
-                      <span className="text-[11px] font-semibold text-slate-300">Improvement Suggestions</span>
+                      <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">Improvement Suggestions</span>
                     </div>
                     <div className="space-y-2">
                       {complexityData.structured_suggestions.map((s, i) => {
@@ -2298,7 +2356,7 @@ export default function Game() {
                           <div key={i} className="rounded-lg p-2.5" style={{ background: ps.bg, border: `1px solid ${ps.border}` }}>
                             <div className="flex items-start justify-between gap-2 mb-1">
                               <span className="text-[11px] font-semibold text-white leading-tight">{s.title}</span>
-                              <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold" style={{ background: ps.badge, color: ps.badgeText }}>{ps.label}</span>
+                              <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase" style={{ background: ps.badge, color: ps.badgeText }}>{ps.label}</span>
                             </div>
                             <p className="text-[10px] text-slate-400 leading-relaxed">{s.description}</p>
                           </div>
@@ -2317,8 +2375,8 @@ export default function Game() {
                         <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                       </svg>
                       <div>
-                        <div className="text-[11px] font-semibold text-white">Copy summary</div>
-                        <div className="text-[9px] text-slate-500">Copy the complexity result to share it</div>
+                        <div className="text-[11px] font-semibold text-white">Share Solution</div>
+                        <div className="text-[9px] text-slate-500">Make your solution visible to others</div>
                       </div>
                     </div>
                     <button
@@ -2326,11 +2384,11 @@ export default function Game() {
                         const text = `Time: ${complexityData.time_complexity?.worst} | Space: ${complexityData.space_complexity?.worst}\n${complexityData.analysis || ''}`
                         navigator.clipboard?.writeText(text).catch(() => {})
                       }}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all active:scale-95"
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all hover:scale-105 active:scale-95"
                       style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.3)' }}
                     >
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                      Copy
+                      Make Public
                     </button>
                   </div>
                 </div>
@@ -2342,7 +2400,7 @@ export default function Game() {
 
       {/* Leaderboard Panel */}
       {activePanel === 'leaderboard' && (
-        <div className="flex flex-col overflow-hidden relative" style={{ width: `${leaderboardWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex flex-col overflow-hidden animate-slide-right relative" style={{ width: `${leaderboardWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
           
           {/* Resize Handle */}
           <div
@@ -2374,7 +2432,7 @@ export default function Game() {
           {/* Header */}
           <div className="px-4 py-3 shrink-0" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="flex items-center gap-2">
-              <Icon name="trophy" size={20} className="" />
+              <span className="text-xl">🏆</span>
               <div>
                 <div className="text-sm font-bold text-white">Leaderboard</div>
                 <div className="text-[10px] text-slate-500">Match rankings</div>
@@ -2387,7 +2445,7 @@ export default function Game() {
             {leaderboard.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(251,191,36,0.1)' }}>
-                  <Icon name="bars" size={30} className="" />
+                  <span className="text-3xl">📊</span>
                 </div>
                 <div className="text-sm text-slate-400">No scores yet</div>
                 <div className="text-xs text-slate-500 mt-1">Start solving to see rankings</div>
@@ -2396,10 +2454,10 @@ export default function Game() {
               <div className="space-y-2">
                 {leaderboard.map((entry, i) => {
                   const isMe = (entry.player_id ?? entry.id) === playerId
-                  const medals = ['1', '2', '3']
+                  const medals = ['🥇', '🥈', '🥉']
                   return (
                     <div key={entry.player_id ?? entry.id ?? i}
-                      className="rounded-xl p-3 transition-all duration-300 "
+                      className="rounded-xl p-3 transition-all duration-300 hover:scale-[1.02]"
                       style={{
                         background: isMe ? 'rgba(59, 130, 246,0.15)' : 'rgba(255,255,255,0.03)',
                         border: isMe ? '1px solid rgba(59, 130, 246,0.3)' : '1px solid rgba(255,255,255,0.05)',
@@ -2465,7 +2523,7 @@ export default function Game() {
 
       {/* LEFT: Problem Panel */}
       {activePanel === 'problem' && (
-        <div className="flex flex-col overflow-hidden relative" style={{ width: `${problemWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex flex-col overflow-hidden animate-slide-right relative" style={{ width: `${problemWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
           
           {/* Resize Handle */}
           <div
@@ -2481,10 +2539,10 @@ export default function Game() {
           </div>
           
           {/* Header */}
-          <div className="px-5 py-4 shrink-0 relative" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="px-5 py-4 shrink-0 animate-slide-down relative" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-xs transition-all duration-300 " 
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-xs transition-all duration-300 hover:scale-110 hover:rotate-6" 
                   style={{ background: 'linear-gradient(135deg,#3b82f6,#06b6d4)' }}>
                   C
                 </div>
@@ -2492,11 +2550,11 @@ export default function Game() {
               </div>
               <div className="flex items-center gap-2">
                 {totalRounds > 1 && (
-                  <span className="text-xs px-2 py-1 rounded-md font-medium transition-all duration-300 " style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.3)' }}>
+                  <span className="text-xs px-2 py-1 rounded-md font-medium transition-all duration-300 hover:scale-105 animate-fade-in" style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.3)' }}>
                     R{currentRound}/{totalRounds}
                   </span>
                 )}
-                <span className="text-xs px-2 py-1 rounded-md font-medium transition-all duration-300 " style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}>
+                <span className="text-xs px-2 py-1 rounded-md font-medium transition-all duration-300 hover:scale-105 animate-fade-in" style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}>
                   Q{totalQuestionsAnswered + 1}/{questionsPerRound * totalRounds}
                 </span>
                 <Timer startedAt={questionStartedAt || startedAt} timeLimit={timeLimit} onExpire={handleTimeUp} />
@@ -2512,17 +2570,17 @@ export default function Game() {
           {/* Question content */}
           <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ padding: '24px' }}>
             {!question ? (
-              <div className="flex flex-col items-center justify-center h-full text-center ">
+              <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
                 <div className="relative mb-6">
-                  <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-full blur-2xl-slow" />
-                  <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-300 " style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                    <Icon name={lobby?.created_by && user?.id && lobby.created_by === user.id ? 'target' : 'clock'} size={36} className="text-blue-400" />
+                  <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-full blur-2xl animate-pulse-slow" />
+                  <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-300 hover:scale-110" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
+                    <span className="text-4xl animate-pulse">{lobby?.created_by && user?.id && lobby.created_by === user.id ? '🎯' : '⏳'}</span>
                   </div>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2 ">
+                <h3 className="text-xl font-bold text-white mb-2 animate-slide-up">
                   {lobby?.created_by && user?.id && lobby.created_by === user.id ? 'Ready to Code?' : 'Waiting for Host…'}
                 </h3>
-                <p className="text-slate-400 text-sm mb-8 max-w-xs " style={{ animationDelay: '0.1s' }}>
+                <p className="text-slate-400 text-sm mb-8 max-w-xs animate-slide-up" style={{ animationDelay: '0.1s' }}>
                   {lobby?.created_by && user?.id && lobby.created_by === user.id
                     ? 'Generate a problem to begin the challenge'
                     : 'The host is generating the first question. Hang tight!'}
@@ -2531,14 +2589,14 @@ export default function Game() {
                 {lobby?.created_by && user?.id && lobby.created_by === user.id && (
                   <div className="w-full max-w-sm relative">
                     <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-2xl blur-xl" />
-                    <div className="relative p-5 rounded-xl transition-all duration-300 " style={{ background: '#101018', border: '1px solid rgba(255,255,255,0.07)', animationDelay: '0.2s' }}>
+                    <div className="relative p-5 rounded-xl animate-scale-in transition-all duration-300 hover:-translate-y-1" style={{ background: '#101018', border: '1px solid rgba(255,255,255,0.07)', animationDelay: '0.2s' }}>
                       <div className="mb-4">
                         <label className="block text-xs text-slate-400 mb-2 text-center">Difficulty</label>
                         <div className="flex gap-2">
                           {['easy', 'medium', 'hard'].map(d => (
                             <button key={d}
                               onClick={() => setDifficulty(d)}
-                              className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all duration-300 capitalize "
+                              className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all duration-300 capitalize hover:scale-105"
                               style={{
                                 background: difficulty === d ? DIFFICULTY_COLORS[d].bg : 'rgba(255,255,255,0.03)',
                                 color: difficulty === d ? DIFFICULTY_COLORS[d].text : '#64748b',
@@ -2562,7 +2620,7 @@ export default function Game() {
                       <button
                         onClick={generateQuestion}
                         disabled={generating}
-                        className="relative w-full py-3 rounded-lg text-sm font-semibold text-white transition-all duration-300 flex items-center justify-center gap-2 overflow-hidden group"
+                        className="relative w-full py-3 rounded-lg text-sm font-semibold text-white transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105 overflow-hidden group"
                         style={{ opacity: generating ? 0.5 : 1 }}
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600" />
@@ -2575,7 +2633,7 @@ export default function Game() {
                             </>
                           ) : (
                             <>
-                              Generate problem
+                              <span>✨</span> Generate Problem
                             </>
                           )}
                         </span>
@@ -2585,11 +2643,11 @@ export default function Game() {
                 )}
               </div>
             ) : (
-              <div className="">
+              <div className="animate-fade-in">
                 <div className="mb-6">
                   <div className="flex items-start justify-between mb-3">
-                    <h1 className="text-2xl font-bold text-white leading-tight pr-4 ">{question.title}</h1>
-                    <span className="shrink-0 px-3 py-1 rounded-full text-xs font-semibold capitalize transition-all "
+                    <h1 className="text-2xl font-bold text-white leading-tight pr-4 animate-slide-up">{question.title}</h1>
+                    <span className="shrink-0 px-3 py-1 rounded-full text-xs font-semibold capitalize animate-scale-in transition-all hover-scale"
                       style={{
                         background: DIFFICULTY_COLORS[question.difficulty]?.bg || 'rgba(255,255,255,0.1)',
                         color: DIFFICULTY_COLORS[question.difficulty]?.text || '#94a3b8',
@@ -2599,20 +2657,20 @@ export default function Game() {
                     </span>
                   </div>
                   {question.topic && (
-                    <span className="inline-block px-2 py-1 rounded text-xs font-medium transition-all " style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa' }}>
+                    <span className="inline-block px-2 py-1 rounded text-xs font-medium animate-slide-right transition-all hover-scale" style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa' }}>
                       #{question.topic}
                     </span>
                   )}
                 </div>
 
-                <div className="" style={{ fontSize: '14px', lineHeight: '1.8', animationDelay: '0.1s' }}>
+                <div className="animate-slide-up" style={{ fontSize: '14px', lineHeight: '1.8', animationDelay: '0.1s' }}>
                   {renderMarkdown(question.description)}
                 </div>
 
                 {/* Diagram for tree/graph questions */}
                 {question.diagram && (
-                  <div className="mt-6 " style={{ animationDelay: '0.2s' }}>
-                    <div className="text-xs font-semibold text-blue-300 mb-3 flex items-center gap-2">
+                  <div className="mt-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
+                    <div className="text-xs font-semibold text-blue-300 uppercase tracking-wider mb-3 flex items-center gap-2">
                       <span style={{ 
                         width: '3px', 
                         height: '14px', 
@@ -2665,11 +2723,11 @@ export default function Game() {
                       <button
                         onClick={generateQuestion}
                         disabled={generating}
-                        className="relative px-4 rounded-lg text-sm font-medium text-white transition-all duration-300 shrink-0 h-9 overflow-hidden group"
+                        className="relative px-4 rounded-lg text-sm font-medium text-white transition-all duration-300 shrink-0 h-9 hover:scale-105 overflow-hidden group"
                         style={{ opacity: generating ? 0.5 : 1 }}
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600" />
-                        <span className="relative z-10">{generating ? '…' : 'Swap'}</span>
+                        <span className="relative z-10">{generating ? '...' : '✨'}</span>
                       </button>
                     </div>
                   </div>
@@ -2687,7 +2745,7 @@ export default function Game() {
             <div className="flex items-center gap-2 ml-auto">
               <div className="text-right">
                 <div className="text-xs font-semibold text-white">{user?.username}</div>
-                <div className="text-[10px] text-slate-500">Player</div>
+                <div className="text-[10px] text-slate-500">PLAYER</div>
               </div>
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" 
                 style={{ background: 'linear-gradient(135deg,#3b82f6,#06b6d4)' }}>
@@ -2702,13 +2760,13 @@ export default function Game() {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Editor Header */}
-        <div className="h-11 flex items-center px-4 gap-4 shrink-0 relative" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="h-11 flex items-center px-4 gap-4 shrink-0 animate-slide-down relative" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div className="flex items-center gap-1">
             {LANGUAGES.map(l => (
               <button
                 key={l.value}
                 onClick={() => changeLang(l.value)}
-                className="px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 "
+                className="px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 hover:scale-105"
                 style={{
                   background: lang === l.value ? 'rgba(59, 130, 246,0.2)' : 'transparent',
                   color: lang === l.value ? '#60a5fa' : '#64748b',
@@ -2726,7 +2784,7 @@ export default function Game() {
             <button
               onClick={runCode}
               disabled={runningCustom || !question}
-              className="px-4 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 flex items-center gap-1.5 "
+              className="px-4 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 flex items-center gap-1.5 hover:scale-105"
               style={{
                 background: useCustomInput ? 'rgba(59, 130, 246,0.2)' : 'rgba(255,255,255,0.06)',
                 color: useCustomInput ? '#60a5fa' : '#94a3b8',
@@ -2741,7 +2799,7 @@ export default function Game() {
             <button
               onClick={submitCode}
               disabled={submitting || !question}
-              className="relative px-5 py-1.5 rounded-lg text-xs font-semibold text-white transition-all duration-300 flex items-center gap-1.5 overflow-hidden group"
+              className="relative px-5 py-1.5 rounded-lg text-xs font-semibold text-white transition-all duration-300 flex items-center gap-1.5 hover:scale-105 overflow-hidden group"
               style={{
                 opacity: (!question || submitting) ? 0.5 : 1,
               }}
@@ -2757,7 +2815,7 @@ export default function Game() {
           
           {/* Logic Analysis Display */}
           {result && result.logic_analysis && (
-            <div className="ml-4 px-4 py-2 rounded-lg flex items-center gap-3 " 
+            <div className="ml-4 px-4 py-2 rounded-lg flex items-center gap-3 animate-fade-in" 
               style={{ 
                 background: result.logic_analysis.logic_correctness >= 70 
                   ? 'rgba(16,185,129,0.15)' 
@@ -2772,7 +2830,7 @@ export default function Game() {
               }}
             >
               <div className="flex items-center gap-2">
-                <Icon name="message" size={18} className="" />
+                <span className="text-lg">🤖</span>
                 <div>
                   <div className="text-xs font-semibold" 
                     style={{ 
@@ -2868,7 +2926,7 @@ export default function Game() {
         </div>
 
         {/* Bottom Panel */}
-        <div className="shrink-0 flex flex-col relative transition-all duration-300" style={{ height: bottomPanelMinimized ? '40px' : '300px', background: '#101018', borderTop: '2px solid rgba(59, 130, 246,0.3)' }}>
+        <div className="shrink-0 flex flex-col animate-slide-up relative transition-all duration-300" style={{ height: bottomPanelMinimized ? '40px' : '300px', background: '#101018', borderTop: '2px solid rgba(59, 130, 246,0.3)' }}>
 
           {/* Tabs Header */}
           <div className="flex items-center justify-between px-2 shrink-0 h-10" style={{ borderBottom: bottomPanelMinimized ? 'none' : '1px solid rgba(255,255,255,0.07)' }}>
@@ -2881,7 +2939,7 @@ export default function Game() {
                     setRightPanelTab('tests')
                   }
                 }}
-                className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 relative"
+                className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 hover:scale-105 relative"
                 style={{ color: rightPanelTab === 'tests' ? '#60a5fa' : '#64748b' }}
               >
                 {rightPanelTab === 'tests' && (
@@ -2898,7 +2956,7 @@ export default function Game() {
               </button>
               <button
                 onClick={() => setRightPanelTab('custom')}
-                className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 relative"
+                className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 hover:scale-105 relative"
                 style={{ color: rightPanelTab === 'custom' ? '#60a5fa' : '#64748b' }}
               >
                 {rightPanelTab === 'custom' && (
@@ -2914,7 +2972,7 @@ export default function Game() {
               </button>
               <button
                 onClick={() => setRightPanelTab('console')}
-                className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 relative"
+                className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 hover:scale-105 relative"
                 style={{ color: rightPanelTab === 'console' ? '#60a5fa' : '#64748b' }}
               >
                 {rightPanelTab === 'console' && (
@@ -2926,13 +2984,13 @@ export default function Game() {
               {result && result.logic_analysis && (
                 <button
                   onClick={() => setRightPanelTab('logic')}
-                  className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 relative"
+                  className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 hover:scale-105 animate-fade-in relative"
                   style={{ color: rightPanelTab === 'logic' ? '#60a5fa' : '#64748b' }}
                 >
                   {rightPanelTab === 'logic' && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#3b82f6' }} />
                   )}
-                  <Icon name="message" size={14} className="" />
+                  <span>🤖</span>
                   Logic Analysis
                   <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" 
                     style={{ 
@@ -2963,7 +3021,7 @@ export default function Game() {
               </button>
               <button
                 onClick={() => setBottomPanelMinimized(!bottomPanelMinimized)}
-                className="px-3 py-1.5 rounded text-slate-500 hover:text-blue-400 transition-all duration-300 text-xs flex items-center gap-1 "
+                className="px-3 py-1.5 rounded text-slate-500 hover:text-blue-400 transition-all duration-300 text-xs flex items-center gap-1 hover:scale-110"
                 title={bottomPanelMinimized ? "Maximize panel" : "Minimize panel"}
               >
                 <svg 
@@ -3038,7 +3096,7 @@ export default function Game() {
                           
                           {testCaseDetails[selectedTestCase].passed !== null && (
                             <div className="w-full max-w-sm rounded-lg p-4" style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                              <div className="text-[11px] font-semibold mb-2 text-center"
+                              <div className="text-[11px] font-semibold uppercase tracking-wider mb-2 text-center"
                                 style={{ color: testCaseDetails[selectedTestCase].passed ? '#34d399' : '#f87171' }}>
                                 {testCaseDetails[selectedTestCase].passed ? '✓ Test Passed' : '✗ Test Failed'}
                               </div>
@@ -3047,7 +3105,7 @@ export default function Game() {
                                   <button onClick={getDebugHint} disabled={loadingHint}
                                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                                     style={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
-                                    {loadingHint ? '⏳ Analyzing...' : 'Get Debug Hint'}
+                                    {loadingHint ? '⏳ Analyzing...' : '💡 Get Debug Hint'}
                                   </button>
                                 </div>
                               )}
@@ -3055,15 +3113,15 @@ export default function Game() {
                                 <div className="mt-3 rounded-xl p-4 text-xs space-y-2"
                                   style={{ background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)' }}>
                                   <div className="flex items-center gap-2 font-bold" style={{ color: '#fbbf24' }}>
-                                    AI mentor
+                                    💡 AI Mentor
                                     <span className="font-normal text-slate-400">- {testCaseHint.status}</span>
                                   </div>
                                   {testCaseHint.line && (
-                                    <div style={{ color: '#f87171' }}>Line: {testCaseHint.line}</div>
+                                    <div style={{ color: '#f87171' }}>📍 Line: {testCaseHint.line}</div>
                                   )}
-                                  <div style={{ color: '#e2e8f0' }}>{testCaseHint.message}</div>
+                                  <div style={{ color: '#e2e8f0' }}>💬 {testCaseHint.message}</div>
                                   <div className="pt-1 font-semibold" style={{ color: '#a5b4fc' }}>
-                                    Hint: {testCaseHint.hint}
+                                    💡 Hint: {testCaseHint.hint}
                                   </div>
                                 </div>
                               )}
@@ -3073,14 +3131,14 @@ export default function Game() {
                       ) : (
                         <>
                           <div>
-                            <div className="text-[11px] font-semibold text-slate-400 mb-2">Input</div>
+                            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Input</div>
                         <div className="rounded-lg p-3 font-mono text-sm whitespace-pre-wrap" 
                           style={{ background: 'rgba(30,30,50,0.8)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.08)' }}>
                           {testCaseDetails[selectedTestCase].input || '(empty)'}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[11px] font-semibold text-slate-400 mb-2">Expected Output</div>
+                        <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Expected Output</div>
                         <div className="rounded-lg p-3 font-mono text-sm whitespace-pre-wrap" 
                           style={{ background: 'rgba(30,30,50,0.8)', color: '#34d399', border: '1px solid rgba(16,185,129,0.2)' }}>
                           {testCaseDetails[selectedTestCase].expected_output || '(empty)'}
@@ -3088,7 +3146,7 @@ export default function Game() {
                       </div>
                       {testCaseDetails[selectedTestCase].passed !== null && (
                         <div>
-                          <div className="text-[11px] font-semibold mb-2"
+                          <div className="text-[11px] font-semibold uppercase tracking-wider mb-2"
                             style={{ color: testCaseDetails[selectedTestCase].error ? '#f87171' : testCaseDetails[selectedTestCase].passed ? '#34d399' : '#f87171' }}>
                             Your Output
                           </div>
@@ -3112,7 +3170,7 @@ export default function Game() {
                       )}
                       {testCaseDetails[selectedTestCase].passed !== null ? (
                         <div>
-                          <div className="text-[11px] font-semibold mb-2"
+                          <div className="text-[11px] font-semibold uppercase tracking-wider mb-2"
                             style={{ color: testCaseDetails[selectedTestCase].passed ? '#34d399' : '#f87171' }}>
                             {testCaseDetails[selectedTestCase].passed ? '✓ Test Passed' : '✗ Test Failed'}
                           </div>
@@ -3122,21 +3180,21 @@ export default function Game() {
                               <button onClick={getDebugHint} disabled={loadingHint}
                                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                                 style={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
-                                {loadingHint ? 'Analyzing…' : 'Get debug hint'}
+                                {loadingHint ? '⏳ Analyzing...' : '🤖 Get Debug Hint'}
                               </button>
                               {testCaseHint && (
                                 <div className="mt-3 rounded-xl p-4 text-xs space-y-2"
                                   style={{ background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)' }}>
                                   <div className="flex items-center gap-2 font-bold" style={{ color: '#fbbf24' }}>
-                                    AI mentor
+                                    🤖 AI Mentor
                                     <span className="font-normal text-slate-400">— {testCaseHint.status}</span>
                                   </div>
                                   {testCaseHint.line && (
-                                    <div style={{ color: '#f87171' }}>Line: {testCaseHint.line}</div>
+                                    <div style={{ color: '#f87171' }}>📍 Line: {testCaseHint.line}</div>
                                   )}
-                                  <div style={{ color: '#e2e8f0' }}>{testCaseHint.message}</div>
+                                  <div style={{ color: '#e2e8f0' }}>💬 {testCaseHint.message}</div>
                                   <div className="pt-1 font-semibold" style={{ color: '#a5b4fc' }}>
-                                    Hint: {testCaseHint.hint}
+                                    💡 Hint: {testCaseHint.hint}
                                   </div>
                                 </div>
                               )}
@@ -3181,7 +3239,7 @@ export default function Game() {
                   </label>
                 </div>
                 <div className="mb-4">
-                  <label className="text-[11px] font-semibold mb-2 block"
+                  <label className="text-[11px] font-semibold uppercase tracking-wider mb-2 block"
                     style={{ color: useCustomInput ? '#94a3b8' : '#64748b' }}>
                     Custom Input
                   </label>
@@ -3227,7 +3285,7 @@ export default function Game() {
                   <div className="flex flex-col gap-3">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <span className="text-[11px] font-semibold text-slate-400">Output</span>
+                        <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Output</span>
                         {consoleOutput[0]?.runType && (
                           <span className="px-2 py-0.5 rounded text-[10px] font-medium"
                             style={{
@@ -3248,17 +3306,17 @@ export default function Game() {
                         <div className="px-3 py-2 flex items-center gap-2" 
                           style={{ background: res.error ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)' }}>
                           <span className="text-xs font-semibold" style={{ color: res.error ? '#f87171' : '#34d399' }}>
-                            {res.error ? 'Error' : `Test ${i + 1}`}
+                            {res.error ? '❌ Error' : `✅ Test ${i + 1}`}
                           </span>
                         </div>
                         {res.input && (
                           <div className="px-3 py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                            <div className="text-[10px] text-slate-500 mb-1">Input</div>
+                            <div className="text-[10px] text-slate-500 uppercase mb-1">Input</div>
                             <div className="text-xs font-mono text-slate-300 whitespace-pre-wrap">{res.input}</div>
                           </div>
                         )}
                         <div className="px-3 py-3">
-                          <div className="text-[10px] text-slate-500 mb-1">Output</div>
+                          <div className="text-[10px] text-slate-500 uppercase mb-1">Output</div>
                           <div className="text-sm font-mono whitespace-pre-wrap" style={{ color: res.error ? '#f87171' : '#34d399' }}>
                             {res.error || res.output || '(no output)'}
                           </div>
@@ -3302,7 +3360,7 @@ export default function Game() {
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <Icon name="message" size={24} className="" />
+                        <span className="text-2xl">🤖</span>
                         <div>
                           <div className="text-sm font-bold text-white">AI Logic Analysis</div>
                           <div className="text-xs text-slate-400">Partial credit awarded</div>
@@ -3330,7 +3388,7 @@ export default function Game() {
 
                   {/* Score Breakdown */}
                   <div className="rounded-xl p-4" style={{ background: 'rgba(59, 130, 246,0.1)', border: '1px solid rgba(59, 130, 246,0.3)' }}>
-                    <div className="text-xs font-semibold text-blue-300 mb-3">Score Breakdown</div>
+                    <div className="text-xs font-semibold text-blue-300 mb-3 uppercase tracking-wider">Score Breakdown</div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-400">Tests Passed</span>
@@ -3346,7 +3404,7 @@ export default function Game() {
                   {/* Detailed Breakdown */}
                   {result.logic_analysis.breakdown && (
                     <div className="rounded-xl p-4" style={{ background: 'rgba(30,30,50,0.6)', border: '1px solid rgba(255,255,255,0.08)' }}>
-                      <div className="text-xs font-semibold text-slate-300 mb-3">Detailed Analysis</div>
+                      <div className="text-xs font-semibold text-slate-300 mb-3 uppercase tracking-wider">Detailed Analysis</div>
                       <div className="space-y-3">
                         {Object.entries(result.logic_analysis.breakdown).map(([key, value]) => (
                           <div key={key}>
@@ -3382,8 +3440,8 @@ export default function Game() {
                   {/* Suggestions */}
                   {result.logic_analysis.suggestions && result.logic_analysis.suggestions.length > 0 && (
                     <div className="rounded-xl p-4" style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)' }}>
-                      <div className="text-xs font-semibold text-blue-300 mb-3 flex items-center gap-2">
-                        <Icon name="bulb" size={14} className="" /> Suggestions for Improvement
+                      <div className="text-xs font-semibold text-blue-300 mb-3 uppercase tracking-wider flex items-center gap-2">
+                        <span>💡</span> Suggestions for Improvement
                       </div>
                       <ul className="space-y-2">
                         {result.logic_analysis.suggestions.map((suggestion, idx) => (
@@ -3405,8 +3463,12 @@ export default function Game() {
         {/* Status Bar */}
         <div className="h-6 flex items-center px-3 text-[11px] shrink-0" style={{ background: '#1e1e2e', borderTop: '1px solid rgba(255,255,255,0.06)', color: '#64748b' }}>
           <div className="flex items-center gap-4">
-            <span>{currentLang.label}</span>
+            <span className="flex items-center gap-1.5">
+              <span style={{ color: currentLang.color }}>{currentLang.icon}</span>
+              {currentLang.label}
+            </span>
             <span>UTF-8</span>
+            <span>JavaScript</span>
           </div>
           <div className="flex-1" />
           <div className="flex items-center gap-4">

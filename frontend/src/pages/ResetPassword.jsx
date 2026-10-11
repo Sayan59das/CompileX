@@ -62,7 +62,7 @@ export default function ResetPassword() {
     <div className="min-h-screen w-full bg-[#050505] flex items-center justify-center px-4 relative overflow-hidden transition-colors duration-500">
       <AnimatedBackgroundCSS />
 
-      <div className="w-full max-w-sm relative z-10 ">
+      <div className="w-full max-w-sm relative z-10 animate-slide-up">
         <div className="flex flex-col items-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center mb-4 shadow-2xl shadow-blue-500/50">
             <Logo size={48} />
@@ -75,7 +75,7 @@ export default function ResetPassword() {
 
         <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
           {error && (
-            <div className="flex items-center gap-3 p-3 rounded-lg mb-6 text-sm bg-rose-500/10 border border-rose-500/20 text-rose-400 ">
+            <div className="flex items-center gap-3 p-3 rounded-lg mb-6 text-sm bg-rose-500/10 border border-rose-500/20 text-rose-400 animate-shake">
               <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>

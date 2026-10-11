@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 import Editor from '@monaco-editor/react'
-import Icon from '../components/Icons'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -11,11 +10,11 @@ import Icon from '../components/Icons'
 const TOTAL_QUESTIONS = 5
 
 const SKILL_DIMENSIONS = [
-  { key: 'logic',           label: 'Logic',           icon: 'layers', desc: 'Basic reasoning & conditionals' },
-  { key: 'strings',         label: 'Strings',         icon: 'code', desc: 'String manipulation & parsing' },
-  { key: 'problem_solving', label: 'Problem Solving', icon: 'bulb', desc: 'Hash maps, frequency counting' },
-  { key: 'algorithms',      label: 'Algorithms',      icon: 'gauge', desc: 'Sorting, searching, two-pointers' },
-  { key: 'advanced',        label: 'Advanced',        icon: 'target', desc: 'DP, recursion, optimization' },
+  { key: 'logic',           label: 'Logic',           icon: '🧩', desc: 'Basic reasoning & conditionals' },
+  { key: 'strings',         label: 'Strings',         icon: '🔤', desc: 'String manipulation & parsing' },
+  { key: 'problem_solving', label: 'Problem Solving', icon: '💡', desc: 'Hash maps, frequency counting' },
+  { key: 'algorithms',      label: 'Algorithms',      icon: '⚙️',  desc: 'Sorting, searching, two-pointers' },
+  { key: 'advanced',        label: 'Advanced',        icon: '🧠', desc: 'DP, recursion, optimization' },
 ]
 
 const DIFF_STYLE = {
@@ -25,18 +24,18 @@ const DIFF_STYLE = {
 }
 
 const TIER_CONFIG = {
-  Beginner:     { icon: 'medal', color: '#6b7280', glow: '#6b728040', grad: 'from-gray-700 to-gray-800',       desc: 'Just getting started — great foundation ahead!' },
-  Intermediate: { icon: 'medal', color: '#10b981', glow: '#10b98140', grad: 'from-emerald-600 to-teal-700',    desc: 'Solid fundamentals — ready for real challenges!' },
-  Advanced:     { icon: 'medal', color: '#3b82f6', glow: '#3b82f640', grad: 'from-blue-600 to-indigo-700',     desc: 'Strong problem-solver — tackling complex algorithms!' },
-  Expert:       { icon: 'medal', color: '#3b82f6', glow: '#3b82f640', grad: 'from-blue-600 to-purple-700',   desc: 'Elite coder — mastering advanced data structures!' },
-  Master:       { icon: 'medal', color: '#f59e0b', glow: '#f59e0b40', grad: 'from-amber-500 to-orange-600',    desc: 'Top-tier competitive programmer — legendary!' },
+  Beginner:     { icon: '🌱', color: '#6b7280', glow: '#6b728040', grad: 'from-gray-700 to-gray-800',       desc: 'Just getting started — great foundation ahead!' },
+  Intermediate: { icon: '⚡', color: '#10b981', glow: '#10b98140', grad: 'from-emerald-600 to-teal-700',    desc: 'Solid fundamentals — ready for real challenges!' },
+  Advanced:     { icon: '🔥', color: '#3b82f6', glow: '#3b82f640', grad: 'from-blue-600 to-indigo-700',     desc: 'Strong problem-solver — tackling complex algorithms!' },
+  Expert:       { icon: '💎', color: '#3b82f6', glow: '#3b82f640', grad: 'from-blue-600 to-purple-700',   desc: 'Elite coder — mastering advanced data structures!' },
+  Master:       { icon: '👑', color: '#f59e0b', glow: '#f59e0b40', grad: 'from-amber-500 to-orange-600',    desc: 'Top-tier competitive programmer — legendary!' },
 }
 
 const LANGUAGES = [
-  { value: 'python',     label: 'Python',     monaco: 'python'     },
-  { value: 'javascript', label: 'JavaScript', monaco: 'javascript' },
-  { value: 'cpp',        label: 'C++',        monaco: 'cpp'        },
-  { value: 'java',       label: 'Java',       monaco: 'java'       },
+  { value: 'python',     label: 'Python',     icon: '🐍', monaco: 'python'     },
+  { value: 'javascript', label: 'JavaScript', icon: '💛', monaco: 'javascript' },
+  { value: 'cpp',        label: 'C++',        icon: '⚡', monaco: 'cpp'        },
+  { value: 'java',       label: 'Java',       icon: '☕', monaco: 'java'       },
 ]
 
 // Strip Sample Input / Sample Output sections from description text
@@ -123,7 +122,7 @@ function SkillRadar({ scores }) {
       {pts.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="5" fill="#3b82f6" stroke="#1e1b4b" strokeWidth="2" />)}
       {pts.map((p, i) => (
         <text key={i} x={p.lx} y={p.ly} textAnchor="middle" dominantBaseline="middle" fill="#9ca3af" fontSize="10" fontWeight="600">
-          {dims[i].label}
+          {dims[i].icon} {dims[i].label}
         </text>
       ))}
     </svg>
@@ -140,16 +139,16 @@ function LoadingQuestion({ slot, dimension }) {
       <div className="relative">
         <div className="w-20 h-20 rounded-full border-4 border-blue-500/20" />
         <div className="absolute inset-0 w-20 h-20 rounded-full border-4 border-blue-500 border-t-transparent animate-spin" />
-        <div className="absolute inset-0 flex items-center justify-center text-blue-400"><Icon name={dim.icon} size={26} /></div>
+        <div className="absolute inset-0 flex items-center justify-center text-2xl">{dim.icon}</div>
       </div>
       <div className="text-center">
         <p className="text-white text-xl font-bold mb-2">Generating Question {slot + 1} of {TOTAL_QUESTIONS}</p>
         <p className="text-gray-500 text-sm">Testing your <span className="text-blue-400 font-semibold">{dim.label}</span> skills...</p>
-        <p className="text-gray-500 text-xs mt-2">AI is crafting a unique question just for you</p>
+        <p className="text-gray-600 text-xs mt-2">AI is crafting a unique question just for you</p>
       </div>
       <div className="flex gap-2">
         {Array.from({ length: TOTAL_QUESTIONS }).map((_, i) => (
-          <div key={i} className={`w-2 h-2 rounded-full transition-all ${i < slot ? 'bg-blue-500' : i === slot ? 'bg-blue-400 scale-150' : 'bg-gray-700'}`} />
+          <div key={i} className={`w-2 h-2 rounded-full transition-all ${i < slot ? 'bg-blue-500' : i === slot ? 'bg-blue-400 animate-pulse scale-150' : 'bg-gray-700'}`} />
         ))}
       </div>
     </div>
@@ -191,16 +190,26 @@ function ResultScreen({ rating, tier, topicScores, questionResults, onContinue }
 
   return (
     <div className={`min-h-screen bg-gray-950 transition-opacity duration-700 ${shown ? 'opacity-100' : 'opacity-0'}`}>
+      {/* Ambient particles */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {Array.from({ length: 25 }).map((_, i) => (
+          <div key={i} className="absolute rounded-full animate-ping"
+            style={{ width: `${3 + (i % 5) * 2}px`, height: `${3 + (i % 5) * 2}px`,
+              left: `${(i * 37) % 100}%`, top: `${(i * 53) % 100}%`,
+              backgroundColor: ['#3b82f6','#10b981','#3b82f6','#f59e0b','#ef4444'][i % 5],
+              animationDelay: `${(i * 0.3) % 3}s`, animationDuration: `${2 + (i % 3)}s`, opacity: 0.12 }} />
+        ))}
+      </div>
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 py-12">
         {/* Hero */}
         <div className="text-center mb-12">
           <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${cfg.grad} flex items-center justify-center mx-auto mb-6 shadow-2xl`}
             style={{ boxShadow: `0 0 100px ${cfg.glow}` }}>
-            <Icon name="medal" size={56} strokeWidth={1.6} />
+            <span className="text-6xl">{cfg.icon}</span>
           </div>
-          <p className="text-gray-500 text-xs mb-2">Assessment Complete</p>
-          <h1 className="text-6xl font-extrabold mb-3" style={{ color: cfg.color }}>{tier?.name}</h1>
+          <p className="text-gray-500 text-xs uppercase tracking-widest mb-2">Assessment Complete</p>
+          <h1 className="text-6xl font-black mb-3" style={{ color: cfg.color }}>{tier?.name}</h1>
           <p className="text-gray-400 text-base max-w-md mx-auto">{cfg.desc}</p>
         </div>
 
@@ -213,8 +222,8 @@ function ResultScreen({ rating, tier, topicScores, questionResults, onContinue }
             { label: 'Accuracy',        value: accuracy, suffix: '%', color: '#f59e0b' },
           ].map(s => (
             <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-2xl p-5 text-center">
-              <p className="text-gray-500 text-xs mb-2">{s.label}</p>
-              <p className="text-3xl font-extrabold" style={{ color: s.color }}>{s.value}{s.suffix}</p>
+              <p className="text-gray-500 text-xs uppercase tracking-wider mb-2">{s.label}</p>
+              <p className="text-3xl font-black" style={{ color: s.color }}>{s.value}{s.suffix}</p>
             </div>
           ))}
         </div>
@@ -251,9 +260,9 @@ function ResultScreen({ rating, tier, topicScores, questionResults, onContinue }
                       <span className="text-gray-500 text-[10px] w-16 text-right">{r.passedTests}/{r.totalTests} tests · {r.pointsEarned}pts</span>
                     </div>
                     <div className="flex items-center gap-1 mt-1">
-                      <Icon name={dim.icon} size={11} />
-                      <span className="text-gray-500 text-[10px]">{dim.label}</span>
-                      {r.timeTaken && <span className="text-gray-500 text-[10px] ml-auto">{r.timeTaken}s</span>}
+                      <span className="text-[10px]">{dim.icon}</span>
+                      <span className="text-gray-600 text-[10px]">{dim.label}</span>
+                      {r.timeTaken && <span className="text-gray-700 text-[10px] ml-auto">{r.timeTaken}s</span>}
                     </div>
                   </div>
                 )
@@ -267,13 +276,13 @@ function ResultScreen({ rating, tier, topicScores, questionResults, onContinue }
           <p className="text-white font-bold mb-4">What happens now</p>
           <div className="grid grid-cols-2 gap-3">
             {[
-              { icon: 'target', title: 'Personalized Practice', desc: 'Questions matched to your exact skill level and weak topics' },
-              { icon: 'trend', title: 'Live Rating Updates', desc: 'Your ELO adjusts after every practice session and match' },
-              { icon: 'trophy', title: 'Fair Matchmaking', desc: 'Compete against players with similar ratings only' },
-              { icon: 'refresh', title: 'Continuous Calibration', desc: 'The system gets smarter about your skills over time' },
+              { icon: '🎯', title: 'Personalized Practice', desc: 'Questions matched to your exact skill level and weak topics' },
+              { icon: '📈', title: 'Live Rating Updates', desc: 'Your ELO adjusts after every practice session and match' },
+              { icon: '🏆', title: 'Fair Matchmaking', desc: 'Compete against players with similar ratings only' },
+              { icon: '🔄', title: 'Continuous Calibration', desc: 'The system gets smarter about your skills over time' },
             ].map((item, i) => (
               <div key={i} className="flex items-start gap-3 bg-gray-800/40 rounded-xl p-4">
-                <Icon name={item.icon} size={20} className="flex-shrink-0 text-blue-400" />
+                <span className="text-xl flex-shrink-0">{item.icon}</span>
                 <div>
                   <p className="text-white text-xs font-semibold mb-0.5">{item.title}</p>
                   <p className="text-gray-500 text-xs leading-relaxed">{item.desc}</p>
@@ -284,7 +293,7 @@ function ResultScreen({ rating, tier, topicScores, questionResults, onContinue }
         </div>
 
         <button onClick={onContinue}
-          className="w-full py-5 rounded-2xl font-extrabold text-white text-xl transition-all duration-200 active:scale-[0.98] shadow-2xl"
+          className="w-full py-5 rounded-2xl font-black text-white text-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] shadow-2xl"
           style={{ background: `linear-gradient(135deg, ${cfg.color}dd, ${cfg.color}88)`, boxShadow: `0 20px 60px ${cfg.glow}` }}>
           Start Coding as {tier?.name} →
         </button>
@@ -303,11 +312,11 @@ function IntroScreen({ onStart, onSkip }) {
         <div className="text-center mb-10">
           <div className="relative w-24 h-24 mx-auto mb-6">
             <div className="w-24 h-24 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-              <Icon name="target" size={44} className="text-blue-400" />
+              <span className="text-5xl">🎯</span>
             </div>
-            <div className="absolute -top-2 -right-2 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-lg">AI</div>
+            <div className="absolute -top-2 -right-2 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center text-white text-xs font-black shadow-lg">AI</div>
           </div>
-          <h1 className="text-5xl font-extrabold text-white mb-3">Skill Assessment</h1>
+          <h1 className="text-5xl font-black text-white mb-3">Skill Assessment</h1>
           <p className="text-gray-400 text-lg max-w-lg mx-auto leading-relaxed">
             Write real code. We execute it. Every user gets <span className="text-blue-400 font-semibold">different AI-generated questions</span> — no two assessments are the same.
           </p>
@@ -316,12 +325,12 @@ function IntroScreen({ onStart, onSkip }) {
         {/* How it works */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           {[
-            { step: '01', icon: 'message', title: 'AI Generates', desc: 'Unique questions crafted just for you — never repeated' },
-            { step: '02', icon: 'code', title: 'You Code', desc: 'Write real solutions in Python, JS, C++, or Java' },
-            { step: '03', icon: 'bolt', title: 'We Execute', desc: 'Your code runs against test cases — no self-reporting' },
+            { step: '01', icon: '🤖', title: 'AI Generates', desc: 'Unique questions crafted just for you — never repeated' },
+            { step: '02', icon: '💻', title: 'You Code', desc: 'Write real solutions in Python, JS, C++, or Java' },
+            { step: '03', icon: '⚡', title: 'We Execute', desc: 'Your code runs against test cases — no self-reporting' },
           ].map(item => (
             <div key={item.step} className="bg-gray-900 border border-gray-800 rounded-2xl p-5 text-center">
-              <Icon name={item.icon} size={28} className="mx-auto mb-3 text-blue-400" />
+              <div className="text-3xl mb-3">{item.icon}</div>
               <p className="text-blue-400 text-xs font-bold mb-1">STEP {item.step}</p>
               <p className="text-white font-semibold text-sm mb-1">{item.title}</p>
               <p className="text-gray-500 text-xs leading-relaxed">{item.desc}</p>
@@ -331,11 +340,11 @@ function IntroScreen({ onStart, onSkip }) {
 
         {/* Skill dimensions tested */}
         <div className="bg-gray-900 border border-gray-800 rounded-2xl p-5 mb-6">
-          <p className="text-gray-400 text-xs mb-4">5 Skill Dimensions Tested</p>
+          <p className="text-gray-400 text-xs uppercase tracking-wider mb-4">5 Skill Dimensions Tested</p>
           <div className="grid grid-cols-5 gap-2">
             {SKILL_DIMENSIONS.map(d => (
               <div key={d.key} className="flex flex-col items-center gap-2 py-3 bg-gray-800/50 rounded-xl">
-                <Icon name={d.icon} size={20} className="text-blue-400" />
+                <span className="text-xl">{d.icon}</span>
                 <span className="text-xs font-semibold text-white">{d.label}</span>
                 <span className="text-[10px] text-gray-500 text-center leading-tight px-1">{d.desc}</span>
               </div>
@@ -347,27 +356,27 @@ function IntroScreen({ onStart, onSkip }) {
         <div className="flex gap-2 mb-8">
           {Object.entries(TIER_CONFIG).map(([name, cfg]) => (
             <div key={name} className="flex-1 flex flex-col items-center gap-1.5 py-3 bg-gray-900 border border-gray-800 rounded-xl">
-              <Icon name="medal" size={20} style={{ color: cfg.color }} />
+              <span className="text-xl">{cfg.icon}</span>
               <span className="text-xs font-bold" style={{ color: cfg.color }}>{name}</span>
             </div>
           ))}
         </div>
 
-        <div className="flex gap-3 mb-3 text-center text-gray-500 text-xs">
+        <div className="flex gap-3 mb-3 text-center text-gray-600 text-xs">
           {[['5', 'Questions'], ['~15min', 'Duration'], ['Real', 'Execution'], ['Adaptive', 'Difficulty']].map(([v, l]) => (
             <div key={l} className="flex-1 bg-gray-900/50 border border-gray-800 rounded-xl py-2">
               <p className="text-white font-bold text-sm">{v}</p>
-              <p className="text-gray-500 text-[10px]">{l}</p>
+              <p className="text-gray-600 text-[10px]">{l}</p>
             </div>
           ))}
         </div>
 
         <button onClick={onStart}
-          className="w-full py-5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xl transition-all duration-200 active:scale-[0.98] mb-3 shadow-lg shadow-blue-500/20 mt-4">
+          className="w-full py-5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-xl transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] mb-3 shadow-lg shadow-blue-500/20 mt-4">
           Start My Assessment
         </button>
         <button onClick={onSkip}
-          className="w-full py-3 rounded-xl text-gray-500 hover:text-gray-400 text-sm transition-colors">
+          className="w-full py-3 rounded-xl text-gray-600 hover:text-gray-400 text-sm transition-colors">
           Skip — use default rating (1000 · Intermediate)
         </button>
       </div>
@@ -649,12 +658,12 @@ export default function SkillAssessment() {
       {/* ── Top Bar ── */}
       <div className="border-b border-gray-800 px-5 py-3 flex items-center justify-between bg-gray-950/95 backdrop-blur sticky top-0 z-20">
         <div className="flex items-center gap-3">
-          <span className="text-white font-extrabold text-lg">CompileX</span>
-          <span className="text-gray-500">|</span>
+          <span className="text-white font-black text-lg">CompileX</span>
+          <span className="text-gray-700">|</span>
           <span className="text-gray-400 text-sm">Skill Assessment</span>
           <div className={`px-2.5 py-1 rounded-full border text-xs font-bold ${ds.bg} ${ds.border} ${ds.text}`}>{ds.label}</div>
           <div className="flex items-center gap-1.5 text-gray-500 text-xs">
-            <Icon name={dim.icon} size={14} /><span>{dim.label}</span>
+            <span>{dim.icon}</span><span>{dim.label}</span>
           </div>
         </div>
         <div className="flex items-center gap-5">
@@ -664,7 +673,7 @@ export default function SkillAssessment() {
               const r = questionResults[i]
               return (
                 <div key={i} className={`transition-all duration-300 rounded-full ${
- i < questionResults.length
+                  i < questionResults.length
                     ? r?.passed ? 'w-3 h-3 bg-emerald-500' : r?.partial ? 'w-3 h-3 bg-amber-500' : 'w-3 h-3 bg-red-500'
                     : i === currentSlot ? 'w-4 h-4 bg-blue-500 ring-2 ring-blue-500/30' : 'w-3 h-3 bg-gray-700'
                 }`} />
@@ -677,7 +686,7 @@ export default function SkillAssessment() {
             {LANGUAGES.map(l => (
               <button key={l.value} onClick={() => setLanguage(l.value)}
                 className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${language === l.value ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}`}>
-                {l.label}
+                {l.icon} {l.label}
               </button>
             ))}
           </div>
@@ -696,13 +705,13 @@ export default function SkillAssessment() {
 
             {timeExpired && (
               <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 text-red-400 text-sm text-center mb-4 animate-pulse">
-                Time's up! Submitting your current code...
+                ⏰ Time's up! Submitting your current code...
               </div>
             )}
 
             {/* Question header */}
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-gray-500 text-xs font-mono">Q{currentSlot + 1}</span>
+              <span className="text-gray-600 text-xs font-mono">Q{currentSlot + 1}</span>
               <div className={`px-2 py-0.5 rounded text-[10px] font-bold ${ds.bg} ${ds.text}`}>{ds.label}</div>
               <div className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400">
                 {currentSlot === 4 ? 500 : currentSlot === 3 ? 400 : currentSlot === 2 ? 300 : 200} pts
@@ -715,7 +724,7 @@ export default function SkillAssessment() {
             {/* Test cases preview */}
             {tcs.slice(0, 2).map((tc, i) => (
               <div key={i} className="bg-gray-900 border border-gray-800 rounded-xl p-3 mb-2 font-mono text-xs">
-                <p className="text-gray-500 text-[10px] mb-1.5">Example {i + 1}</p>
+                <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-1.5">Example {i + 1}</p>
                 <div className="text-gray-400 mb-1">Input: <span className="text-cyan-400 whitespace-pre-wrap">{tc.input ?? tc.stdin ?? ''}</span></div>
                 <div className="text-gray-400">Output: <span className="text-green-400">{tc.expected_output ?? tc.output ?? ''}</span></div>
               </div>
@@ -724,7 +733,7 @@ export default function SkillAssessment() {
             {/* Constraints */}
             {currentQuestion?.constraints && (
               <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-3 mb-4">
-                <p className="text-gray-500 text-[10px] mb-1">Constraints</p>
+                <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-1">Constraints</p>
                 <p className="text-gray-400 text-xs whitespace-pre-line">{currentQuestion.constraints}</p>
               </div>
             )}
@@ -732,14 +741,14 @@ export default function SkillAssessment() {
             {/* Previous results mini-list */}
             {questionResults.length > 0 && (
               <div className="mt-5 pt-5 border-t border-gray-800">
-                <p className="text-gray-500 text-[10px] mb-2">Previous</p>
+                <p className="text-gray-600 text-[10px] uppercase tracking-wider mb-2">Previous</p>
                 {questionResults.map((r, i) => (
                   <div key={i} className="flex items-center gap-2 mb-1.5">
                     <span className={`text-xs font-bold ${r.passed ? 'text-emerald-400' : r.partial ? 'text-amber-400' : 'text-red-400'}`}>
                       {r.passed ? '✓' : r.partial ? '~' : '✗'}
                     </span>
                     <span className="text-gray-500 text-xs truncate flex-1">{r.title}</span>
-                    <span className="text-gray-500 text-[10px]">{r.pointsEarned}pts</span>
+                    <span className="text-gray-700 text-[10px]">{r.pointsEarned}pts</span>
                   </div>
                 ))}
               </div>
@@ -774,7 +783,7 @@ export default function SkillAssessment() {
                 {runResult && !running && (
                   <span className={`text-xs font-bold ${runResult.passed ? 'text-emerald-400' : runResult.passedTests > 0 ? 'text-amber-400' : 'text-red-400'}`}>
                     {runResult.passed ? '✓ All tests passed!' : `${runResult.passedTests}/${runResult.totalTests} tests passed`}
-                    {runResult.preview && <span className="text-gray-500 font-normal ml-1">(preview)</span>}
+                    {runResult.preview && <span className="text-gray-600 font-normal ml-1">(preview)</span>}
                   </span>
                 )}
               </div>
@@ -785,8 +794,8 @@ export default function SkillAssessment() {
                   Run
                 </button>
                 <button onClick={() => submitQuestion(false)} disabled={running}
-                  className="px-5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all disabled:opacity-40 flex items-center gap-1.5">
-                  {running ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Icon name="bolt" size={14} />}
+                  className="px-5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-black transition-all disabled:opacity-40 flex items-center gap-1.5">
+                  {running ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡'}
                   Submit
                 </button>
               </div>
@@ -794,7 +803,7 @@ export default function SkillAssessment() {
 
             <div className="flex-1 overflow-y-auto p-4">
               {!runResult && !running && (
-                <p className="text-gray-500 text-xs text-center py-6">Click Run to test with examples, or Submit to evaluate all test cases</p>
+                <p className="text-gray-700 text-xs text-center py-6">Click Run to test with examples, or Submit to evaluate all test cases</p>
               )}
               {running && (
                 <div className="flex items-center gap-3 py-6 justify-center">

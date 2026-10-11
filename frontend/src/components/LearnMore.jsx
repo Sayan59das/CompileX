@@ -45,7 +45,7 @@ function StageTrack({ status }) {
           <div
             key={stage}
             className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
- done
+              done
                 ? 'bg-blue-500'
                 : active
                   ? 'bg-gradient-to-r from-blue-500 to-cyan-400 animate-pulse'
@@ -166,7 +166,7 @@ export default function LearnMore() {
           <button
             type="submit"
             disabled={submitting || working || !topic.trim()}
-            className="px-8 py-4 font-bold text-white rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/30 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+            className="px-8 py-4 font-bold text-white rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-blue-500/30 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
           >
             {working ? 'Generating…' : submitting ? 'Starting…' : 'Generate Video'}
           </button>
@@ -174,7 +174,7 @@ export default function LearnMore() {
 
         {/* ── Suggested / already-rendered topics ─────────────────────────── */}
         <div className="flex flex-wrap items-center gap-2 mb-8">
-          <span className="text-xs text-slate-500 mr-1">
+          <span className="text-xs uppercase tracking-wider text-slate-500 mr-1">
             {ready.length ? 'Ready to watch' : 'Try'}
           </span>
           {chips.map((v) => (

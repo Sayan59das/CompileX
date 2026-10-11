@@ -119,9 +119,9 @@ export default function Login() {
           {/* LEFT PANE: Text Content */}
           <div className="hidden lg:flex w-1/2 flex-col justify-between p-16 relative">
             
-            <div className="relative z-10 ">
+            <div className="relative z-10 animate-slide-up">
               <Link to="/" className="flex items-center gap-3 cursor-pointer group">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center rounded-xl shadow-lg shadow-blue-500/20 transition-transform duration-300 ">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center rounded-xl shadow-lg shadow-blue-500/20 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-6">
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
                   </svg>
@@ -130,25 +130,25 @@ export default function Login() {
               </Link>
             </div>
 
-            <div className="relative z-10 max-w-xl ">
-              <h1 className="text-6xl font-extrabold text-white leading-[1.1] tracking-tight mb-6 " style={{animationDelay: '0.1s'}}>
+            <div className="relative z-10 max-w-xl stagger">
+              <h1 className="text-6xl font-black text-white leading-[1.1] tracking-tight mb-6 animate-slide-up" style={{animationDelay: '0.1s'}}>
                 Build.<br/>Compete.<br/>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Elevate.</span>
               </h1>
-              <p className="text-xl text-slate-400 font-medium " style={{animationDelay: '0.2s'}}>
+              <p className="text-xl text-slate-400 font-medium animate-slide-up" style={{animationDelay: '0.2s'}}>
                 Experience the next generation of competitive programming. Sign in to access your dashboard, track your stats, and conquer new challenges.
               </p>
             </div>
 
-            <div className="relative z-10 " style={{animationDelay: '0.3s'}}>
-              <p className="text-sm text-slate-500 font-medium">© 2026 CompileX Platform</p>
+            <div className="relative z-10 animate-slide-up" style={{animationDelay: '0.3s'}}>
+              <p className="text-sm text-slate-600 font-medium tracking-wide uppercase">© 2026 CompileX Platform</p>
             </div>
           </div>
 
           {/* RIGHT PANE: Login Form */}
           <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 lg:p-16 relative">
             
-            <Link to="/" className="absolute top-8 left-8 lg:hidden flex items-center gap-3 cursor-pointer ">
+            <Link to="/" className="absolute top-8 left-8 lg:hidden flex items-center gap-3 cursor-pointer animate-fade-in">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center rounded-lg shadow-lg">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
@@ -156,14 +156,14 @@ export default function Login() {
               </div>
             </Link>
 
-          <div className="w-full max-w-md " style={{animationDelay: '0.2s'}}>
+          <div className="w-full max-w-md animate-fade-in" style={{animationDelay: '0.2s'}}>
             <div className="mb-12">
               <h2 className="text-4xl font-bold text-white mb-3">Welcome Back</h2>
               <p className="text-slate-400 text-lg">Initialize your session to continue.</p>
             </div>
 
             {error && (
-              <div className="flex items-center gap-3 px-4 py-3 rounded-lg mb-8 text-sm bg-red-500/10 border border-red-500/20 text-red-400 ">
+              <div className="flex items-center gap-3 px-4 py-3 rounded-lg mb-8 text-sm bg-red-500/10 border border-red-500/20 text-red-400 animate-shake">
                 <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01"/></svg>
                 {error}
               </div>
@@ -211,7 +211,7 @@ export default function Login() {
 
             <div className="flex items-center gap-4 my-10 opacity-60">
               <div className="flex-1 h-px bg-white/[0.1]" />
-              <span className="text-xs text-slate-400 font-medium">Or connect via</span>
+              <span className="text-xs text-slate-400 font-medium uppercase tracking-widest">Or connect via</span>
               <div className="flex-1 h-px bg-white/[0.1]" />
             </div>
 
@@ -229,7 +229,7 @@ export default function Login() {
                 )},
               ].map(p => (
                 <button key={p.id} onClick={() => handleOAuth(p.id)}
-                  className="flex items-center justify-center gap-3 py-3.5 rounded-xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] text-slate-300 font-semibold transition-all duration-300 hover:border-cyan-500/30 hover:shadow-[0_0_15px_rgba(6,182,212,0.15)] ">
+                  className="flex items-center justify-center gap-3 py-3.5 rounded-xl border border-white/[0.08] bg-white/[0.02] hover:bg-white/[0.06] text-slate-300 font-semibold transition-all duration-300 hover:border-cyan-500/30 hover:shadow-[0_0_15px_rgba(6,182,212,0.15)] hover:-translate-y-1">
                   {p.icon}
                   {p.label}
                 </button>

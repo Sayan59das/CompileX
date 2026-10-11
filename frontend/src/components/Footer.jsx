@@ -12,11 +12,11 @@ export default function Footer() {
           </span>
         </div>
         <div className="flex items-center gap-8 text-sm font-medium text-slate-500">
-          <a href="/about" className="hover:text-cyan-400 transition-colors">About</a>
-          <a href="https://github.com/Sayan59das/CompileX" target="_blank" rel="noreferrer" className="hover:text-cyan-400 transition-colors">GitHub</a>
-          <a href="/login" className="hover:text-cyan-400 transition-colors">Log in</a>
+          <a href="#" className="hover:text-cyan-400 transition-colors">Privacy</a>
+          <a href="#" className="hover:text-cyan-400 transition-colors">Terms</a>
+          <a href="#" className="hover:text-cyan-400 transition-colors">Contact</a>
         </div>
-        <p className="text-sm font-medium text-slate-500">&copy; 2026 CompileX. All rights reserved.</p>
+        <p className="text-sm font-medium text-slate-600">&copy; 2026 CompileX. All rights reserved.</p>
       </div>
     </footer>
   )

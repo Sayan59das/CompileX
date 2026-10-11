@@ -6,8 +6,7 @@
 
 /* ─── Design Tokens ─────────────────────────────────────────────────────── */
 :root {
-  color-scheme: dark;
-  /* The interface is designed dark-only. */
+  /* Dark theme (default) */
   --bg:          #05050A;
   --bg-1:        #0A0A10;
   --bg-2:        #101018;
@@ -35,8 +34,34 @@
 }
 
 /* Light theme */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:          #ffffff;
+    --bg-1:        #f8fafc;
+    --bg-2:        #f1f5f9;
+    --bg-3:        #e2e8f0;
+    --border:      rgba(0,0,0,0.08);
+    --border-md:   rgba(0,0,0,0.12);
+    --text:        #0f172a;
+    --text-2:      #475569;
+    --text-3:      #94a3b8;
+    --shadow-sm:   0 1px 3px rgba(0,0,0,0.1);
+    --shadow-md:   0 4px 16px rgba(0,0,0,0.08);
+    --shadow-lg:   0 8px 32px rgba(0,0,0,0.12);
+    --shadow-glow: 0 0 24px rgba(99,102,241,0.15);
+  }
+}
+
 /* ─── Base ───────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
+
+/* Remove default focus outlines and white lines */
+button:focus,
+button:focus-visible,
+button:active {
+  outline: none !important;
+  box-shadow: none !important;
+}
 
 html { scroll-behavior: smooth; }
 
@@ -111,11 +136,23 @@ body {
   border-radius: var(--radius);
 }
 
+@media (prefers-color-scheme: light) {
+  .glass {
+    background: rgba(255,255,255,0.95);
+  }
+}
+
 .glass-panel {
   background: rgba(22,27,39,0.96);
   border: 1px solid var(--border-md);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
+}
+
+@media (prefers-color-scheme: light) {
+  .glass-panel {
+    background: rgba(255,255,255,0.9);
+  }
 }
 
 /* ─── Buttons ────────────────────────────────────────────────────────────── */
@@ -290,6 +327,12 @@ input:-webkit-autofill:active{
   border-bottom: 1px solid var(--border);
 }
 
+@media (prefers-color-scheme: light) {
+  .navbar {
+    background: rgba(255,255,255,0.85);
+  }
+}
+
 /* ─── Animations - OPTIMIZED ────────────────────────────────────────────── */
 @keyframes fadeIn    { from { opacity:0 } to { opacity:1 } }
 @keyframes slideUp   { from { opacity:0; transform:translateY(16px) } to { opacity:1; transform:translateY(0) } }
@@ -303,8 +346,23 @@ input:-webkit-autofill:active{
 @keyframes gradAnim  { 0%,100% { background-position:0% 50% } 50% { background-position:100% 50% } }
 @keyframes shake     { 0%,100% { transform:translateX(0) } 10%,30%,50%,70%,90% { transform:translateX(-4px) } 20%,40%,60%,80% { transform:translateX(4px) } }
 
+.animate-fade-in    { animation: fadeIn    0.4s ease-out both; }
+.animate-slide-up   { animation: slideUp   0.5s ease-out both; }
+.animate-slide-down { animation: slideDown 0.4s ease-out both; }
+.animate-scale-in   { animation: scaleIn   0.35s ease-out both; }
 .animate-spin       { animation: spin      0.8s linear infinite; }
 .animate-pulse      { animation: pulse     2s ease-in-out infinite; }
+.animate-pulse-slow { animation: pulseSlow 4s ease-in-out infinite; }
+.animate-float      { animation: float     3s ease-in-out infinite; }
+.animate-shake      { animation: shake     0.5s ease-in-out; }
+.animate-gradient   {
+  background: linear-gradient(270deg, #818cf8, #a78bfa, #e879f9, #818cf8);
+  background-size: 300% 300%;
+  animation: gradAnim 6s ease infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 
 /* Performance optimizations */
 .will-change-transform { will-change: transform; }
@@ -332,9 +390,24 @@ input:-webkit-autofill:active{
   box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
 }
 
+@media (prefers-color-scheme: light) {
+  .code-card {
+    background: #1e293b;
+    border: 1px solid rgba(0,0,0,0.1);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+  }
+}
+
 .code-header {
   background: #161b22;
   border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+@media (prefers-color-scheme: light) {
+  .code-header {
+    background: #0f172a;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
 }
 
 .code-dot {
@@ -391,6 +464,12 @@ input:-webkit-autofill:active{
   padding: 1.5rem;
 }
 
+@media (prefers-color-scheme: light) {
+  .glass-card {
+    background: rgba(255,255,255,0.7);
+  }
+}
+
 .testimonial-card {
   background: rgba(22,27,39,0.95);
   border: 1px solid var(--border);
@@ -399,6 +478,12 @@ input:-webkit-autofill:active{
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+}
+
+@media (prefers-color-scheme: light) {
+  .testimonial-card {
+    background: rgba(255,255,255,0.7);
+  }
 }
 
 /* ─── Switch ─────────────────────────────────────────────────────────────── */
@@ -449,8 +534,22 @@ input:-webkit-autofill:active{
               var(--bg);
 }
 
+@media (prefers-color-scheme: light) {
+  .gradient-bg {
+    background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,0.08) 0%, transparent 70%),
+                radial-gradient(ellipse 60% 40% at 80% 80%, rgba(124,58,237,0.05) 0%, transparent 60%),
+                var(--bg);
+  }
+}
+
 .hero-glow {
   background: radial-gradient(ellipse 100% 80% at 50% -20%, rgba(99,102,241,0.15) 0%, transparent 65%);
+}
+
+@media (prefers-color-scheme: light) {
+  .hero-glow {
+    background: radial-gradient(ellipse 100% 80% at 50% -20%, rgba(99,102,241,0.1) 0%, transparent 65%);
+  }
 }
 
 /* ─── Performance ────────────────────────────────────────────────────────── */
@@ -496,6 +595,11 @@ input:-webkit-autofill:active{
 }
 
 /* ─── Premium App-Wide Enhancements ─────────────────────────────────────── */
+
+/* Smooth page transitions */
+#root {
+  animation: fadeIn 0.25s ease-out;
+}
 
 /* Refined focus ring — replaces browser default */
 *:focus-visible {
@@ -608,12 +712,36 @@ a {
 }
 .bar-animated { animation: barGrow 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
 
+/* ─── Stagger children animation ─────────────────────────────────────────── */
+.stagger > * { opacity: 0; animation: slideUp 0.4s ease-out forwards; }
+.stagger > *:nth-child(1)  { animation-delay: 0.05s }
+.stagger > *:nth-child(2)  { animation-delay: 0.10s }
+.stagger > *:nth-child(3)  { animation-delay: 0.15s }
+.stagger > *:nth-child(4)  { animation-delay: 0.20s }
+.stagger > *:nth-child(5)  { animation-delay: 0.25s }
+.stagger > *:nth-child(6)  { animation-delay: 0.30s }
+.stagger > *:nth-child(7)  { animation-delay: 0.35s }
+.stagger > *:nth-child(8)  { animation-delay: 0.40s }
+
 /* ─── Live match countdown ring ─────────────────────────────────────────── */
 @keyframes timerWarning {
   0%,100% { filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.6)); }
   50%     { filter: drop-shadow(0 0 12px rgba(239, 68, 68, 1)); }
 }
 .timer-warning { animation: timerWarning 0.8s ease-in-out infinite; }
+
+/* ─── Float slow/slower (for landing page orbs) ─────────────────────────── */
+@keyframes floatSlowKf {
+  0%,100% { transform: translate(0,0) scale(1); }
+  33%     { transform: translate(35px,-25px) scale(1.05); }
+  66%     { transform: translate(-20px, 20px) scale(0.97); }
+}
+@keyframes floatSlowerKf {
+  0%,100% { transform: translate(0,0); }
+  50%     { transform: translate(-50px, 45px) scale(1.08); }
+}
+.animate-float-slow   { animation: floatSlowKf   20s ease-in-out infinite; }
+.animate-float-slower { animation: floatSlowerKf 28s ease-in-out infinite; }
 
 /* ─── Competitive rank badge shimmer ─────────────────────────────────────── */
 @keyframes rankShimmer {
@@ -627,6 +755,17 @@ a {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+/* ─── Page section reveal ────────────────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* ─── Monaco editor overrides (tighter, more premium look) ──────────────── */
@@ -742,14 +881,4 @@ a {
   .cx-protect-reject .cx-protected-rail {
     border-left-color: rgba(56, 189, 248, 0.95);
   }
-}
-
-/* ─── Typing cursor + gradient headline word (landing) ───────────────────── */
-@keyframes caBlink { 0%, 100% { opacity: 1 } 50% { opacity: 0 } }
-.animate-blink { animation: caBlink 1s step-end infinite; }
-.ca-grad {
-  background: linear-gradient(90deg, #60a5fa, #22d3ee);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
 }

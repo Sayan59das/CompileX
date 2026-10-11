@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
-import Icon from '../components/Icons'
 
 const diffColor = {
   easy: 'text-emerald bg-emerald/10 border-emerald/20',
@@ -137,7 +136,7 @@ export default function TournamentDetail() {
         {matchLobbyCode && (
           <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-4 mb-6 animate-pulse">
             <div className="flex items-center gap-3">
-              <Icon name="duel" size={26} className="text-emerald-400" />
+              <span className="text-2xl">⚔️</span>
               <div>
                 <div className="text-emerald-400 font-bold">Your match is ready!</div>
                 <div className="text-xs text-slate-400">Lobby: <span className="font-mono text-emerald-300">{matchLobbyCode}</span></div>
@@ -162,13 +161,13 @@ export default function TournamentDetail() {
         )}
 
         {/* Header */}
-        <div className="glass-panel p-8 mb-8 glow ">
+        <div className="glass-panel p-8 mb-8 glow animate-slide-up">
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-extrabold text-white mb-2">{t.name}</h1>
               <div className="flex items-center gap-2 mb-4">
                 <span className={`text-xs px-3 py-1 rounded-full border font-medium ${
- t.status === 'registration' ? 'text-emerald bg-emerald/10 border-emerald/20' :
+                  t.status === 'registration' ? 'text-emerald bg-emerald/10 border-emerald/20' :
                   t.status === 'in_progress' ? 'text-amber bg-amber/10 border-amber/20' :
                   'text-slate-400 bg-white/5 border-white/10'
                 }`}>
@@ -219,7 +218,7 @@ export default function TournamentDetail() {
                   disabled={starting || (t.participants?.length ?? t.participant_count) < 2}
                   className="py-2.5 px-6 rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-sm font-medium hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {starting ? 'Starting...' : 'Start Tournament'}
+                  {starting ? 'Starting...' : '🚀 Start Tournament'}
                 </button>
                 {(t.participants?.length ?? t.participant_count) < 2 && (
                   <span className="text-xs text-amber-400 text-center">Need at least 2 participants</span>
@@ -230,7 +229,7 @@ export default function TournamentDetail() {
         </div>
 
         {/* Participants */}
-        <div className="glass-panel p-6 ">
+        <div className="glass-panel p-6 animate-fade-in">
           <h2 className="text-lg font-bold text-white mb-4">Participants</h2>
           {t.participants?.length === 0 ? (
             <p className="text-slate-500 text-center py-8">No participants yet</p>
@@ -240,7 +239,7 @@ export default function TournamentDetail() {
                 <div
                   key={p.user_id}
                   className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${
- p.eliminated
+                    p.eliminated
                       ? 'bg-white/[0.01] border-white/5 opacity-50'
                       : p.user_id === user?.id
                         ? 'bg-indigo/10 border-indigo/30'
