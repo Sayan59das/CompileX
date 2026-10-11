@@ -1,45 +1,42 @@
 import React from 'react'
+import Avatar from './Avatar'
 
-const MEDALS = ['🥇', '🥈', '🥉']
-
-export default function Leaderboard({ entries = [], currentPlayerId }) {
+/**
+ * Standings table. Rows are ranked by the order they arrive in, which is how
+ * the server sends them. The current player's row is highlighted.
+ */
+export default function Leaderboard({ entries = [], currentPlayerId, showSolved = true, className = '' }) {
   if (!entries.length) {
     return (
-      <div className="text-center py-8">
-        <div className="text-3xl mb-2">📊</div>
-        <p className="text-slate-500 text-xs">No scores yet</p>
+      <div className={`px-5 py-10 text-center ${className}`}>
+        <p className="font-semibold">No scores yet</p>
+        <p className="mt-1 text-sm text-ink-3">Standings appear when the first solution is submitted.</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-1.5">
+    <ol className={className}>
       {entries.map((entry, i) => {
         const isMe = (entry.player_id ?? entry.id) === currentPlayerId
         return (
-          <div
+          <li
             key={entry.player_id ?? entry.id ?? i}
-            className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm ${
-              isMe
-                ? 'bg-indigo/20 border border-indigo/30'
-                : 'bg-white/[0.03] border border-white/5'
-            }`}
+            className={`flex items-center gap-3 border-b border-line px-4 py-3 last:border-b-0 ${isMe ? 'bg-sun/15' : ''}`}
           >
-            <span className="w-5 text-center text-base shrink-0">
-              {MEDALS[i] ?? <span className="text-slate-500 text-xs font-mono">{i + 1}</span>}
-            </span>
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo to-violet flex items-center justify-center text-white text-xs font-bold shrink-0">
-              {entry.username?.[0]?.toUpperCase()}
+            <span className={`numeral w-7 shrink-0 text-2xl ${i === 0 ? 'text-sun-ink' : 'text-ink-3'}`}>{i + 1}</span>
+            <Avatar name={entry.username} size={30} />
+            <div className="min-w-0 flex-1">
+              <div className="truncate font-semibold">
+                {entry.username}
+                {isMe && <span className="ml-2 text-xs font-medium text-ink-3">you</span>}
+              </div>
+              {showSolved && <div className="text-xs text-ink-3">{entry.questions_solved ?? 0} solved</div>}
             </div>
-            <span className={`flex-1 truncate font-medium text-xs ${isMe ? 'text-indigo-light' : 'text-slate-200'}`}>
-              {entry.username}
-            </span>
-            <span className={`font-bold text-sm shrink-0 ${isMe ? 'text-indigo-light' : 'text-white'}`}>
-              {entry.score}
-            </span>
-          </div>
+            <span className="numeral text-2xl">{Math.round(entry.score ?? 0)}</span>
+          </li>
         )
       })}
-    </div>
+    </ol>
   )
 }
