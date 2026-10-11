@@ -86,7 +86,7 @@
 
 ### 🎨 **User Experience**
 - ✅ Modern, responsive UI
-- ✅ Dark theme optimized
+- ✅ Light and dark themes
 - ✅ Real-time updates via WebSocket
 - ✅ Visual diagrams for tree/graph problems
 - ✅ Syntax highlighting
