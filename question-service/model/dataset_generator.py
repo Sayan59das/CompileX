@@ -16,6 +16,8 @@ import os
 import random
 from typing import Optional, List, Dict
 
+from model.titles import normalize_title
+
 # ── Path resolution ───────────────────────────────────────────────────────────
 _HERE = os.path.dirname(__file__)
 _DATA_PATH = os.path.join(_HERE, "..", "data", "questions.json")
@@ -168,7 +170,7 @@ def get_from_dataset(
     if not _dataset:
         return None
 
-    exclude_set = set(t.lower().strip() for t in (exclude_titles or []))
+    exclude_set = set(normalize_title(t) for t in (exclude_titles or []))
     diff = difficulty.lower().strip()
 
     # Resolve topic to dataset keys
@@ -201,7 +203,7 @@ def get_from_dataset(
         diff_candidates = candidates
 
     # Filter out titles the caller has excluded (the user's own history)
-    fresh = [q for q in diff_candidates if q["title"].lower().strip() not in exclude_set]
+    fresh = [q for q in diff_candidates if normalize_title(q["title"]) not in exclude_set]
 
     if not fresh:
         print(f"[Dataset] All {len(diff_candidates)} questions excluded for topic='{topic}'")

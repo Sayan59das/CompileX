@@ -25,6 +25,10 @@ def _seed() -> int:
     return int(uuid.uuid4().int % (2**31))
 
 
+class NoFreshQuestion(LookupError):
+    """The caller has already had every template for this topic and difficulty."""
+
+
 def _uid() -> str:
     return hashlib.md5(uuid.uuid4().bytes).hexdigest()[:8]
 
@@ -5313,9 +5317,13 @@ def generate_dynamic(topic: str, difficulty: str, exclude_titles: List[str] = No
         "hard":   " [Hard] Advanced algorithm required — segment trees, bitmask DP, complex graph algorithms, or multi-dimensional DP. Optimal time complexity expected.",
     }
 
-    # ── Try to find a unique title ──────────────────────────────────────────
-    # We shuffle templates and try every variation of every template.
-    # If all are exhausted we fall back to the least-recently-used title.
+    # ── Pick a template this caller has not seen ────────────────────────────
+    # A template is one underlying problem; its title is only a costume. The caller's
+    # history stores the template's identity (base_title), so a template whose identity
+    # is already excluded is skipped. When every template has been seen there is nothing
+    # fresh left, and we say so (NoFreshQuestion) instead of serving the same problem
+    # again under a new costume. Only the caller's own history counts here, never what
+    # other callers were served, so one player cannot use up another player's questions.
     rng = _rng()
 
     # Use difficulty-aware templates when available
@@ -5338,41 +5346,27 @@ def generate_dynamic(topic: str, difficulty: str, exclude_titles: List[str] = No
     for template_fn in templates:
         body = template_fn(rng)
         base = body["title"]
-        # Try every variation for this base title
-        if base in _TITLE_VARIATIONS:
-            pool = _TITLE_VARIATIONS[base]
-        else:
-            pool = None
+        if base.lower() in expanded_exclude:
+            continue  # this caller has already had this problem
 
+        pool = _TITLE_VARIATIONS.get(base)
         if pool:
-            available = [v for v in pool if v.lower() not in full_exclude]
-            if available:
-                chosen_body = body
-                varied_title = rng.choice(available)
-                chosen_template_fn = template_fn
-                break
-        else:
-            # Generic fallback title — always unique via token
-            candidate = _make_generic_title(base, rng)
-            if candidate.lower() not in full_exclude:
-                chosen_body = body
-                varied_title = candidate
-                chosen_template_fn = template_fn
-                break
-
-    if chosen_body is None:
-        # All variations exhausted — pick randomly, use _TITLE_VARIATIONS directly
-        template_fn = rng.choice(templates)
-        body = template_fn(rng)
-        base = body["title"]
-        if base in _TITLE_VARIATIONS:
-            pool = _TITLE_VARIATIONS[base]
-            available = [v for v in pool if v.lower() not in full_exclude]
-            varied_title = rng.choice(available if available else pool)
+            # Prefer a wording nobody was served recently; never reject an unseen problem for lack of one.
+            available = (
+                [v for v in pool if v.lower() not in full_exclude]
+                or [v for v in pool if v.lower() not in expanded_exclude]
+            )
+            if not available:
+                continue
+            varied_title = rng.choice(available)
         else:
             varied_title = _make_generic_title(base, rng)
         chosen_body = body
         chosen_template_fn = template_fn
+        break
+
+    if chosen_body is None:
+        raise NoFreshQuestion(f"no unseen {difficulty} {topic_key} question is left for this caller")
 
     # ── Build test cases ────────────────────────────────────────────────────
     test_cases = list(chosen_body["test_cases"])
@@ -5403,6 +5397,7 @@ def generate_dynamic(topic: str, difficulty: str, exclude_titles: List[str] = No
 
     return {
         "title": varied_title,
+        "base_title": chosen_body["title"],
         "problem_statement": chosen_body["problem_statement"] + flavour[difficulty],
         "input_format": chosen_body["input_format"],
         "output_format": chosen_body["output_format"],

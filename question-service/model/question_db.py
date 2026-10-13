@@ -18,6 +18,8 @@ import hashlib
 from collections import defaultdict
 from typing import Optional
 
+from model.titles import normalize_title
+
 _HERE = os.path.dirname(__file__)
 _DB_PATH = os.path.join(_HERE, '..', 'data', 'question_db.json')
 
@@ -121,8 +123,8 @@ def get_question(
     if not candidates or not key:
         return None
 
-    blocked = set(e.lower().strip() for e in (exclude_titles or []))
-    fresh = [q for q in candidates if q.get('title', '').lower() not in blocked]
+    blocked = set(normalize_title(e) for e in (exclude_titles or []))
+    fresh = [q for q in candidates if normalize_title(q.get('title', '')) not in blocked]
     if not fresh:
         return None
 

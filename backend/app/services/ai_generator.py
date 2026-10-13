@@ -3391,6 +3391,35 @@ def _clean_description(desc: str, input_fmt: str, output_fmt: str) -> tuple:
     return body, extracted_input, extracted_output, extracted_note
 
 
+_TYPED_STARTER_LANGUAGES = ("python", "cpp", "java", "javascript")
+
+
+def _typed_signature(data: dict):
+    """(function_signature, starter_code) when the question already carries its own, else None.
+
+    Reviewed questions arrive with a real signature and starter code that were checked end to end, so
+    guessing them again from the title and text would only make them worse. Anything incomplete falls
+    back to the guess, exactly as before.
+    """
+    code = data.get("starter_code")
+    params = data.get("parameters")
+    name = data.get("function_name")
+    return_type = data.get("return_type")
+    if not (isinstance(code, dict) and isinstance(params, list) and params and isinstance(name, str) and name and return_type):
+        return None
+    if any(not isinstance(code.get(lang), str) or not code[lang].strip() for lang in _TYPED_STARTER_LANGUAGES):
+        return None
+    if any(not isinstance(p, dict) or not p.get("name") or not p.get("type") for p in params):
+        return None
+    signature = {
+        "function_name": name,
+        "parameters": params,
+        "return_type": return_type,
+        "return_description": data.get("return_description") or "The answer to the problem",
+    }
+    return signature, {lang: text for lang, text in code.items() if isinstance(text, str) and text.strip()}
+
+
 async def _build_result(
     data: dict, difficulty: DifficultyLevel, topic: Optional[str]
 ) -> dict:
@@ -3430,9 +3459,10 @@ async def _build_result(
     if note:
         full_description += f"\n\n**Note**\n{note}"
 
-    # Generate function signature metadata
-    function_signature = _generate_function_signature(title, raw_desc, data.get("topic", topic), input_fmt)
-    
+    # Function signature metadata: a reviewed question brings its own, otherwise it is guessed from the text
+    typed = _typed_signature(data)
+    function_signature = typed[0] if typed else _generate_function_signature(title, raw_desc, data.get("topic", topic), input_fmt)
+
     print(f"[ai] Function signature: {function_signature['function_name']}({len(function_signature['parameters'])} params) -> {function_signature['return_type']}")
 
     # Generate diagram for tree/graph questions or image via Nvidia API
@@ -3464,7 +3494,7 @@ async def _build_result(
 
     # Generate function-based starter code using the function signature
     # The test harness (I/O parsing) is added automatically at execution time
-    starter_code = _generate_starter_code_from_signature(function_signature, title, desc, input_fmt)
+    starter_code = typed[1] if typed else _generate_starter_code_from_signature(function_signature, title, desc, input_fmt)
 
     return {
         "title": title,

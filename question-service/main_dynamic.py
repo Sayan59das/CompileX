@@ -16,12 +16,16 @@ import random
 import uvicorn
 
 # Import generators — question_db first, then smart AI, dataset, dynamic templates as fallback
-from model.dynamic_generator import generate_dynamic
+from model.dynamic_generator import generate_dynamic, NoFreshQuestion
+from model.titles import normalize_title
 from model.dataset_generator import (
     get_from_dataset, dataset_stats, pool_size as dataset_pool_size, clear_cache as clear_dataset_cache,
 )
 from model.smart_generator import generate_smart, pool_size as smart_pool_size, clear_cache as clear_smart_cache
 from model.question_db import get_question as db_get_question, get_stats as db_get_stats, pool_size as db_pool_size
+from model.reviewed_bank import (
+    get_question as reviewed_get_question, get_stats as reviewed_stats, pool_size as reviewed_pool_size,
+)
 
 # Try to load the trained model generator
 _trained_generator = None
@@ -119,6 +123,7 @@ async def stats():
     return {
         "dataset_questions": ds["total_questions"],
         "dataset_topics": ds["topics"],
+        "reviewed_questions": sum(sum(by_difficulty.values()) for by_difficulty in reviewed_stats().values()),
         "deduplication": "per-user, via exclude_titles",
     }
 
@@ -182,7 +187,8 @@ def _bank_order(topic: str, difficulty: str) -> List[str]:
         "dataset": dataset_pool_size(topic, difficulty),
     }
     remaining = [name for name, size in pools.items() if size > 0]
-    order: List[str] = []
+    # Reviewed questions are verified end to end and ship with real starter code, so they are tried first.
+    order: List[str] = ["reviewed"] if reviewed_pool_size(topic, difficulty) > 0 else []
     while remaining:
         pick = random.choices(remaining, weights=[pools[n] for n in remaining])[0]
         order.append(pick)
@@ -212,7 +218,8 @@ def generate_question(req: GenerateRequest):
     attempts = 0
     result = None
     accepted = False
-    client_exclude = set(t.lower().strip() for t in (req.exclude_titles or []))
+    exhausted = False
+    client_exclude = set(normalize_title(t) for t in (req.exclude_titles or []))
     exclude_list = list(client_exclude)
 
     while attempts < _max_retries:
@@ -226,7 +233,9 @@ def generate_question(req: GenerateRequest):
             # holds for this topic and difficulty, so a small bank is not served
             # to everyone before the large ones are touched.
             for bank in _bank_order(topic, difficulty):
-                if bank == "question_db":
+                if bank == "reviewed":
+                    candidate = reviewed_get_question(topic=topic, difficulty=difficulty, exclude_titles=exclude_list)
+                elif bank == "question_db":
                     candidate = db_get_question(topic=topic, difficulty=difficulty, exclude_titles=exclude_list)
                     if candidate:
                         candidate.setdefault("source", "question_db")
@@ -265,12 +274,16 @@ def generate_question(req: GenerateRequest):
                     print(f"[API] Trained model failed: {e}")
                     candidate = None
 
-            # Dynamic template generator (always works, topic-aware)
+            # Template generator: each template is one real problem, and a player gets each at most once
             if candidate is None:
-                candidate = generate_dynamic(
-                    topic, difficulty,
-                    exclude_titles=exclude_list,
-                )
+                try:
+                    candidate = generate_dynamic(
+                        topic, difficulty,
+                        exclude_titles=exclude_list,
+                    )
+                except NoFreshQuestion:
+                    exhausted = True
+                    break
                 print(f"[API] Dynamic template: '{candidate['title']}'")
 
             gen_time = time.time() - gen_start
@@ -279,7 +292,7 @@ def generate_question(req: GenerateRequest):
             # Reject anything the caller excluded (generators such as the trained
             # model or templates may ignore exclude_titles)
             title = result["title"]
-            identities = {title.lower().strip(), (result.get("base_title") or title).lower().strip()}
+            identities = {normalize_title(title), normalize_title(result.get("base_title") or title)}
 
             if not identities & client_exclude:
                 accepted = True
@@ -292,6 +305,14 @@ def generate_question(req: GenerateRequest):
             print(f"[API] Error in attempt {attempts}: {e}")
             if attempts >= _max_retries:
                 raise
+
+    if exhausted:
+        # Not an error: this player has had every question we hold for this topic and difficulty.
+        # The caller decides what to do (the backend falls back to its own pool).
+        raise HTTPException(
+            status_code=404,
+            detail=f"No unseen {difficulty} {topic} question is left for this player"
+        )
 
     if not accepted:
         raise HTTPException(
@@ -378,7 +399,13 @@ def generate_question(req: GenerateRequest):
             "difficulty": difficulty,
             "source": "dynamic"
         }
-        
+        # Reviewed questions carry a real signature and starter code; everything else keeps the old response.
+        if result.get("starter_code"):
+            for key in ("constraints", "function_name", "parameters", "return_type", "return_description",
+                        "starter_code", "input_schema", "output_schema"):
+                if result.get(key):
+                    response[key] = result[key]
+
         total_time = time.time() - request_start
         print(f"[API] Total request time: {total_time:.3f}s")
         
