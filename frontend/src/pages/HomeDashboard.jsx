@@ -98,19 +98,19 @@ export default function HomeDashboard() {
   ]
 
   return (
-    <div className="min-h-screen bg-[#05050A] relative overflow-hidden">
+    <div className="min-h-screen bg-[#000000] relative overflow-hidden">
       {/* Animated Background */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[120px] animate-float-slow" />
         <div className="absolute bottom-0 right-1/4 w-[700px] h-[700px] bg-cyan-500/15 rounded-full blur-[130px] animate-float-slower" style={{ animationDelay: '3s' }} />
         <div className="absolute inset-0 opacity-[0.08]" style={{ 
-          backgroundImage: 'linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px)', 
+          backgroundImage: 'linear-gradient(rgba(59,140,255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(59,140,255, 0.1) 1px, transparent 1px)', 
           backgroundSize: '50px 50px' 
         }} />
       </div>
 
       {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0A0A10]/80 backdrop-blur-xl border-b border-white/[0.07]">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#000000]/80 backdrop-blur-xl border-b border-white/[0.07]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3 group cursor-pointer" onClick={() => navigate('/home')}>
             <Logo size={40} className="transition-all duration-300 group-hover:scale-110 group-hover:rotate-6" />
@@ -118,7 +118,7 @@ export default function HomeDashboard() {
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-[#101018] rounded-xl border border-white/[0.07]">
+            <div className="flex items-center gap-2 px-4 py-2 bg-[#0F0F0F] rounded-xl border border-white/[0.07]">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-sm text-white font-medium">{user?.username}</span>
             </div>
@@ -152,7 +152,7 @@ export default function HomeDashboard() {
                 className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 ${
                   tab === t.key
                     ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/50'
-                    : 'bg-[#101018] text-slate-400 hover:text-white hover:bg-[#1f2937] border border-white/[0.07]'
+                    : 'bg-[#0F0F0F] text-slate-400 hover:text-white hover:bg-[#1A1A1A] border border-white/[0.07]'
                 }`}
               >
                 <span className="mr-2">{t.icon}</span>
@@ -172,7 +172,7 @@ export default function HomeDashboard() {
           )}
 
           {/* Tab Content */}
-          <div className="bg-[#0A0A10] border border-white/[0.07] rounded-2xl p-8 shadow-2xl">
+          <div className="bg-[#000000] border border-white/[0.07] rounded-2xl p-8 shadow-2xl">
             {tab === 'create' && (
               <form onSubmit={createLobby} className="space-y-6">
                 <h2 className="text-2xl font-bold text-white mb-6">Create New Arena</h2>
@@ -180,7 +180,7 @@ export default function HomeDashboard() {
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Arena Name</label>
                   <input
-                    className="w-full px-4 py-3 bg-[#101018] border border-white/[0.07] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="w-full px-4 py-3 bg-[#0F0F0F] border border-white/[0.07] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     placeholder={`${user?.username}'s Arena`}
                     value={lobbyName}
                     onChange={e => setLobbyName(e.target.value)}
@@ -192,7 +192,7 @@ export default function HomeDashboard() {
                     <label className="block text-sm font-medium text-slate-300 mb-2">Max Players</label>
                     <input
                       type="number"
-                      className="w-full px-4 py-3 bg-[#101018] border border-white/[0.07] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className="w-full px-4 py-3 bg-[#0F0F0F] border border-white/[0.07] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                       value={maxPlayers}
                       onChange={e => setMaxPlayers(e.target.value)}
                       min="2"
@@ -203,7 +203,7 @@ export default function HomeDashboard() {
                     <label className="block text-sm font-medium text-slate-300 mb-2">Time Limit (seconds)</label>
                     <input
                       type="number"
-                      className="w-full px-4 py-3 bg-[#101018] border border-white/[0.07] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                      className="w-full px-4 py-3 bg-[#0F0F0F] border border-white/[0.07] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                       value={timeLimit}
                       onChange={e => setTimeLimit(e.target.value)}
                       min="60"
@@ -215,7 +215,7 @@ export default function HomeDashboard() {
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Difficulty</label>
                   <select
-                    className="w-full px-4 py-3 bg-[#101018] border border-white/[0.07] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="w-full px-4 py-3 bg-[#0F0F0F] border border-white/[0.07] rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     value={difficulty}
                     onChange={e => setDifficulty(e.target.value)}
                   >
@@ -231,7 +231,7 @@ export default function HomeDashboard() {
                     id="public"
                     checked={isPublic}
                     onChange={e => setIsPublic(e.target.checked)}
-                    className="w-5 h-5 rounded bg-[#101018] border-white/[0.07] text-blue-600 focus:ring-2 focus:ring-blue-500/50"
+                    className="w-5 h-5 rounded bg-[#0F0F0F] border-white/[0.07] text-blue-600 focus:ring-2 focus:ring-blue-500/50"
                   />
                   <label htmlFor="public" className="text-sm text-slate-300">Make arena public</label>
                 </div>
@@ -253,7 +253,7 @@ export default function HomeDashboard() {
                 <div>
                   <label className="block text-sm font-medium text-slate-300 mb-2">Arena Code</label>
                   <input
-                    className="w-full px-4 py-3 bg-[#101018] border border-white/[0.07] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 uppercase"
+                    className="w-full px-4 py-3 bg-[#0F0F0F] border border-white/[0.07] rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 uppercase"
                     placeholder="Enter 6-character code"
                     value={joinCode}
                     onChange={e => setJoinCode(e.target.value.toUpperCase())}
@@ -283,7 +283,7 @@ export default function HomeDashboard() {
                 ) : (
                   <div className="space-y-4">
                     {publicLobbies.map(lobby => (
-                      <div key={lobby.id} className="p-4 bg-[#101018] border border-white/[0.07] rounded-xl hover:border-blue-500/30 transition-all">
+                      <div key={lobby.id} className="p-4 bg-[#0F0F0F] border border-white/[0.07] rounded-xl hover:border-blue-500/30 transition-all">
                         <div className="flex items-center justify-between">
                           <div>
                             <h3 className="text-white font-semibold">{lobby.name}</h3>

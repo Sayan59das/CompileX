@@ -10,11 +10,11 @@ import { attachProtectedRegion } from '../utils/protectedRegion'
 import MathText from '../components/MathText'
 
 const LANGUAGES = [
-  { value: 'python', label: 'Python', monaco: 'python', icon: '🐍', color: '#3776ab' },
-  { value: 'javascript', label: 'JavaScript', monaco: 'javascript', icon: '📜', color: '#f7df1e' },
-  { value: 'cpp', label: 'C++', monaco: 'cpp', icon: '⚡', color: '#00599c' },
-  { value: 'java', label: 'Java', monaco: 'java', icon: '☕', color: '#ed8b00' },
-  { value: 'c', label: 'C', monaco: 'c', icon: '🔧', color: '#a8b9cc' },
+  { value: 'python', label: 'Python', monaco: 'python', color: '#3776ab' },
+  { value: 'javascript', label: 'JavaScript', monaco: 'javascript', color: '#f7df1e' },
+  { value: 'cpp', label: 'C++', monaco: 'cpp', color: '#00599c' },
+  { value: 'java', label: 'Java', monaco: 'java', color: '#ed8b00' },
+  { value: 'c', label: 'C', monaco: 'c', color: '#a8b9cc' },
 ]
 
 const STARTER = {
@@ -84,6 +84,12 @@ int main() {
 `,
   java: `import java.util.*;
 import java.io.*;
+import { AlertTriangle, BarChart3, Bot, CheckCircle2, Hourglass, Lightbulb, PenLine, RefreshCw, Target, Trophy, XCircle, Zap } from 'lucide-react'
+
+// Renders an icon component, or plain text, at the size of the surrounding text.
+const Ico = ({ of, className = 'inline-block h-[1em] w-[1em] align-[-0.125em]' }) =>
+  of == null ? null : typeof of === 'string' ? of : React.createElement(of, { className, 'aria-hidden': true })
+
 
 public class Main {
     /**
@@ -259,8 +265,8 @@ const GAME_STYLES = `
     50% { opacity: 0.5; }
   }
   @keyframes glow {
-    0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); }
-    50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.6); }
+    0%, 100% { box-shadow: 0 0 20px rgba(139,108,255, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(139,108,255, 0.6); }
   }
   @keyframes shake {
     0%, 100% { transform: rotate(0deg); }
@@ -283,7 +289,7 @@ const GAME_STYLES = `
   .transition-all { transition: all 0.3s ease; }
   .hover-lift:hover { transform: translateY(-2px); }
   .hover-scale:hover { transform: scale(1.05); }
-  .hover-glow:hover { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
+  .hover-glow:hover { box-shadow: 0 0 20px rgba(139,108,255, 0.4); }
 `
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -313,8 +319,8 @@ function ComplexityChart({ userComplexity }) {
 
   const CURVES = [
     { label: 'O(1)',      color: '#22c55e',  dash: '' },
-    { label: 'O(log n)',  color: '#3b82f6',  dash: '' },
-    { label: 'O(n)',      color: '#60a5fa',  dash: '' },
+    { label: 'O(log n)',  color: '#3B8CFF',  dash: '' },
+    { label: 'O(n)',      color: '#5AA2FF',  dash: '' },
     { label: 'O(n log n)',color: '#f59e0b',  dash: '' },
     { label: 'O(n²)',     color: '#ef4444',  dash: '' },
   ]
@@ -404,7 +410,7 @@ function ComplexityChart({ userComplexity }) {
 
       {/* User's code curve highlight (if not in standard list) */}
       {userLabel && !CURVES.find(c => c.label === userLabel) && (
-        <path d={makePath(userLabel)} fill="none" stroke="#60a5fa" strokeWidth="2.5" />
+        <path d={makePath(userLabel)} fill="none" stroke="#5AA2FF" strokeWidth="2.5" />
       )}
 
       {/* "Your Code" label on the user curve */}
@@ -414,8 +420,8 @@ function ComplexityChart({ userComplexity }) {
         const y = toY(complexityValue(userLabel, midN))
         return (
           <g>
-            <circle cx={x} cy={y} r="3" fill="#60a5fa" />
-            <text x={x + 5} y={y - 4} fill="#60a5fa" fontSize="8" fontWeight="bold">Your Code</text>
+            <circle cx={x} cy={y} r="3" fill="#5AA2FF" />
+            <text x={x + 5} y={y - 4} fill="#5AA2FF" fontSize="8" fontWeight="bold">Your Code</text>
           </g>
         )
       })()}
@@ -427,8 +433,8 @@ function ComplexityChart({ userComplexity }) {
 function ChartLegend({ userComplexity }) {
   const items = [
     { label: 'O(1)',       color: '#22c55e' },
-    { label: 'O(log n)',   color: '#3b82f6' },
-    { label: 'O(n)',       color: '#60a5fa' },
+    { label: 'O(log n)',   color: '#3B8CFF' },
+    { label: 'O(n)',       color: '#5AA2FF' },
     { label: 'O(n log n)', color: '#f59e0b' },
     { label: 'O(n²)',      color: '#ef4444' },
   ]
@@ -474,11 +480,11 @@ export default function Game() {
 
   function _perfectSuggestions() {
     const pool = [
-      '✅ Perfect score! All test cases passed.',
-      '🎉 Flawless solution — every test case passed!',
-      '✅ All tests green! Your logic is correct.',
-      '🏆 Perfect! Submit to lock in your score.',
-      '✅ 100% — excellent work!',
+      'Perfect score! All test cases passed.',
+      'Flawless solution — every test case passed!',
+      'All tests green! Your logic is correct.',
+      'Perfect! Submit to lock in your score.',
+      '100% — excellent work!',
     ]
     return [pool[Math.floor(Math.random() * pool.length)]]
   }
@@ -492,32 +498,32 @@ export default function Game() {
 
     if (pct === 0) {
       pool.push(
-        `❌ All ${total} test cases failing — check your core algorithm logic`,
-        `🔍 Start by tracing through the sample input manually`,
-        `⚠️ Your output format may be wrong — check the expected output carefully`,
-        `💡 Make sure you're reading the input correctly (check the Input Format section)`,
-        `🧪 Add print statements to see what your code actually produces`,
+        `All ${total} test cases failing — check your core algorithm logic`,
+        `Start by tracing through the sample input manually`,
+        `Your output format may be wrong — check the expected output carefully`,
+        `Make sure you're reading the input correctly (check the Input Format section)`,
+        `Add print statements to see what your code actually produces`,
       )
     } else if (pct < 50) {
       pool.push(
-        `❌ ${failed} test case${failed > 1 ? 's' : ''} failing — your approach handles some cases but misses others`,
-        `🔍 Check edge cases: empty input, single element, all-same values`,
-        `⚠️ Your logic works for simple cases but breaks on complex ones`,
-        `💡 Look at the first failing test — what's different about that input?`,
-        `🧪 Compare your output format with the expected output exactly`,
+        `${failed} test case${failed > 1 ? 's' : ''} failing — your approach handles some cases but misses others`,
+        `Check edge cases: empty input, single element, all-same values`,
+        `Your logic works for simple cases but breaks on complex ones`,
+        `Look at the first failing test — what's different about that input?`,
+        `Compare your output format with the expected output exactly`,
       )
     } else if (pct < 100) {
       pool.push(
-        `⚠️ ${failed} edge case${failed > 1 ? 's' : ''} still failing — you're close!`,
-        `🔍 Check: negative numbers, zero values, maximum constraints`,
-        `💡 Your main logic is right — look for off-by-one errors or boundary conditions`,
-        `🧪 Click a failing test case to compare expected vs actual output`,
-        `⚠️ Check if your solution handles the minimum and maximum input sizes`,
+        `${failed} edge case${failed > 1 ? 's' : ''} still failing — you're close!`,
+        `Check: negative numbers, zero values, maximum constraints`,
+        `Your main logic is right — look for off-by-one errors or boundary conditions`,
+        `Click a failing test case to compare expected vs actual output`,
+        `Check if your solution handles the minimum and maximum input sizes`,
       )
     }
 
     // Always add a "click failing test" hint
-    pool.push(`🧪 Click a failing test case below to see the exact input, expected, and actual output`)
+    pool.push(`Click a failing test case below to see the exact input, expected, and actual output`)
 
     // Shuffle and pick 2–3 unique suggestions
     const shuffled = pool.sort(() => Math.random() - 0.5)
@@ -976,7 +982,7 @@ export default function Game() {
       setGrokMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
     } catch (err) {
       const errMsg = err.response?.data?.detail || 'Failed to get AI response. Please try again.'
-      setGrokMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${errMsg}` }])
+      setGrokMessages(prev => [...prev, { role: 'assistant', content: `${errMsg}` }])
     } finally {
       setGrokLoading(false)
     }
@@ -1177,7 +1183,7 @@ export default function Game() {
       if (parts.length <= 1) return text
       return parts.map((w, j) =>
         keywords.includes(w.toLowerCase())
-          ? <span key={j} style={{ color: '#22d3ee', fontWeight: 500 }}>{w}</span>
+          ? <span key={j} style={{ color: '#3DE0FF', fontWeight: 500 }}>{w}</span>
           : w
       )
     }
@@ -1187,7 +1193,7 @@ export default function Game() {
       const parts = line.split(/(\*\*[^*]+\*\*)/)
       return parts.map((p, i) =>
         p.startsWith('**') && p.endsWith('**')
-          ? <strong key={i} style={{ color: '#f1f5f9', fontWeight: 600 }}><MathText text={p.slice(2, -2)} /></strong>
+          ? <strong key={i} style={{ color: '#E6E6E6', fontWeight: 600 }}><MathText text={p.slice(2, -2)} /></strong>
           : <MathText key={i} text={p} />
       )
     }
@@ -1199,7 +1205,7 @@ export default function Game() {
       fontFamily: "'JetBrains Mono','Fira Code',monospace",
       fontSize: '13px',
       lineHeight: '1.7',
-      color: '#e2e8f0',
+      color: '#D0D0D0',
       border: '1px solid rgba(255, 255, 255, 0.08)',
     }
 
@@ -1224,12 +1230,12 @@ export default function Game() {
         if (SKIP_SECTIONS.has(sectionName)) continue
 
         const accentColors = {
-          'Input Format': '#22d3ee',
-          'Output Format': '#60a5fa',
+          'Input Format': '#3DE0FF',
+          'Output Format': '#5AA2FF',
           'Constraints': '#fbbf24',
           'Sample Input': '#34d399',
           'Sample Output': '#34d399',
-          'Explanation': '#22d3ee',
+          'Explanation': '#3DE0FF',
         }
 
         elements.push(
@@ -1237,7 +1243,7 @@ export default function Game() {
             <div style={{ 
               fontSize: '12px', 
               fontWeight: 700, 
-              color: accentColors[sectionName] || '#94a3b8', 
+              color: accentColors[sectionName] || '#8C8C8C', 
               marginBottom: '10px', 
               letterSpacing: '0.05em',
               textTransform: 'uppercase',
@@ -1248,7 +1254,7 @@ export default function Game() {
               <span style={{ 
                 width: '3px', 
                 height: '14px', 
-                background: accentColors[sectionName] || '#94a3b8',
+                background: accentColors[sectionName] || '#8C8C8C',
                 borderRadius: '2px',
               }} />
               {sectionName}
@@ -1269,7 +1275,7 @@ export default function Game() {
       } else {
         if (line.trim()) {
           elements.push(
-            <p key={key++} style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.7', marginBottom: '10px' }}>
+            <p key={key++} style={{ color: '#B0B0B0', fontSize: '14px', lineHeight: '1.7', marginBottom: '10px' }}>
               {renderBoldLine(line)}
             </p>
           )
@@ -1278,7 +1284,7 @@ export default function Game() {
       }
     }
     return elements.length > 0 ? elements : (
-      <p style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}><MathText text={text} /></p>
+      <p style={{ color: '#B0B0B0', fontSize: '14px', lineHeight: '1.7', whiteSpace: 'pre-wrap' }}><MathText text={text} /></p>
     )
   }
 
@@ -1288,7 +1294,7 @@ export default function Game() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 relative overflow-hidden">
         <div className="absolute inset-0 bg-hero-glow pointer-events-none" />
         <div className="relative text-center animate-slide-up">
-          <div className="text-5xl mb-4">📊</div>
+          <div className="text-5xl mb-4"><Ico of={BarChart3} /></div>
           <h2 className="text-3xl font-extrabold text-white mb-1">Round {currentRound} Complete</h2>
           <p className="text-slate-400 mb-6">{isLastRound ? 'Final standings' : `${totalRounds - currentRound} round(s) remaining`}</p>
           <div className="glass rounded-2xl p-6 w-full max-w-sm mx-auto glow mb-6">
@@ -1313,15 +1319,15 @@ export default function Game() {
       <div className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden"
         style={{ background: '#0d0d14' }}>
         <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.15) 0%, transparent 70%)' }} />
+          style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(139,108,255,0.15) 0%, transparent 70%)' }} />
 
         <div className="relative w-full max-w-lg animate-slide-up">
           {/* Header */}
           <div className="text-center mb-8">
-            <div className="text-6xl mb-3">🏆</div>
+            <div className="text-6xl mb-3"><Ico of={Trophy} /></div>
             <h2 className="text-4xl font-extrabold text-white mb-1">Game Over!</h2>
             {myRank === 1
-              ? <p className="text-amber-400 font-semibold">You won! 🎉</p>
+              ? <p className="text-amber-400 font-semibold">You won! </p>
               : myRank
               ? <p className="text-slate-400">You finished #{myRank}</p>
               : <p className="text-slate-400">Final standings</p>
@@ -1345,25 +1351,25 @@ export default function Game() {
             ) : (
               leaderboard.map((entry, i) => {
                 const isMe = (entry.player_id ?? entry.id) === playerId
-                const medals = ['🥇', '🥈', '🥉']
+                const medals = []
                 return (
                   <div key={entry.player_id ?? entry.id ?? i}
                     className="grid grid-cols-12 px-5 py-4 items-center transition-all"
                     style={{
-                      background: isMe ? 'rgba(99,102,241,0.12)' : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
+                      background: isMe ? 'rgba(139,108,255,0.12)' : i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
                       borderBottom: i < leaderboard.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                      borderLeft: isMe ? '3px solid #6366f1' : '3px solid transparent',
+                      borderLeft: isMe ? '3px solid #8B6CFF' : '3px solid transparent',
                     }}>
                     <span className="col-span-1 text-lg">
                       {medals[i] ?? <span className="text-slate-500 text-sm font-mono">{i + 1}</span>}
                     </span>
                     <div className="col-span-7 flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                        style={{ background: isMe ? 'linear-gradient(135deg,#6366f1,#3b82f6)' : 'rgba(255,255,255,0.1)' }}>
+                        style={{ background: isMe ? 'linear-gradient(135deg,#8B6CFF,#3B8CFF)' : 'rgba(255,255,255,0.1)' }}>
                         {entry.username?.[0]?.toUpperCase()}
                       </div>
                       <div>
-                        <div className="font-semibold text-sm" style={{ color: isMe ? '#a5b4fc' : '#e2e8f0' }}>
+                        <div className="font-semibold text-sm" style={{ color: isMe ? '#B8A0FF' : '#D0D0D0' }}>
                           {entry.username} {isMe && <span className="text-xs text-indigo-400">(you)</span>}
                         </div>
                         {i === 0 && <div className="text-[10px] text-amber-400">Winner</div>}
@@ -1373,7 +1379,7 @@ export default function Game() {
                       {entry.questions_solved ?? 0}
                     </div>
                     <div className="col-span-2 text-right font-bold text-base"
-                      style={{ color: isMe ? '#a5b4fc' : '#f1f5f9' }}>
+                      style={{ color: isMe ? '#B8A0FF' : '#E6E6E6' }}>
                       {entry.score ?? 0}
                     </div>
                   </div>
@@ -1391,7 +1397,7 @@ export default function Game() {
             </button>
             <button onClick={() => nav('/home')}
               className="flex-1 py-3 rounded-xl font-bold text-sm text-white transition-all"
-              style={{ background: 'linear-gradient(135deg,#6366f1,#3b82f6)' }}>
+              style={{ background: 'linear-gradient(135deg,#8B6CFF,#3B8CFF)' }}>
               Play Again
             </button>
           </div>
@@ -1405,7 +1411,7 @@ export default function Game() {
   const currentLang = LANGUAGES.find(l => l.value === lang) || LANGUAGES[0]
 
   return (
-    <div className="h-screen flex overflow-hidden relative" style={{ background: '#000000', fontFamily: "'Inter', system-ui, sans-serif" }}>
+    <div className="h-screen flex overflow-hidden relative" style={{ background: '#000000', fontFamily: 'inherit' }}>
       <style>{GAME_STYLES}</style>
 
       {/* Animated Background */}
@@ -1413,7 +1419,7 @@ export default function Game() {
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-500/20 rounded-full blur-[120px] animate-float-slow" />
         <div className="absolute bottom-0 right-1/4 w-[700px] h-[700px] bg-cyan-500/15 rounded-full blur-[130px] animate-float-slower" style={{ animationDelay: '3s' }} />
         <div className="absolute inset-0 opacity-[0.08]" style={{ 
-          backgroundImage: 'linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px)', 
+          backgroundImage: 'linear-gradient(rgba(59,140,255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(59,140,255, 0.1) 1px, transparent 1px)', 
           backgroundSize: '50px 50px' 
         }} />
       </div>
@@ -1451,12 +1457,12 @@ export default function Game() {
           <div className="relative w-full max-w-sm mx-4 rounded-2xl overflow-hidden animate-scale-in"
             style={{
               background: 'linear-gradient(145deg,#0f0f1a,#1a1a2e)',
-              border: '1px solid rgba(99,102,241,0.3)',
-              boxShadow: '0 0 60px rgba(99,102,241,0.2), 0 20px 40px rgba(0,0,0,0.5)',
+              border: '1px solid rgba(139,108,255,0.3)',
+              boxShadow: '0 0 60px rgba(139,108,255,0.2), 0 20px 40px rgba(0,0,0,0.5)',
             }}>
-            <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg,#6366f1,#3b82f6,#06b6d4)' }} />
+            <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg,#8B6CFF,#3B8CFF,#17CDEF)' }} />
             <div className="p-7 text-center">
-              <div className="text-5xl mb-3">⏳</div>
+              <div className="text-5xl mb-3"><Ico of={Hourglass} /></div>
               <h2 className="text-xl font-extrabold text-white mb-1">Submitted!</h2>
               <p className="text-slate-400 text-sm mb-5">Waiting for other players to submit the current question…</p>
 
@@ -1498,16 +1504,16 @@ export default function Game() {
           <div className="relative w-full max-w-md mx-4 rounded-3xl overflow-hidden animate-scale-in"
             style={{
               background: 'linear-gradient(145deg,#0f0f1a,#1a1a2e)',
-              border: '1px solid rgba(99,102,241,0.35)',
-              boxShadow: '0 0 80px rgba(99,102,241,0.25), 0 30px 60px rgba(0,0,0,0.6)',
+              border: '1px solid rgba(139,108,255,0.35)',
+              boxShadow: '0 0 80px rgba(139,108,255,0.25), 0 30px 60px rgba(0,0,0,0.6)',
             }}>
             {/* Glow top bar */}
-            <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg,#6366f1,#3b82f6,#06b6d4)' }} />
+            <div className="h-1 w-full" style={{ background: 'linear-gradient(90deg,#8B6CFF,#3B8CFF,#17CDEF)' }} />
 
             <div className="p-8">
               {/* Header */}
               <div className="text-center mb-6">
-                <div className="text-6xl mb-3">⚡</div>
+                <div className="text-6xl mb-3"><Ico of={Zap} /></div>
                 <h2 className="text-2xl font-extrabold text-white mb-2">You're Fast!</h2>
                 <p className="text-slate-400 text-sm leading-relaxed">
                   You've completed all {questionsPerRound * totalRounds} question{questionsPerRound * totalRounds !== 1 ? 's' : ''}.
@@ -1522,9 +1528,9 @@ export default function Game() {
                         <div key={i} className="w-3 h-3 rounded-full transition-all duration-500"
                           style={{
                             background: i < finishedCount
-                              ? 'linear-gradient(135deg,#6366f1,#3b82f6)'
+                              ? 'linear-gradient(135deg,#8B6CFF,#3B8CFF)'
                               : 'rgba(255,255,255,0.12)',
-                            boxShadow: i < finishedCount ? '0 0 8px rgba(99,102,241,0.6)' : 'none',
+                            boxShadow: i < finishedCount ? '0 0 8px rgba(139,108,255,0.6)' : 'none',
                           }} />
                       ))}
                     </div>
@@ -1548,7 +1554,7 @@ export default function Game() {
                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
                 <div className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-slate-500 flex items-center gap-2"
                   style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                  <span>🏆</span> Live Standings
+                  <span><Ico of={Trophy} /></span> Live Standings
                 </div>
                 <div className="grid grid-cols-12 px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-600"
                   style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
@@ -1563,24 +1569,24 @@ export default function Game() {
                 ) : (
                   leaderboard.map((entry, i) => {
                     const isMe = (entry.player_id ?? entry.id) === playerId
-                    const medals = ['🥇', '🥈', '🥉']
+                    const medals = []
                     return (
                       <div key={entry.player_id ?? entry.id ?? i}
                         className="grid grid-cols-12 px-4 py-3 items-center"
                         style={{
-                          background: isMe ? 'rgba(99,102,241,0.12)' : 'transparent',
+                          background: isMe ? 'rgba(139,108,255,0.12)' : 'transparent',
                           borderBottom: i < leaderboard.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none',
-                          borderLeft: isMe ? '3px solid #6366f1' : '3px solid transparent',
+                          borderLeft: isMe ? '3px solid #8B6CFF' : '3px solid transparent',
                         }}>
                         <span className="col-span-1 text-base">
                           {medals[i] ?? <span className="text-slate-500 text-xs font-mono">{i + 1}</span>}
                         </span>
                         <div className="col-span-7 flex items-center gap-2">
                           <div className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                            style={{ background: isMe ? 'linear-gradient(135deg,#6366f1,#3b82f6)' : 'rgba(255,255,255,0.1)' }}>
+                            style={{ background: isMe ? 'linear-gradient(135deg,#8B6CFF,#3B8CFF)' : 'rgba(255,255,255,0.1)' }}>
                             {entry.username?.[0]?.toUpperCase()}
                           </div>
-                          <span className="text-sm font-semibold truncate" style={{ color: isMe ? '#a5b4fc' : '#e2e8f0' }}>
+                          <span className="text-sm font-semibold truncate" style={{ color: isMe ? '#B8A0FF' : '#D0D0D0' }}>
                             {entry.username} {isMe && <span className="text-xs text-indigo-400">(you)</span>}
                           </span>
                         </div>
@@ -1588,7 +1594,7 @@ export default function Game() {
                           {entry.questions_solved ?? 0}
                         </div>
                         <div className="col-span-2 text-right text-sm font-bold"
-                          style={{ color: isMe ? '#a5b4fc' : '#e2e8f0' }}>
+                          style={{ color: isMe ? '#B8A0FF' : '#D0D0D0' }}>
                           {Math.round(entry.score ?? 0)}
                         </div>
                       </div>
@@ -1614,7 +1620,7 @@ export default function Game() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center" style={{ background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(12px)' }}>
           <div className="rounded-2xl p-6 max-w-sm w-full mx-4 relative" 
             style={{ 
-              background: '#0A0A10',
+              background: '#000000',
               border: '1px solid rgba(255,255,255,0.1)',
               boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
             }}>
@@ -1642,7 +1648,7 @@ export default function Game() {
                   className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 hover:scale-105"
                   style={{ 
                     background: 'rgba(255,255,255,0.05)', 
-                    color: '#94a3b8',
+                    color: '#8C8C8C',
                     border: '1px solid rgba(255,255,255,0.1)'
                   }}
                 >
@@ -1656,9 +1662,9 @@ export default function Game() {
                   }}
                   className="flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 hover:scale-105"
                   style={{
-                    background: '#3b82f6',
+                    background: '#3B8CFF',
                     color: 'white',
-                    border: '1px solid rgba(59, 130, 246, 0.5)'
+                    border: '1px solid rgba(59,140,255, 0.5)'
                   }}
                 >
                   Uncheck & Continue
@@ -1670,16 +1676,16 @@ export default function Game() {
       )}
 
       {/* LEFT: Activity Bar with Icons */}
-      <div className="w-14 flex flex-col items-center py-3 gap-1 shrink-0 animate-slide-right relative" style={{ background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+      <div className="w-14 flex flex-col items-center py-3 gap-1 shrink-0 animate-slide-right relative" style={{ background: '#000000', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
         {/* Problem Icon */}
         <button
           onClick={() => setActivePanel(activePanel === 'problem' ? 'right' : 'problem')}
           className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative group"
           style={{ 
-            color: activePanel === 'problem' ? '#60a5fa' : '#64748b',
-            background: activePanel === 'problem' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-            border: activePanel === 'problem' ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid transparent',
-            boxShadow: activePanel === 'problem' ? '0 0 20px rgba(59, 130, 246, 0.3)' : 'none',
+            color: activePanel === 'problem' ? '#5AA2FF' : '#737373',
+            background: activePanel === 'problem' ? 'rgba(59,140,255, 0.15)' : 'transparent',
+            border: activePanel === 'problem' ? '1px solid rgba(59,140,255, 0.3)' : '1px solid transparent',
+            boxShadow: activePanel === 'problem' ? '0 0 20px rgba(59,140,255, 0.3)' : 'none',
           }}
           title="Problem"
         >
@@ -1691,10 +1697,10 @@ export default function Game() {
           onClick={() => setActivePanel('ai-analyzer')}
           className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative group"
           style={{ 
-            color: activePanel === 'ai-analyzer' ? '#60a5fa' : '#64748b',
-            background: activePanel === 'ai-analyzer' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-            border: activePanel === 'ai-analyzer' ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid transparent',
-            boxShadow: activePanel === 'ai-analyzer' ? '0 0 20px rgba(59, 130, 246, 0.3)' : 'none',
+            color: activePanel === 'ai-analyzer' ? '#5AA2FF' : '#737373',
+            background: activePanel === 'ai-analyzer' ? 'rgba(59,140,255, 0.15)' : 'transparent',
+            border: activePanel === 'ai-analyzer' ? '1px solid rgba(59,140,255, 0.3)' : '1px solid transparent',
+            boxShadow: activePanel === 'ai-analyzer' ? '0 0 20px rgba(59,140,255, 0.3)' : 'none',
           }}
           title="AI Code Analyzer"
         >
@@ -1716,10 +1722,10 @@ export default function Game() {
           onClick={() => setActivePanel('complexity')}
           className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative group"
           style={{ 
-            color: activePanel === 'complexity' ? '#60a5fa' : '#64748b',
-            background: activePanel === 'complexity' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-            border: activePanel === 'complexity' ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid transparent',
-            boxShadow: activePanel === 'complexity' ? '0 0 20px rgba(59, 130, 246, 0.3)' : 'none',
+            color: activePanel === 'complexity' ? '#5AA2FF' : '#737373',
+            background: activePanel === 'complexity' ? 'rgba(59,140,255, 0.15)' : 'transparent',
+            border: activePanel === 'complexity' ? '1px solid rgba(59,140,255, 0.3)' : '1px solid transparent',
+            boxShadow: activePanel === 'complexity' ? '0 0 20px rgba(59,140,255, 0.3)' : 'none',
           }}
           title="Time & Space Complexity"
         >
@@ -1731,10 +1737,10 @@ export default function Game() {
           onClick={() => setActivePanel('leaderboard')}
           className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative group"
           style={{ 
-            color: activePanel === 'leaderboard' ? '#60a5fa' : '#64748b',
-            background: activePanel === 'leaderboard' ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
-            border: activePanel === 'leaderboard' ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid transparent',
-            boxShadow: activePanel === 'leaderboard' ? '0 0 20px rgba(59, 130, 246, 0.3)' : 'none',
+            color: activePanel === 'leaderboard' ? '#5AA2FF' : '#737373',
+            background: activePanel === 'leaderboard' ? 'rgba(59,140,255, 0.15)' : 'transparent',
+            border: activePanel === 'leaderboard' ? '1px solid rgba(59,140,255, 0.3)' : '1px solid transparent',
+            boxShadow: activePanel === 'leaderboard' ? '0 0 20px rgba(59,140,255, 0.3)' : 'none',
           }}
           title="Leaderboard"
         >
@@ -1747,7 +1753,7 @@ export default function Game() {
         <button
           className="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 relative group"
           style={{ 
-            color: '#64748b',
+            color: '#737373',
             background: 'transparent',
             border: '1px solid transparent',
           }}
@@ -1759,7 +1765,7 @@ export default function Game() {
 
       {/* AI Code Analyzer Panel - Conditional */}
       {activePanel === 'ai-analyzer' && (
-        <div className="flex flex-col overflow-hidden animate-slide-right relative" style={{ width: `${aiAnalyzerWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex flex-col overflow-hidden animate-slide-right relative" style={{ width: `${aiAnalyzerWidth}px`, background: '#000000', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
           
           {/* Resize Handle */}
           <div
@@ -1770,14 +1776,14 @@ export default function Game() {
             className="absolute top-0 right-0 w-2 h-full cursor-ew-resize z-50 group"
             style={{ background: 'transparent', marginRight: '-4px' }}
           >
-            <div className="absolute inset-y-0 right-1 w-1 transition-all duration-200" style={{ background: 'rgba(59, 130, 246, 0.3)' }} />
-            <div className="absolute inset-y-0 right-1 w-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: '#3b82f6', boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)' }} />
+            <div className="absolute inset-y-0 right-1 w-1 transition-all duration-200" style={{ background: 'rgba(59,140,255, 0.3)' }} />
+            <div className="absolute inset-y-0 right-1 w-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: '#3B8CFF', boxShadow: '0 0 10px rgba(59,140,255, 0.5)' }} />
           </div>
           
           {/* Header */}
-          <div className="px-4 py-3 shrink-0" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="px-4 py-3 shrink-0" style={{ background: '#0F0F0F', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="flex items-center gap-2">
-              <span className="text-xl">🤖</span>
+              <span className="text-xl"><Ico of={Bot} /></span>
               <div>
                 <div className="text-sm font-bold text-white">AI Code Analyzer</div>
                 <div className="text-[10px] text-slate-500">Real-time feedback</div>
@@ -1789,22 +1795,22 @@ export default function Game() {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {!question ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                <span className="text-3xl">🎯</span>
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59,140,255,0.1)' }}>
+                <span className="text-3xl"><Ico of={Target} /></span>
               </div>
               <div className="text-sm text-slate-400">Generate a problem to start</div>
             </div>
           ) : !editorCode || editorCode === STARTER[lang] || editorCode === generateCodeTemplate(question, lang) ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                <span className="text-3xl">✍️</span>
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59,140,255,0.1)' }}>
+                <span className="text-3xl"><Ico of={PenLine} /></span>
               </div>
               <div className="text-sm text-slate-400 px-4">Start writing code to get AI analysis</div>
             </div>
           ) : (
             <>
               {/* Code Correctness */}
-              <div className="rounded-xl p-4" style={{ background: 'rgba(59, 130, 246,0.1)', border: '1px solid rgba(59, 130, 246,0.3)' }}>
+              <div className="rounded-xl p-4" style={{ background: 'rgba(59,140,255,0.1)', border: '1px solid rgba(59,140,255,0.3)' }}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="text-xs font-semibold text-blue-300 uppercase tracking-wider">Code Analysis</div>
                   <button 
@@ -1861,9 +1867,9 @@ export default function Game() {
                     }}
                     disabled={loadingHint}
                     className="px-2 py-1 rounded text-[10px] font-medium transition-all hover:scale-105"
-                    style={{ background: 'rgba(59, 130, 246,0.2)', color: '#60a5fa' }}
+                    style={{ background: 'rgba(59,140,255,0.2)', color: '#5AA2FF' }}
                   >
-                    {loadingHint ? '⏳' : '🔄'} Analyze
+                    {loadingHint ? <Ico of={Hourglass} /> : <Ico of={RefreshCw} />} Analyze
                   </button>
                 </div>
 
@@ -1920,7 +1926,7 @@ export default function Game() {
 
                     {/* AI Analysis */}
                     {debugHint.analysis && (
-                      <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.2)' }}>
+                      <div className="rounded-lg p-3 mb-3" style={{ background: 'rgba(90,162,255,0.1)', border: '1px solid rgba(90,162,255,0.2)' }}>
                         <div className="text-[10px] text-blue-300 font-semibold uppercase tracking-wider mb-2">AI Feedback</div>
                         <div className="text-xs text-slate-300 leading-relaxed">{debugHint.analysis}</div>
                       </div>
@@ -1930,7 +1936,7 @@ export default function Game() {
                     {debugHint.suggestions && debugHint.suggestions.length > 0 && (
                       <div className="rounded-lg p-3" style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.2)' }}>
                         <div className="text-[10px] text-yellow-300 font-semibold uppercase tracking-wider mb-2 flex items-center gap-1">
-                          <span>💡</span> Hints to Improve
+                          <span><Ico of={Lightbulb} /></span> Hints to Improve
                         </div>
                         <ul className="space-y-1.5">
                           {debugHint.suggestions.slice(0, 3).map((suggestion, idx) => (
@@ -1953,11 +1959,11 @@ export default function Game() {
 
               {/* Quick Stats */}
               <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-lg p-3 text-center" style={{ background: 'rgba(59, 130, 246,0.1)', border: '1px solid rgba(59, 130, 246,0.2)' }}>
+                <div className="rounded-lg p-3 text-center" style={{ background: 'rgba(59,140,255,0.1)', border: '1px solid rgba(59,140,255,0.2)' }}>
                   <div className="text-xs text-blue-300 font-semibold">{editorCode.split('\n').length}</div>
                   <div className="text-[10px] text-slate-500">Lines</div>
                 </div>
-                <div className="rounded-lg p-3 text-center" style={{ background: 'rgba(59, 130, 246,0.1)', border: '1px solid rgba(59, 130, 246,0.2)' }}>
+                <div className="rounded-lg p-3 text-center" style={{ background: 'rgba(59,140,255,0.1)', border: '1px solid rgba(59,140,255,0.2)' }}>
                   <div className="text-xs text-blue-300 font-semibold">{lang.toUpperCase()}</div>
                   <div className="text-[10px] text-slate-500">Language</div>
                 </div>
@@ -1977,13 +1983,13 @@ export default function Game() {
               )}
 
               {/* ── AI Feedback Chat ── */}
-              <div className="rounded-xl overflow-hidden" style={{ background: '#101018', border: '1px solid rgba(59, 130, 246,0.3)' }}>
+              <div className="rounded-xl overflow-hidden" style={{ background: '#0F0F0F', border: '1px solid rgba(59,140,255,0.3)' }}>
                 {/* Chat header */}
-                <div className="px-3 py-2.5 flex items-center justify-between" style={{ background: 'rgba(59, 130, 246,0.12)', borderBottom: '1px solid rgba(59, 130, 246,0.2)' }}>
+                <div className="px-3 py-2.5 flex items-center justify-between" style={{ background: 'rgba(59,140,255,0.12)', borderBottom: '1px solid rgba(59,140,255,0.2)' }}>
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[11px]" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[11px]" style={{ background: 'linear-gradient(135deg,#2B70E8,#db2777)' }}>✦</div>
                     <span className="text-xs font-bold text-white">Ask AI Coach</span>
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase" style={{ background: 'rgba(59, 130, 246,0.25)', color: '#60a5fa' }}>NVIDIA</span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase" style={{ background: 'rgba(59,140,255,0.25)', color: '#5AA2FF' }}>NVIDIA</span>
                   </div>
                   {grokMessages.length > 0 && (
                     <button
@@ -2008,13 +2014,13 @@ export default function Game() {
                   {grokMessages.map((msg, i) => (
                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                       {msg.role === 'assistant' && (
-                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2B70E8,#db2777)' }}>✦</div>
                       )}
                       <div
                         className="rounded-xl px-3 py-2 text-[11px] leading-relaxed max-w-[85%]"
                         style={msg.role === 'user'
-                          ? { background: 'rgba(59, 130, 246,0.25)', color: '#e2e8f0', borderBottomRightRadius: '4px' }
-                          : { background: 'rgba(255,255,255,0.05)', color: '#cbd5e1', borderBottomLeftRadius: '4px', border: '1px solid rgba(255,255,255,0.07)' }
+                          ? { background: 'rgba(59,140,255,0.25)', color: '#D0D0D0', borderBottomRightRadius: '4px' }
+                          : { background: 'rgba(255,255,255,0.05)', color: '#B0B0B0', borderBottomLeftRadius: '4px', border: '1px solid rgba(255,255,255,0.07)' }
                         }
                       >
                         {msg.content}
@@ -2023,7 +2029,7 @@ export default function Game() {
                   ))}
                   {grokLoading && (
                     <div className="flex justify-start">
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2B70E8,#db2777)' }}>✦</div>
                       <div className="rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
                         <div className="flex gap-1 items-center h-4">
                           <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -2050,7 +2056,7 @@ export default function Game() {
                         onClick={() => sendGrokMessage(prompt)}
                         disabled={grokLoading}
                         className="px-2 py-1 rounded-full text-[10px] transition-all hover:scale-105 active:scale-95 disabled:opacity-40"
-                        style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.25)' }}
+                        style={{ background: 'rgba(59,140,255,0.15)', color: '#5AA2FF', border: '1px solid rgba(59,140,255,0.25)' }}
                       >
                         {prompt}
                       </button>
@@ -2060,7 +2066,7 @@ export default function Game() {
 
                 {/* Input box */}
                 <div className="p-2.5 pt-0" style={{ borderTop: grokMessages.length > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-                  <div className="flex gap-2 items-end rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(59, 130, 246,0.25)' }}>
+                  <div className="flex gap-2 items-end rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(59,140,255,0.25)' }}>
                     <textarea
                       value={grokInput}
                       onChange={e => setGrokInput(e.target.value)}
@@ -2080,7 +2086,7 @@ export default function Game() {
                       onClick={() => sendGrokMessage()}
                       disabled={grokLoading || !grokInput.trim()}
                       className="m-1.5 w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-                      style={{ background: grokInput.trim() ? 'linear-gradient(135deg,#2563eb,#a855f7)' : 'rgba(59, 130, 246,0.2)' }}
+                      style={{ background: grokInput.trim() ? 'linear-gradient(135deg,#2B70E8,#A387FF)' : 'rgba(59,140,255,0.2)' }}
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -2098,7 +2104,7 @@ export default function Game() {
 
       {/* Complexity Analyzer Panel */}
       {activePanel === 'complexity' && (
-        <div className="flex flex-col overflow-hidden animate-slide-right relative" style={{ width: `${complexityWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex flex-col overflow-hidden animate-slide-right relative" style={{ width: `${complexityWidth}px`, background: '#000000', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
           
           {/* Resize Handle */}
           <div
@@ -2106,14 +2112,14 @@ export default function Game() {
             className="absolute top-0 right-0 w-2 h-full cursor-ew-resize z-50 group"
             style={{ background: 'transparent', marginRight: '-4px' }}
           >
-            <div className="absolute inset-y-0 right-1 w-1 transition-all duration-200" style={{ background: 'rgba(59, 130, 246,0.3)' }} />
-            <div className="absolute inset-y-0 right-1 w-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: '#3b82f6', boxShadow: '0 0 10px rgba(59, 130, 246,0.5)' }} />
+            <div className="absolute inset-y-0 right-1 w-1 transition-all duration-200" style={{ background: 'rgba(59,140,255,0.3)' }} />
+            <div className="absolute inset-y-0 right-1 w-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: '#3B8CFF', boxShadow: '0 0 10px rgba(59,140,255,0.5)' }} />
           </div>
 
           {/* Header */}
-          <div className="px-4 py-3 shrink-0 flex items-center justify-between" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="px-4 py-3 shrink-0 flex items-center justify-between" style={{ background: '#0F0F0F', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="flex items-center gap-2">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5AA2FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
               </svg>
               <div>
@@ -2142,11 +2148,11 @@ export default function Game() {
               }}
               disabled={loadingComplexity || !question || !editorCode}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ background: 'rgba(59, 130, 246,0.2)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.4)' }}
+              style={{ background: 'rgba(59,140,255,0.2)', color: '#5AA2FF', border: '1px solid rgba(59,140,255,0.4)' }}
             >
               {loadingComplexity
-                ? <><span className="animate-spin inline-block">⏳</span> Analyzing…</>
-                : <><span>⚡</span> Analyze</>}
+                ? <><span className="animate-spin inline-block"><Ico of={Hourglass} /></span> Analyzing…</>
+                : <><span><Ico of={Zap} /></span> Analyze</>}
             </button>
           </div>
 
@@ -2154,22 +2160,22 @@ export default function Game() {
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
             {!question ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                  <span className="text-2xl">🎯</span>
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59,140,255,0.1)' }}>
+                  <span className="text-2xl"><Ico of={Target} /></span>
                 </div>
                 <div className="text-sm text-slate-400">Generate a problem to start</div>
               </div>
             ) : !editorCode || editorCode === STARTER[lang] || editorCode === generateCodeTemplate(question, lang) ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                  <span className="text-2xl">✍️</span>
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59,140,255,0.1)' }}>
+                  <span className="text-2xl"><Ico of={PenLine} /></span>
                 </div>
                 <div className="text-sm text-slate-400 px-4">Write some code, then click Analyze</div>
               </div>
             ) : !complexityData ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                  <span className="text-2xl">⚡</span>
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(59,140,255,0.1)' }}>
+                  <span className="text-2xl"><Ico of={Zap} /></span>
                 </div>
                 <div className="text-sm text-slate-400 mb-1">Ready to analyze</div>
                 <div className="text-[11px] text-slate-500">Click Analyze to check time & space complexity</div>
@@ -2178,9 +2184,9 @@ export default function Game() {
               <>
                 {/* ── Execution Statistics ── */}
                 {complexityData.execution_stats && (
-                  <div className="rounded-xl p-3" style={{ background: '#101018', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div className="rounded-xl p-3" style={{ background: '#0F0F0F', border: '1px solid rgba(255,255,255,0.07)' }}>
                     <div className="flex items-center gap-1.5 mb-3">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5AA2FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
                       </svg>
                       <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">Execution Statistics</span>
@@ -2188,7 +2194,7 @@ export default function Game() {
                     <div className="grid grid-cols-3 gap-2">
                       <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
                         <div className="flex items-center justify-center gap-1 mb-1">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#8C8C8C" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                           <span className="text-[9px] text-slate-500">Memory</span>
                         </div>
                         <div className="text-sm font-bold text-blue-400">
@@ -2202,7 +2208,7 @@ export default function Game() {
                       </div>
                       <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
                         <div className="flex items-center justify-center gap-1 mb-1">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#8C8C8C" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                           <span className="text-[9px] text-slate-500">CPU Time</span>
                         </div>
                         <div className="text-sm font-bold text-blue-400">
@@ -2216,7 +2222,7 @@ export default function Game() {
                       </div>
                       <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
                         <div className="flex items-center justify-center gap-1 mb-1">
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#8C8C8C" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                           <span className="text-[9px] text-slate-500">Wall Time</span>
                         </div>
                         <div className="text-sm font-bold text-blue-400">
@@ -2235,16 +2241,16 @@ export default function Game() {
                 {/* ── Verdict Badge ── */}
                 {complexityData.verdict && complexityData.verdict !== 'unknown' && (() => {
                   const verdictConfig = {
-                    optimal:          { bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.35)', color: '#34d399', icon: '✅', label: 'Optimal' },
-                    acceptable:       { bg: 'rgba(251,191,36,0.10)', border: 'rgba(251,191,36,0.35)', color: '#fbbf24', icon: '🟡', label: 'Acceptable' },
-                    needs_improvement:{ bg: 'rgba(249,115,22,0.10)', border: 'rgba(249,115,22,0.35)', color: '#fb923c', icon: '⚠️', label: 'Needs Improvement' },
-                    poor:             { bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.35)',  color: '#f87171', icon: '🔴', label: 'Poor' },
+                    optimal:          { bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.35)', color: '#34d399', icon: CheckCircle2, label: 'Optimal' },
+                    acceptable:       { bg: 'rgba(251,191,36,0.10)', border: 'rgba(251,191,36,0.35)', color: '#fbbf24', icon: '', label: 'Acceptable' },
+                    needs_improvement:{ bg: 'rgba(249,115,22,0.10)', border: 'rgba(249,115,22,0.35)', color: '#fb923c', icon: AlertTriangle, label: 'Needs Improvement' },
+                    poor:             { bg: 'rgba(239,68,68,0.10)',  border: 'rgba(239,68,68,0.35)',  color: '#f87171', icon: '', label: 'Poor' },
                   }
                   const cfg = verdictConfig[complexityData.verdict] || verdictConfig.acceptable
                   return (
                     <div className="rounded-xl p-3" style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-base">{cfg.icon}</span>
+                        <span className="text-base"><Ico of={cfg.icon} /></span>
                         <span className="text-sm font-bold" style={{ color: cfg.color }}>{cfg.label}</span>
                       </div>
                       <p className="text-[11px] text-slate-300 leading-relaxed">{complexityData.verdict_explanation}</p>
@@ -2254,22 +2260,22 @@ export default function Game() {
 
                 {/* ── Time & Space Complexity Cards ── */}
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="rounded-xl p-3 text-center" style={{ background: '#101018', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div className="rounded-xl p-3 text-center" style={{ background: '#0F0F0F', border: '1px solid rgba(255,255,255,0.07)' }}>
                     <div className="flex items-center justify-center gap-1 mb-2">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8C8C8C" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                       <span className="text-[10px] text-slate-400 font-medium">Time</span>
                     </div>
-                    <div className="text-xl font-bold font-mono" style={{ color: '#60a5fa' }}>
+                    <div className="text-xl font-bold font-mono" style={{ color: '#5AA2FF' }}>
                       {complexityData.time_complexity?.worst || 'N/A'}
                     </div>
                     <div className="text-[9px] text-slate-500 mt-1">worst case</div>
                   </div>
-                  <div className="rounded-xl p-3 text-center" style={{ background: '#101018', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div className="rounded-xl p-3 text-center" style={{ background: '#0F0F0F', border: '1px solid rgba(255,255,255,0.07)' }}>
                     <div className="flex items-center justify-center gap-1 mb-2">
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8C8C8C" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                       <span className="text-[10px] text-slate-400 font-medium">Space</span>
                     </div>
-                    <div className="text-xl font-bold font-mono" style={{ color: '#60a5fa' }}>
+                    <div className="text-xl font-bold font-mono" style={{ color: '#5AA2FF' }}>
                       {complexityData.space_complexity?.worst || 'N/A'}
                     </div>
                     <div className="text-[9px] text-slate-500 mt-1">worst case</div>
@@ -2277,7 +2283,7 @@ export default function Game() {
                 </div>
 
                 {/* Best/Avg/Worst breakdown */}
-                <div className="rounded-xl p-3 space-y-2" style={{ background: '#101018', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <div className="rounded-xl p-3 space-y-2" style={{ background: '#0F0F0F', border: '1px solid rgba(255,255,255,0.07)' }}>
                   <div className="grid grid-cols-3 gap-1 text-center">
                     <div>
                       <div className="text-[9px] text-slate-500 mb-0.5">Best</div>
@@ -2312,9 +2318,9 @@ export default function Game() {
                 </div>
 
                 {/* ── Complexity Visualization ── */}
-                <div className="rounded-xl p-3" style={{ background: '#101018', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <div className="rounded-xl p-3" style={{ background: '#0F0F0F', border: '1px solid rgba(255,255,255,0.07)' }}>
                   <div className="flex items-center gap-1.5 mb-2">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5AA2FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
                     </svg>
                     <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">Complexity Visualization</span>
@@ -2327,9 +2333,9 @@ export default function Game() {
 
                 {/* ── Complexity Analysis ── */}
                 {complexityData.analysis && (
-                  <div className="rounded-xl p-3" style={{ background: '#101018', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div className="rounded-xl p-3" style={{ background: '#0F0F0F', border: '1px solid rgba(255,255,255,0.07)' }}>
                     <div className="flex items-center gap-1.5 mb-2">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5AA2FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
                       </svg>
                       <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">Complexity Analysis</span>
@@ -2340,9 +2346,9 @@ export default function Game() {
 
                 {/* ── Improvement Suggestions ── */}
                 {complexityData.structured_suggestions && complexityData.structured_suggestions.length > 0 && (
-                  <div className="rounded-xl p-3" style={{ background: '#101018', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div className="rounded-xl p-3" style={{ background: '#0F0F0F', border: '1px solid rgba(255,255,255,0.07)' }}>
                     <div className="flex items-center gap-1.5 mb-3">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5AA2FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
                       </svg>
                       <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider">Improvement Suggestions</span>
@@ -2370,10 +2376,10 @@ export default function Game() {
                 )}
 
                 {/* ── Share Solution ── */}
-                <div className="rounded-xl p-3" style={{ background: '#101018', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <div className="rounded-xl p-3" style={{ background: '#0F0F0F', border: '1px solid rgba(255,255,255,0.07)' }}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C8C8C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
                         <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
                       </svg>
@@ -2388,7 +2394,7 @@ export default function Game() {
                         navigator.clipboard?.writeText(text).catch(() => {})
                       }}
                       className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all hover:scale-105 active:scale-95"
-                      style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.3)' }}
+                      style={{ background: 'rgba(59,140,255,0.15)', color: '#5AA2FF', border: '1px solid rgba(59,140,255,0.3)' }}
                     >
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                       Make Public
@@ -2403,7 +2409,7 @@ export default function Game() {
 
       {/* Leaderboard Panel */}
       {activePanel === 'leaderboard' && (
-        <div className="flex flex-col overflow-hidden animate-slide-right relative" style={{ width: `${leaderboardWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex flex-col overflow-hidden animate-slide-right relative" style={{ width: `${leaderboardWidth}px`, background: '#000000', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
           
           {/* Resize Handle */}
           <div
@@ -2420,22 +2426,22 @@ export default function Game() {
             <div 
               className="absolute inset-y-0 right-1 w-1 transition-all duration-200"
               style={{
-                background: 'rgba(59, 130, 246, 0.3)',
+                background: 'rgba(59,140,255, 0.3)',
               }}
             />
             <div 
               className="absolute inset-y-0 right-1 w-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
               style={{
-                background: '#3b82f6',
-                boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)',
+                background: '#3B8CFF',
+                boxShadow: '0 0 10px rgba(59,140,255, 0.5)',
               }}
             />
           </div>
           
           {/* Header */}
-          <div className="px-4 py-3 shrink-0" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="px-4 py-3 shrink-0" style={{ background: '#0F0F0F', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="flex items-center gap-2">
-              <span className="text-xl">🏆</span>
+              <span className="text-xl"><Ico of={Trophy} /></span>
               <div>
                 <div className="text-sm font-bold text-white">Leaderboard</div>
                 <div className="text-[10px] text-slate-500">Match rankings</div>
@@ -2448,7 +2454,7 @@ export default function Game() {
             {leaderboard.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center">
                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3" style={{ background: 'rgba(251,191,36,0.1)' }}>
-                  <span className="text-3xl">📊</span>
+                  <span className="text-3xl"><Ico of={BarChart3} /></span>
                 </div>
                 <div className="text-sm text-slate-400">No scores yet</div>
                 <div className="text-xs text-slate-500 mt-1">Start solving to see rankings</div>
@@ -2457,14 +2463,14 @@ export default function Game() {
               <div className="space-y-2">
                 {leaderboard.map((entry, i) => {
                   const isMe = (entry.player_id ?? entry.id) === playerId
-                  const medals = ['🥇', '🥈', '🥉']
+                  const medals = []
                   return (
                     <div key={entry.player_id ?? entry.id ?? i}
                       className="rounded-xl p-3 transition-all duration-300 hover:scale-[1.02]"
                       style={{
-                        background: isMe ? 'rgba(59, 130, 246,0.15)' : 'rgba(255,255,255,0.03)',
-                        border: isMe ? '1px solid rgba(59, 130, 246,0.3)' : '1px solid rgba(255,255,255,0.05)',
-                        boxShadow: isMe ? '0 0 20px rgba(59, 130, 246,0.2)' : 'none',
+                        background: isMe ? 'rgba(59,140,255,0.15)' : 'rgba(255,255,255,0.03)',
+                        border: isMe ? '1px solid rgba(59,140,255,0.3)' : '1px solid rgba(255,255,255,0.05)',
+                        boxShadow: isMe ? '0 0 20px rgba(59,140,255,0.2)' : 'none',
                       }}>
                       <div className="flex items-center gap-3">
                         {/* Rank */}
@@ -2474,13 +2480,13 @@ export default function Game() {
                         
                         {/* Avatar */}
                         <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                          style={{ background: isMe ? 'linear-gradient(135deg,#3b82f6,#06b6d4)' : 'rgba(255,255,255,0.1)' }}>
+                          style={{ background: isMe ? 'linear-gradient(135deg,#3B8CFF,#17CDEF)' : 'rgba(255,255,255,0.1)' }}>
                           {entry.username?.[0]?.toUpperCase()}
                         </div>
                         
                         {/* Info */}
                         <div className="flex-1 min-w-0">
-                          <div className="font-semibold text-sm truncate" style={{ color: isMe ? '#a5b4fc' : '#e2e8f0' }}>
+                          <div className="font-semibold text-sm truncate" style={{ color: isMe ? '#B8A0FF' : '#D0D0D0' }}>
                             {entry.username}
                             {isMe && <span className="text-xs text-blue-400 ml-1">(you)</span>}
                           </div>
@@ -2491,7 +2497,7 @@ export default function Game() {
                         
                         {/* Score */}
                         <div className="text-right shrink-0">
-                          <div className="font-bold text-base" style={{ color: isMe ? '#a5b4fc' : '#f1f5f9' }}>
+                          <div className="font-bold text-base" style={{ color: isMe ? '#B8A0FF' : '#E6E6E6' }}>
                             {entry.score ?? 0}
                           </div>
                           <div className="text-[9px] text-slate-500">points</div>
@@ -2506,9 +2512,9 @@ export default function Game() {
 
           {/* Footer Stats */}
           {leaderboard.length > 0 && (
-            <div className="px-4 py-3 shrink-0" style={{ background: '#101018', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+            <div className="px-4 py-3 shrink-0" style={{ background: '#0F0F0F', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
               <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(59, 130, 246,0.1)', border: '1px solid rgba(59, 130, 246,0.2)' }}>
+                <div className="rounded-lg p-2 text-center" style={{ background: 'rgba(59,140,255,0.1)', border: '1px solid rgba(59,140,255,0.2)' }}>
                   <div className="text-xs text-blue-300 font-semibold">{leaderboard.length}</div>
                   <div className="text-[9px] text-slate-500">Players</div>
                 </div>
@@ -2526,7 +2532,7 @@ export default function Game() {
 
       {/* LEFT: Problem Panel */}
       {activePanel === 'problem' && (
-        <div className="flex flex-col overflow-hidden animate-slide-right relative" style={{ width: `${problemWidth}px`, background: '#0A0A10', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="flex flex-col overflow-hidden animate-slide-right relative" style={{ width: `${problemWidth}px`, background: '#000000', borderRight: '1px solid rgba(255,255,255,0.07)' }}>
           
           {/* Resize Handle */}
           <div
@@ -2537,23 +2543,23 @@ export default function Game() {
             className="absolute top-0 right-0 w-2 h-full cursor-ew-resize z-50 group"
             style={{ background: 'transparent', marginRight: '-4px' }}
           >
-            <div className="absolute inset-y-0 right-1 w-1 transition-all duration-200" style={{ background: 'rgba(59, 130, 246, 0.3)' }} />
-            <div className="absolute inset-y-0 right-1 w-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: '#3b82f6', boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)' }} />
+            <div className="absolute inset-y-0 right-1 w-1 transition-all duration-200" style={{ background: 'rgba(59,140,255, 0.3)' }} />
+            <div className="absolute inset-y-0 right-1 w-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: '#3B8CFF', boxShadow: '0 0 10px rgba(59,140,255, 0.5)' }} />
           </div>
           
           {/* Header */}
-          <div className="px-5 py-4 shrink-0 animate-slide-down relative" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="px-5 py-4 shrink-0 animate-slide-down relative" style={{ background: '#0F0F0F', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white text-xs transition-all duration-300 hover:scale-110 hover:rotate-6" 
-                  style={{ background: 'linear-gradient(135deg,#3b82f6,#06b6d4)' }}>
+                  style={{ background: 'linear-gradient(135deg,#3B8CFF,#17CDEF)' }}>
                   C
                 </div>
                 <span className="font-semibold text-sm bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">CompileX</span>
               </div>
               <div className="flex items-center gap-2">
                 {totalRounds > 1 && (
-                  <span className="text-xs px-2 py-1 rounded-md font-medium transition-all duration-300 hover:scale-105 animate-fade-in" style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.3)' }}>
+                  <span className="text-xs px-2 py-1 rounded-md font-medium transition-all duration-300 hover:scale-105 animate-fade-in" style={{ background: 'rgba(59,140,255,0.15)', color: '#5AA2FF', border: '1px solid rgba(59,140,255,0.3)' }}>
                     R{currentRound}/{totalRounds}
                   </span>
                 )}
@@ -2566,7 +2572,7 @@ export default function Game() {
             
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-500">Lobby:</span>
-              <span className="text-xs font-mono px-2 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8' }}>{code}</span>
+              <span className="text-xs font-mono px-2 py-0.5 rounded" style={{ background: 'rgba(255,255,255,0.05)', color: '#8C8C8C' }}>{code}</span>
             </div>
           </div>
 
@@ -2576,8 +2582,8 @@ export default function Game() {
               <div className="flex flex-col items-center justify-center h-full text-center animate-fade-in">
                 <div className="relative mb-6">
                   <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-full blur-2xl animate-pulse-slow" />
-                  <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-300 hover:scale-110" style={{ background: 'rgba(59, 130, 246,0.1)' }}>
-                    <span className="text-4xl animate-pulse">{lobby?.created_by && user?.id && lobby.created_by === user.id ? '🎯' : '⏳'}</span>
+                  <div className="relative w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-300 hover:scale-110" style={{ background: 'rgba(59,140,255,0.1)' }}>
+                    <span className="text-4xl animate-pulse">{lobby?.created_by && user?.id && lobby.created_by === user.id ? <Ico of={Target} /> : <Ico of={Hourglass} />}</span>
                   </div>
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2 animate-slide-up">
@@ -2592,7 +2598,7 @@ export default function Game() {
                 {lobby?.created_by && user?.id && lobby.created_by === user.id && (
                   <div className="w-full max-w-sm relative">
                     <div className="absolute -inset-1 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 rounded-2xl blur-xl" />
-                    <div className="relative p-5 rounded-xl animate-scale-in transition-all duration-300 hover:-translate-y-1" style={{ background: '#101018', border: '1px solid rgba(255,255,255,0.07)', animationDelay: '0.2s' }}>
+                    <div className="relative p-5 rounded-xl animate-scale-in transition-all duration-300 hover:-translate-y-1" style={{ background: '#0F0F0F', border: '1px solid rgba(255,255,255,0.07)', animationDelay: '0.2s' }}>
                       <div className="mb-4">
                         <label className="block text-xs text-slate-400 mb-2 text-center">Difficulty</label>
                         <div className="flex gap-2">
@@ -2602,7 +2608,7 @@ export default function Game() {
                               className="flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all duration-300 capitalize hover:scale-105"
                               style={{
                                 background: difficulty === d ? DIFFICULTY_COLORS[d].bg : 'rgba(255,255,255,0.03)',
-                                color: difficulty === d ? DIFFICULTY_COLORS[d].text : '#64748b',
+                                color: difficulty === d ? DIFFICULTY_COLORS[d].text : '#737373',
                                 border: `1px solid ${difficulty === d ? DIFFICULTY_COLORS[d].border : 'rgba(255,255,255,0.06)'}`,
                               }}>
                               {d}
@@ -2617,7 +2623,7 @@ export default function Game() {
                           value={topic}
                           onChange={e => setTopic(e.target.value)}
                           placeholder="e.g., arrays, strings, dp"
-                          className="w-full px-3 py-2 rounded-lg text-sm text-white bg-[#0A0A10] border border-white/[0.07] focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 placeholder-slate-600 transition-all duration-300"
+                          className="w-full px-3 py-2 rounded-lg text-sm text-white bg-[#000000] border border-white/[0.07] focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 placeholder-slate-600 transition-all duration-300"
                         />
                       </div>
                       <button
@@ -2636,7 +2642,7 @@ export default function Game() {
                             </>
                           ) : (
                             <>
-                              <span>✨</span> Generate Problem
+                              <span></span> Generate Problem
                             </>
                           )}
                         </span>
@@ -2653,14 +2659,14 @@ export default function Game() {
                     <span className="shrink-0 px-3 py-1 rounded-full text-xs font-semibold capitalize animate-scale-in transition-all hover-scale"
                       style={{
                         background: DIFFICULTY_COLORS[question.difficulty]?.bg || 'rgba(255,255,255,0.1)',
-                        color: DIFFICULTY_COLORS[question.difficulty]?.text || '#94a3b8',
+                        color: DIFFICULTY_COLORS[question.difficulty]?.text || '#8C8C8C',
                         border: `1px solid ${DIFFICULTY_COLORS[question.difficulty]?.border || 'transparent'}`,
                       }}>
                       {question.difficulty}
                     </span>
                   </div>
                   {question.topic && (
-                    <span className="inline-block px-2 py-1 rounded text-xs font-medium animate-slide-right transition-all hover-scale" style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa' }}>
+                    <span className="inline-block px-2 py-1 rounded text-xs font-medium animate-slide-right transition-all hover-scale" style={{ background: 'rgba(59,140,255,0.15)', color: '#5AA2FF' }}>
                       #{question.topic}
                     </span>
                   )}
@@ -2677,15 +2683,15 @@ export default function Game() {
                       <span style={{ 
                         width: '3px', 
                         height: '14px', 
-                        background: '#60a5fa',
+                        background: '#5AA2FF',
                         borderRadius: '2px',
                       }} />
                       Visual Diagram
                     </div>
                     <div className="rounded-xl overflow-hidden border" style={{ 
                       background: 'rgba(255,255,255,0.02)', 
-                      border: '1px solid rgba(59, 130, 246,0.2)',
-                      boxShadow: '0 4px 20px rgba(59, 130, 246,0.1)'
+                      border: '1px solid rgba(59,140,255,0.2)',
+                      boxShadow: '0 4px 20px rgba(59,140,255,0.1)'
                     }}>
                       <img 
                         src={question.diagram} 
@@ -2705,22 +2711,22 @@ export default function Game() {
                         onChange={e => setDifficulty(e.target.value)}
                         className="px-3 rounded-lg text-xs font-medium border focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all duration-300 cursor-pointer h-9 shrink-0"
                         style={{
-                          background: '#101018',
+                          background: '#0F0F0F',
                           width: '90px',
                           border: difficulty === 'easy' ? '1px solid rgba(52,211,153,0.5)' : difficulty === 'hard' ? '1px solid rgba(248,113,113,0.5)' : '1px solid rgba(251,191,36,0.5)',
                           color: difficulty === 'easy' ? '#34d399' : difficulty === 'hard' ? '#f87171' : '#fbbf24',
                         }}
                       >
-                        <option value="easy" style={{ background: '#101018', color: '#34d399' }}>Easy</option>
-                        <option value="medium" style={{ background: '#101018', color: '#fbbf24' }}>Medium</option>
-                        <option value="hard" style={{ background: '#101018', color: '#f87171' }}>Hard</option>
+                        <option value="easy" style={{ background: '#0F0F0F', color: '#34d399' }}>Easy</option>
+                        <option value="medium" style={{ background: '#0F0F0F', color: '#fbbf24' }}>Medium</option>
+                        <option value="hard" style={{ background: '#0F0F0F', color: '#f87171' }}>Hard</option>
                       </select>
                       <input
                         type="text"
                         value={topic}
                         onChange={e => setTopic(e.target.value)}
                         placeholder="New topic..."
-                        className="flex-1 px-3 rounded-lg text-sm text-white bg-[#101018] border border-white/[0.07] focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 placeholder-slate-600 h-9 transition-all duration-300"
+                        className="flex-1 px-3 rounded-lg text-sm text-white bg-[#0F0F0F] border border-white/[0.07] focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 placeholder-slate-600 h-9 transition-all duration-300"
                         onKeyDown={e => { if (e.key === 'Enter' && !generating) generateQuestion() }}
                       />
                       <button
@@ -2730,7 +2736,7 @@ export default function Game() {
                         style={{ opacity: generating ? 0.5 : 1 }}
                       >
                         <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600" />
-                        <span className="relative z-10">{generating ? '...' : '✨'}</span>
+                        <span className="relative z-10">{generating ? '...' : null}</span>
                       </button>
                     </div>
                   </div>
@@ -2739,7 +2745,7 @@ export default function Game() {
             )}
           </div>
 
-          <div className="px-4 py-3 shrink-0 flex items-center justify-between relative" style={{ background: '#101018', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+          <div className="px-4 py-3 shrink-0 flex items-center justify-between relative" style={{ background: '#0F0F0F', borderTop: '1px solid rgba(255,255,255,0.07)' }}>
             {lobby?.created_by && user?.id && lobby.created_by === user.id && (
               <button onClick={endGame} className="text-xs font-medium text-rose-400 hover:text-rose-300 transition-colors duration-300">
                 End Game
@@ -2751,7 +2757,7 @@ export default function Game() {
                 <div className="text-[10px] text-slate-500">PLAYER</div>
               </div>
               <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" 
-                style={{ background: 'linear-gradient(135deg,#3b82f6,#06b6d4)' }}>
+                style={{ background: 'linear-gradient(135deg,#3B8CFF,#17CDEF)' }}>
                 {user?.username?.[0]?.toUpperCase() || 'U'}
               </div>
             </div>
@@ -2763,7 +2769,7 @@ export default function Game() {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Editor Header */}
-        <div className="h-11 flex items-center px-4 gap-4 shrink-0 animate-slide-down relative" style={{ background: '#101018', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+        <div className="h-11 flex items-center px-4 gap-4 shrink-0 animate-slide-down relative" style={{ background: '#0F0F0F', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div className="flex items-center gap-1">
             {LANGUAGES.map(l => (
               <button
@@ -2771,9 +2777,9 @@ export default function Game() {
                 onClick={() => changeLang(l.value)}
                 className="px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-300 hover:scale-105"
                 style={{
-                  background: lang === l.value ? 'rgba(59, 130, 246,0.2)' : 'transparent',
-                  color: lang === l.value ? '#60a5fa' : '#64748b',
-                  border: lang === l.value ? '1px solid rgba(59, 130, 246,0.3)' : '1px solid transparent',
+                  background: lang === l.value ? 'rgba(59,140,255,0.2)' : 'transparent',
+                  color: lang === l.value ? '#5AA2FF' : '#737373',
+                  border: lang === l.value ? '1px solid rgba(59,140,255,0.3)' : '1px solid transparent',
                 }}
               >
                 {l.label}
@@ -2789,9 +2795,9 @@ export default function Game() {
               disabled={runningCustom || !question}
               className="px-4 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 flex items-center gap-1.5 hover:scale-105"
               style={{
-                background: useCustomInput ? 'rgba(59, 130, 246,0.2)' : 'rgba(255,255,255,0.06)',
-                color: useCustomInput ? '#60a5fa' : '#94a3b8',
-                border: useCustomInput ? '1px solid rgba(59, 130, 246,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                background: useCustomInput ? 'rgba(59,140,255,0.2)' : 'rgba(255,255,255,0.06)',
+                color: useCustomInput ? '#5AA2FF' : '#8C8C8C',
+                border: useCustomInput ? '1px solid rgba(59,140,255,0.3)' : '1px solid rgba(255,255,255,0.1)',
                 opacity: (!question || runningCustom) ? 0.5 : 1,
               }}
               title={useCustomInput ? 'Run with custom input' : 'Run with test cases'}
@@ -2833,7 +2839,7 @@ export default function Game() {
               }}
             >
               <div className="flex items-center gap-2">
-                <span className="text-lg">🤖</span>
+                <span className="text-lg"><Ico of={Bot} /></span>
                 <div>
                   <div className="text-xs font-semibold" 
                     style={{ 
@@ -2929,7 +2935,7 @@ export default function Game() {
         </div>
 
         {/* Bottom Panel */}
-        <div className="shrink-0 flex flex-col animate-slide-up relative transition-all duration-300" style={{ height: bottomPanelMinimized ? '40px' : '300px', background: '#101018', borderTop: '2px solid rgba(59, 130, 246,0.3)' }}>
+        <div className="shrink-0 flex flex-col animate-slide-up relative transition-all duration-300" style={{ height: bottomPanelMinimized ? '40px' : '300px', background: '#0F0F0F', borderTop: '2px solid rgba(59,140,255,0.3)' }}>
 
           {/* Tabs Header */}
           <div className="flex items-center justify-between px-2 shrink-0 h-10" style={{ borderBottom: bottomPanelMinimized ? 'none' : '1px solid rgba(255,255,255,0.07)' }}>
@@ -2943,10 +2949,10 @@ export default function Game() {
                   }
                 }}
                 className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 hover:scale-105 relative"
-                style={{ color: rightPanelTab === 'tests' ? '#60a5fa' : '#64748b' }}
+                style={{ color: rightPanelTab === 'tests' ? '#5AA2FF' : '#737373' }}
               >
                 {rightPanelTab === 'tests' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#3b82f6' }} />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#3B8CFF' }} />
                 )}
                 {ACTIVITY_ICONS.test}
                 Test Cases
@@ -2960,15 +2966,15 @@ export default function Game() {
               <button
                 onClick={() => setRightPanelTab('custom')}
                 className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 hover:scale-105 relative"
-                style={{ color: rightPanelTab === 'custom' ? '#60a5fa' : '#64748b' }}
+                style={{ color: rightPanelTab === 'custom' ? '#5AA2FF' : '#737373' }}
               >
                 {rightPanelTab === 'custom' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#3b82f6' }} />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#3B8CFF' }} />
                 )}
                 {ACTIVITY_ICONS.custom}
                 Custom
                 {useCustomInput && (
-                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: 'rgba(59, 130, 246,0.2)', color: '#60a5fa' }}>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" style={{ background: 'rgba(59,140,255,0.2)', color: '#5AA2FF' }}>
                     ON
                   </span>
                 )}
@@ -2976,10 +2982,10 @@ export default function Game() {
               <button
                 onClick={() => setRightPanelTab('console')}
                 className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 hover:scale-105 relative"
-                style={{ color: rightPanelTab === 'console' ? '#60a5fa' : '#64748b' }}
+                style={{ color: rightPanelTab === 'console' ? '#5AA2FF' : '#737373' }}
               >
                 {rightPanelTab === 'console' && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#3b82f6' }} />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#3B8CFF' }} />
                 )}
                 {ACTIVITY_ICONS.console}
                 Console
@@ -2988,12 +2994,12 @@ export default function Game() {
                 <button
                   onClick={() => setRightPanelTab('logic')}
                   className="px-3 py-2 text-xs font-semibold transition-all duration-300 flex items-center gap-2 hover:scale-105 animate-fade-in relative"
-                  style={{ color: rightPanelTab === 'logic' ? '#60a5fa' : '#64748b' }}
+                  style={{ color: rightPanelTab === 'logic' ? '#5AA2FF' : '#737373' }}
                 >
                   {rightPanelTab === 'logic' && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#3b82f6' }} />
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: '#3B8CFF' }} />
                   )}
-                  <span>🤖</span>
+                  <span><Ico of={Bot} /></span>
                   Logic Analysis
                   <span className="px-1.5 py-0.5 rounded text-[10px] font-bold" 
                     style={{ 
@@ -3055,7 +3061,7 @@ export default function Game() {
                   ) : (
                     <>
                       {testCaseDetails.map((tc, i) => {
-                        const icon = tc.passed === null ? '⚠' : tc.passed ? '✓' : '✗'
+                        const icon = tc.passed === null ? <Ico of={AlertTriangle} /> : tc.passed ? '✓' : '✗'
                         const c = tc.passed === null
                           ? { bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)', text: '#fbbf24' }
                           : tc.passed
@@ -3067,9 +3073,9 @@ export default function Game() {
                             onClick={() => { setSelectedTestCase(i); setTestCaseHint(null) }}
                             className="w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center gap-2 focus:outline-none"
                             style={{
-                              background: selectedTestCase === i ? 'rgba(99,102,241,0.15)' : c.bg,
-                              color: selectedTestCase === i ? '#e2e8f0' : c.text,
-                              border: `1px solid ${selectedTestCase === i ? 'rgba(99,102,241,0.3)' : c.border}`,
+                              background: selectedTestCase === i ? 'rgba(139,108,255,0.15)' : c.bg,
+                              color: selectedTestCase === i ? '#D0D0D0' : c.text,
+                              border: `1px solid ${selectedTestCase === i ? 'rgba(139,108,255,0.3)' : c.border}`,
                               outline: 'none',
                             }}
                           >
@@ -3108,7 +3114,7 @@ export default function Game() {
                                   <button onClick={getDebugHint} disabled={loadingHint}
                                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                                     style={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
-                                    {loadingHint ? '⏳ Analyzing...' : '💡 Get Debug Hint'}
+                                    {loadingHint ? 'Analyzing...' : 'Get Debug Hint'}
                                   </button>
                                 </div>
                               )}
@@ -3116,15 +3122,15 @@ export default function Game() {
                                 <div className="mt-3 rounded-xl p-4 text-xs space-y-2"
                                   style={{ background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)' }}>
                                   <div className="flex items-center gap-2 font-bold" style={{ color: '#fbbf24' }}>
-                                    💡 AI Mentor
+                                    <Ico of={Lightbulb} /> AI Mentor
                                     <span className="font-normal text-slate-400">- {testCaseHint.status}</span>
                                   </div>
                                   {testCaseHint.line && (
-                                    <div style={{ color: '#f87171' }}>📍 Line: {testCaseHint.line}</div>
+                                    <div style={{ color: '#f87171' }}> Line: {testCaseHint.line}</div>
                                   )}
-                                  <div style={{ color: '#e2e8f0' }}>💬 {testCaseHint.message}</div>
-                                  <div className="pt-1 font-semibold" style={{ color: '#a5b4fc' }}>
-                                    💡 Hint: {testCaseHint.hint}
+                                  <div style={{ color: '#D0D0D0' }}> {testCaseHint.message}</div>
+                                  <div className="pt-1 font-semibold" style={{ color: '#B8A0FF' }}>
+                                    <Ico of={Lightbulb} /> Hint: {testCaseHint.hint}
                                   </div>
                                 </div>
                               )}
@@ -3136,7 +3142,7 @@ export default function Game() {
                           <div>
                             <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Input</div>
                         <div className="rounded-lg p-3 font-mono text-sm whitespace-pre-wrap" 
-                          style={{ background: 'rgba(30,30,50,0.8)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.08)' }}>
+                          style={{ background: 'rgba(30,30,50,0.8)', color: '#D0D0D0', border: '1px solid rgba(255,255,255,0.08)' }}>
                           {testCaseDetails[selectedTestCase].input || '(empty)'}
                         </div>
                       </div>
@@ -3183,21 +3189,21 @@ export default function Game() {
                               <button onClick={getDebugHint} disabled={loadingHint}
                                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                                 style={{ background: 'rgba(251,191,36,0.1)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.3)' }}>
-                                {loadingHint ? '⏳ Analyzing...' : '🤖 Get Debug Hint'}
+                                {loadingHint ? 'Analyzing...' : 'Get Debug Hint'}
                               </button>
                               {testCaseHint && (
                                 <div className="mt-3 rounded-xl p-4 text-xs space-y-2"
                                   style={{ background: 'rgba(251,191,36,0.06)', border: '1px solid rgba(251,191,36,0.2)' }}>
                                   <div className="flex items-center gap-2 font-bold" style={{ color: '#fbbf24' }}>
-                                    🤖 AI Mentor
+                                    <Ico of={Bot} /> AI Mentor
                                     <span className="font-normal text-slate-400">— {testCaseHint.status}</span>
                                   </div>
                                   {testCaseHint.line && (
-                                    <div style={{ color: '#f87171' }}>📍 Line: {testCaseHint.line}</div>
+                                    <div style={{ color: '#f87171' }}> Line: {testCaseHint.line}</div>
                                   )}
-                                  <div style={{ color: '#e2e8f0' }}>💬 {testCaseHint.message}</div>
-                                  <div className="pt-1 font-semibold" style={{ color: '#a5b4fc' }}>
-                                    💡 Hint: {testCaseHint.hint}
+                                  <div style={{ color: '#D0D0D0' }}> {testCaseHint.message}</div>
+                                  <div className="pt-1 font-semibold" style={{ color: '#B8A0FF' }}>
+                                    <Ico of={Lightbulb} /> Hint: {testCaseHint.hint}
                                   </div>
                                 </div>
                               )}
@@ -3236,14 +3242,14 @@ export default function Game() {
                         }
                       }}
                       className="w-4 h-4 rounded"
-                      style={{ accentColor: '#6366f1' }}
+                      style={{ accentColor: '#8B6CFF' }}
                     />
                     <span className="text-xs font-medium text-slate-300">Use custom input for Run</span>
                   </label>
                 </div>
                 <div className="mb-4">
                   <label className="text-[11px] font-semibold uppercase tracking-wider mb-2 block"
-                    style={{ color: useCustomInput ? '#94a3b8' : '#64748b' }}>
+                    style={{ color: useCustomInput ? '#8C8C8C' : '#737373' }}>
                     Custom Input
                   </label>
                   <textarea
@@ -3254,8 +3260,8 @@ export default function Game() {
                     className="w-full h-28 rounded-lg p-3 text-sm font-mono resize-none transition"
                     style={{ 
                       background: useCustomInput ? 'rgba(30,30,50,0.8)' : 'rgba(20,20,32,0.8)',
-                      color: useCustomInput ? '#e2e8f0' : '#64748b',
-                      border: useCustomInput ? '1px solid rgba(99,102,241,0.3)' : '1px solid rgba(255,255,255,0.06)',
+                      color: useCustomInput ? '#D0D0D0' : '#737373',
+                      border: useCustomInput ? '1px solid rgba(139,108,255,0.3)' : '1px solid rgba(255,255,255,0.06)',
                       cursor: useCustomInput ? 'text' : 'not-allowed',
                       outline: 'none',
                     }}
@@ -3266,7 +3272,7 @@ export default function Game() {
                   disabled={runningCustom || !question || !useCustomInput}
                   className="px-4 py-2 rounded-lg text-xs font-medium text-white transition-all flex items-center gap-2"
                   style={{
-                    background: runningCustom ? '#4b5563' : 'linear-gradient(135deg,#6366f1,#3b82f6)',
+                    background: runningCustom ? '#4b5563' : 'linear-gradient(135deg,#8B6CFF,#3B8CFF)',
                     opacity: (!question || runningCustom || !useCustomInput) ? 0.5 : 1,
                     cursor: (!useCustomInput || !question) ? 'not-allowed' : 'pointer',
                   }}
@@ -3292,8 +3298,8 @@ export default function Game() {
                         {consoleOutput[0]?.runType && (
                           <span className="px-2 py-0.5 rounded text-[10px] font-medium"
                             style={{
-                              background: consoleOutput[0].runType === 'custom' ? 'rgba(59, 130, 246,0.2)' : 'rgba(34,211,238,0.2)',
-                              color: consoleOutput[0].runType === 'custom' ? '#60a5fa' : '#22d3ee',
+                              background: consoleOutput[0].runType === 'custom' ? 'rgba(59,140,255,0.2)' : 'rgba(61,224,255,0.2)',
+                              color: consoleOutput[0].runType === 'custom' ? '#5AA2FF' : '#3DE0FF',
                             }}>
                             {consoleOutput[0].runType === 'custom' ? 'Custom Input' : 'Test Cases'}
                           </span>
@@ -3309,7 +3315,7 @@ export default function Game() {
                         <div className="px-3 py-2 flex items-center gap-2" 
                           style={{ background: res.error ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)' }}>
                           <span className="text-xs font-semibold" style={{ color: res.error ? '#f87171' : '#34d399' }}>
-                            {res.error ? '❌ Error' : `✅ Test ${i + 1}`}
+                            {res.error ? 'Error' : `Test ${i + 1}`}
                           </span>
                         </div>
                         {res.input && (
@@ -3329,8 +3335,8 @@ export default function Game() {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style={{ background: 'rgba(99,102,241,0.1)' }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2">
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style={{ background: 'rgba(139,108,255,0.1)' }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8B6CFF" strokeWidth="2">
                         <polyline points="4 17 10 11 4 5"/>
                         <line x1="12" y1="19" x2="20" y2="19"/>
                       </svg>
@@ -3363,7 +3369,7 @@ export default function Game() {
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-2xl">🤖</span>
+                        <span className="text-2xl"><Ico of={Bot} /></span>
                         <div>
                           <div className="text-sm font-bold text-white">AI Logic Analysis</div>
                           <div className="text-xs text-slate-400">Partial credit awarded</div>
@@ -3390,7 +3396,7 @@ export default function Game() {
                   </div>
 
                   {/* Score Breakdown */}
-                  <div className="rounded-xl p-4" style={{ background: 'rgba(59, 130, 246,0.1)', border: '1px solid rgba(59, 130, 246,0.3)' }}>
+                  <div className="rounded-xl p-4" style={{ background: 'rgba(59,140,255,0.1)', border: '1px solid rgba(59,140,255,0.3)' }}>
                     <div className="text-xs font-semibold text-blue-300 mb-3 uppercase tracking-wider">Score Breakdown</div>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-xs">
@@ -3442,9 +3448,9 @@ export default function Game() {
 
                   {/* Suggestions */}
                   {result.logic_analysis.suggestions && result.logic_analysis.suggestions.length > 0 && (
-                    <div className="rounded-xl p-4" style={{ background: 'rgba(96,165,250,0.1)', border: '1px solid rgba(96,165,250,0.3)' }}>
+                    <div className="rounded-xl p-4" style={{ background: 'rgba(90,162,255,0.1)', border: '1px solid rgba(90,162,255,0.3)' }}>
                       <div className="text-xs font-semibold text-blue-300 mb-3 uppercase tracking-wider flex items-center gap-2">
-                        <span>💡</span> Suggestions for Improvement
+                        <span><Ico of={Lightbulb} /></span> Suggestions for Improvement
                       </div>
                       <ul className="space-y-2">
                         {result.logic_analysis.suggestions.map((suggestion, idx) => (
@@ -3464,10 +3470,10 @@ export default function Game() {
         </div>
 
         {/* Status Bar */}
-        <div className="h-6 flex items-center px-3 text-[11px] shrink-0" style={{ background: '#1e1e2e', borderTop: '1px solid rgba(255,255,255,0.06)', color: '#64748b' }}>
+        <div className="h-6 flex items-center px-3 text-[11px] shrink-0" style={{ background: '#1A1A1A', borderTop: '1px solid rgba(255,255,255,0.06)', color: '#737373' }}>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1.5">
-              <span style={{ color: currentLang.color }}>{currentLang.icon}</span>
+              <span style={{ color: currentLang.color }}><Ico of={currentLang.icon} /></span>
               {currentLang.label}
             </span>
             <span>UTF-8</span>

@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { AlertCircle, Bot, Check, CheckCircle2, FileCheck, FileText, Gauge, Info, ListChecks, ShieldCheck, Code2, Languages, XCircle } from 'lucide-react'
+import Logo from '../components/Logo'
+import CoderScene from '../components/CoderScene'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 import Editor from '@monaco-editor/react'
@@ -11,11 +14,11 @@ import { attachProtectedRegion } from '../utils/protectedRegion'
 // CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
 const LANGUAGES = [
-  { value: 'python',     label: 'Python',     icon: '🐍', monaco: 'python'     },
-  { value: 'cpp',        label: 'C++',        icon: '⚡', monaco: 'cpp'        },
-  { value: 'java',       label: 'Java',       icon: '☕', monaco: 'java'       },
-  { value: 'javascript', label: 'JavaScript', icon: '💛', monaco: 'javascript' },
-  { value: 'c',          label: 'C',          icon: '🔵', monaco: 'c'          },
+  { value: 'python',     label: 'Python',     monaco: 'python'     },
+  { value: 'cpp',        label: 'C++',        monaco: 'cpp'        },
+  { value: 'java',       label: 'Java',       monaco: 'java'       },
+  { value: 'javascript', label: 'JavaScript', monaco: 'javascript' },
+  { value: 'c',          label: 'C',          monaco: 'c'          },
 ]
 
 const DIFF = {
@@ -87,7 +90,7 @@ function SectionBlock({ name, content }) {
         <span className={`text-[10px] font-black uppercase tracking-[0.12em] ${s.label}`}>{name}</span>
       </div>
       {s.code ? (
-        <pre className="bg-[#0A0A10] border border-white/[0.06] rounded-xl px-4 py-3 text-[12px] font-mono text-slate-200 whitespace-pre-wrap leading-relaxed">
+        <pre className="bg-[#000000] border border-white/[0.06] rounded-xl px-4 py-3 text-[12px] font-mono text-slate-200 whitespace-pre-wrap leading-relaxed">
           {content}
         </pre>
       ) : (
@@ -128,11 +131,11 @@ function IconTab({ icon, label, active, onClick, badge }) {
   return (
     <button onClick={onClick} title={label}
       className={`relative flex flex-col items-center gap-1 py-3 w-full transition-all duration-200 group ${
-        active ? 'text-blue-300' : 'text-slate-600 hover:text-slate-300'
+        active ? 'text-white' : 'text-slate-500 hover:text-slate-200'
       }`}>
       {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-8 bg-blue-500 rounded-r-full" />}
-      <span className="text-base">{icon}</span>
-      <span className="text-[9px] font-bold uppercase tracking-wider leading-none">{label}</span>
+      {typeof icon === 'string' ? <span className="text-base">{icon}</span> : React.createElement(icon, { className: 'h-[18px] w-[18px]', 'aria-hidden': true })}
+      <span className="text-[10px] font-medium leading-none">{label}</span>
       {badge != null && (
         <span className={`absolute top-1.5 right-1.5 text-[8px] font-black min-w-[14px] h-3.5 flex items-center justify-center rounded-full px-0.5 ${
           active ? 'bg-blue-500 text-white' : 'bg-white/10 text-slate-400'
@@ -417,7 +420,7 @@ export default function OfflinePractice() {
       setGrokMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
     } catch (err) {
       const errMsg = err.response?.data?.detail || 'Failed to get AI response. Please try again.'
-      setGrokMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${errMsg}` }])
+      setGrokMessages(prev => [...prev, { role: 'assistant', content: errMsg }])
     } finally {
       setGrokLoading(false)
     }
@@ -431,7 +434,7 @@ export default function OfflinePractice() {
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   return (
-    <div className="h-screen bg-[#0a0f1c] flex flex-col overflow-hidden text-white relative" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="h-screen bg-[#000000] flex flex-col overflow-hidden text-white relative" style={{ fontFamily: 'inherit' }}>
       <div className="absolute inset-0 z-0 pointer-events-none">
         <AnimatedBackgroundCSS />
       </div>
@@ -443,23 +446,19 @@ export default function OfflinePractice() {
           toast.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/40 text-emerald-300' :
           'bg-[#1a1f2e]/90 border-white/10 text-slate-300'
         }`}>
-          <span>{toast.type === 'error' ? '⚠️' : toast.type === 'success' ? '✓' : 'ℹ'}</span>
+          {toast.type === 'error' ? <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" /> : toast.type === 'success' ? <Check className="h-4 w-4 shrink-0" aria-hidden="true" /> : <Info className="h-4 w-4 shrink-0" aria-hidden="true" />}
           {toast.msg}
         </div>
       </div>
 
       {/* ── TOP BAR ── */}
-      <header className="h-11 flex items-center justify-between px-4 border-b border-white/[0.05] bg-[#060a12]/95 backdrop-blur shrink-0 z-40">
+      <header className="h-11 flex items-center justify-between px-4 border-b border-white/[0.05] bg-[#000000]/95 backdrop-blur shrink-0 z-40">
         <div className="flex items-center gap-3">
-          <button onClick={() => nav('/home')} className="flex items-center gap-1.5 text-slate-500 hover:text-white transition-colors text-xs group">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="group-hover:-translate-x-0.5 transition-transform"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
-            Back
-          </button>
-          <div className="w-px h-4 bg-white/[0.08]" />
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-[10px] shadow-lg shadow-blue-500/30">⚡</div>
-            <span className="text-sm font-bold bg-gradient-to-r from-blue-300 to-pink-300 bg-clip-text text-transparent">Practice Arena</span>
-          </div>
+          <Link to="/dashboard" className="flex items-center gap-2" aria-label="Back to dashboard">
+            <Logo size={24} />
+          </Link>
+          <div className="h-4 w-px bg-white/10" />
+          <span className="text-[14px] font-semibold text-white">Practice</span>
         </div>
 
         {q && (
@@ -473,7 +472,7 @@ export default function OfflinePractice() {
         <div className="flex items-center gap-2">
           {user?.rating && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.07] text-[10px] text-slate-400">
-              <span>{user.rating < 800 ? '🌱' : user.rating < 1200 ? '⚡' : user.rating < 1600 ? '🔥' : '💎'}</span>
+              <span>Rating</span>
               <span className="font-bold text-blue-400">{user.rating}</span>
             </div>
           )}
@@ -527,7 +526,7 @@ export default function OfflinePractice() {
                             const inp = tc.input || tc.input_data || ''
                             const out = tc.output || tc.expected_output || ''
                             return (
-                              <div key={i} className="rounded-xl border border-white/[0.06] bg-[#0A0A10] overflow-hidden">
+                              <div key={i} className="rounded-xl border border-white/[0.06] bg-[#000000] overflow-hidden">
                                 <div className="px-3 py-1.5 border-b border-white/[0.05] bg-white/[0.02]">
                                   <span className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Example {i + 1}</span>
                                 </div>
@@ -554,7 +553,7 @@ export default function OfflinePractice() {
               {/* EDITOR COLUMN */}
               <div className="flex-1 flex flex-col overflow-hidden min-w-0">
                 {/* Editor toolbar */}
-                <div className="h-11 flex items-center justify-between px-3 border-b border-white/[0.05] bg-[#060a12] shrink-0">
+                <div className="h-11 flex items-center justify-between px-3 border-b border-white/[0.05] bg-[#000000] shrink-0">
                   <div className="flex items-center gap-0.5 overflow-x-auto hide-scrollbar">
                     {LANGUAGES.map(l => (
                       <button key={l.value} onClick={() => setLanguage(l.value)}
@@ -563,14 +562,14 @@ export default function OfflinePractice() {
                             ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
                             : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.04]'
                         }`}>
-                        <span>{l.icon}</span><span className="hidden sm:inline">{l.label}</span>
+                        <span>{l.label}</span>
                       </button>
                     ))}
                   </div>
                   <div className="flex items-center gap-2 shrink-0 ml-3">
                     <button onClick={fetchComplexity} disabled={loadingCx}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-400/80 hover:text-amber-300 hover:bg-amber-500/8 border border-amber-500/15 hover:border-amber-500/30 transition-all disabled:opacity-40">
-                      {loadingCx ? <Spinner color="border-amber-500" /> : '📊'}
+                      {loadingCx ? <Spinner color="border-amber-500" /> : <Gauge className="h-3.5 w-3.5" aria-hidden="true" />}
                       <span className="hidden md:inline">Complexity</span>
                     </button>
                     <button onClick={bottomTab === 'custom' ? handleRunCustom : handleRunTests} disabled={isRunning || submissionStatus[activeQ]}
@@ -612,10 +611,10 @@ export default function OfflinePractice() {
                 {/* Bottom panel */}
                 {bottomOpen ? (
                   <div style={{ height: bottomH }} className="shrink-0 flex flex-col border-t border-white/[0.05] bg-[#080c16] overflow-hidden">
-                    <div className="flex items-center justify-between px-4 border-b border-white/[0.05] bg-[#060a12] shrink-0 h-9">
+                    <div className="flex items-center justify-between px-4 border-b border-white/[0.05] bg-[#000000] shrink-0 h-9">
                       <div className="flex h-full">
                         {[
-                          { id: 'testcases', label: '🧪 Tests', badge: totalCount > 0 ? `${passedCount}/${totalCount}` : null, badgeOk: passedCount === totalCount && totalCount > 0 },
+                          { id: 'testcases', label: 'Tests', badge: totalCount > 0 ? `${passedCount}/${totalCount}` : null, badgeOk: passedCount === totalCount && totalCount > 0 },
                           { id: 'custom',    label: '⌨️ Custom' },
                         ].map(t => (
                           <button key={t.id} onClick={() => setBottomTab(t.id)}
@@ -747,7 +746,7 @@ export default function OfflinePractice() {
                     </div>
                   </div>
                 ) : (
-                  <div className="h-7 flex items-center px-4 border-t border-white/[0.05] bg-[#060a12] shrink-0">
+                  <div className="h-7 flex items-center px-4 border-t border-white/[0.05] bg-[#000000] shrink-0">
                     <button onClick={() => setBottomOpen(true)} className="flex items-center gap-1.5 text-[10px] text-slate-600 hover:text-slate-300 transition-colors">
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 15l-6-6-6 6"/></svg>
                       Show panel
@@ -767,7 +766,7 @@ export default function OfflinePractice() {
                   }`}>
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-base ${submitResult.status === 'passed' ? 'bg-emerald-500/20' : 'bg-rose-500/20'}`}>
-                        {submitResult.status === 'passed' ? '✅' : '❌'}
+                        {submitResult.status === 'passed' ? <CheckCircle2 className="h-4 w-4 text-emerald-400" aria-hidden="true" /> : <XCircle className="h-4 w-4 text-rose-400" aria-hidden="true" />}
                       </div>
                       <div>
                         <p className={`font-bold text-sm ${submitResult.status === 'passed' ? 'text-emerald-400' : 'text-rose-400'}`}>
@@ -786,56 +785,42 @@ export default function OfflinePractice() {
             </>
           ) : (
             /* Empty state */
-            <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
-              <div className="relative overflow-hidden rounded-3xl bg-[#0a0f1c]/60 backdrop-blur-xl border border-white/[0.05] p-12 sm:p-16 text-center shadow-2xl max-w-2xl w-full">
-                {/* Glowing background effects inside the card */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[200px] bg-gradient-to-b from-blue-500/10 to-transparent pointer-events-none" />
-                <div className="absolute -bottom-[50px] -right-[50px] w-[200px] h-[200px] bg-cyan-500/10 blur-[80px] pointer-events-none rounded-full" />
-                <div className="absolute -top-[50px] -left-[50px] w-[200px] h-[200px] bg-blue-600/10 blur-[80px] pointer-events-none rounded-full" />
-                
-                <div className="relative z-10 flex flex-col items-center">
-                  <div className="relative flex items-center justify-center w-28 h-28 mb-8">
-                    <div className="absolute inset-0 rounded-full border border-blue-500/30 animate-ping" style={{ animationDuration: '3s' }} />
-                    <div className="absolute inset-2 rounded-full border border-cyan-400/20 animate-ping" style={{ animationDuration: '3s', animationDelay: '0.5s' }} />
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.5)]">
-                      <span className="text-4xl drop-shadow-md">🧠</span>
-                    </div>
-                  </div>
-                  
-                  <h2 className="text-4xl font-black text-white mb-4 tracking-tight">AI Practice Arena</h2>
-                  <p className="text-slate-400 text-lg max-w-lg mx-auto mb-10 leading-relaxed">
-                    Generate highly personalized coding challenges from any topic. Powered by advanced AI — every question is strictly unique.
-                  </p>
-                  
-                  <div className="flex flex-wrap justify-center gap-4 sm:gap-8 text-sm text-slate-300">
-                    {[
-                      { i: '🤖', l: 'AI Generated', d: 'Infinite questions' },
-                      { i: '📊', l: 'Smart Analysis', d: 'Instant feedback' },
-                      { i: '⚡', l: 'Live Execution', d: 'Secure sandbox' }
-                    ].map(f => (
-                      <div key={f.l} className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:-translate-y-1 transition-all duration-300">
-                        <span className="text-3xl mb-1">{f.i}</span>
-                        <span className="font-bold text-white">{f.l}</span>
-                        <span className="text-xs text-slate-500">{f.d}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+            <div className="flex flex-1 items-center justify-center p-8">
+              <div className="w-full max-w-xl">
+                <CoderScene className="mb-4 h-[300px] w-full" interactive={false} fps={30} />
+                <h2 className="font-display text-[28px] font-bold tracking-tight text-white">Start a practice set</h2>
+                <p className="mt-2 text-[15px] leading-relaxed text-slate-400">
+                  Choose a topic and a difficulty in the panel on the right, set how many problems you want, and press Generate.
+                  You can also upload a syllabus and we will pick topics from it.
+                </p>
+                <ul className="mt-8 grid gap-3 sm:grid-cols-3">
+                  {[
+                    { icon: Languages, l: 'Five languages', d: 'Python, C++, Java, JavaScript and C' },
+                    { icon: ShieldCheck, l: 'Hidden tests', d: 'Graded on the server' },
+                    { icon: Gauge, l: 'Complexity', d: 'Time and space read from your code' },
+                  ].map(f => (
+                    <li key={f.l} className="rounded-xl border border-white/10 bg-[#0A0A0A] p-4">
+                      <f.icon className="mb-2 h-4 w-4 text-arc" aria-hidden="true" />
+                      <div className="text-[14px] font-medium text-white">{f.l}</div>
+                      <div className="mt-0.5 text-[13px] text-slate-400">{f.d}</div>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           )}
         </div>
 
         {/* ══ RIGHT ICON RAIL ══ */}
-        <div className="w-14 shrink-0 flex flex-col border-l border-white/[0.05] bg-[#0a0f1c]/80 backdrop-blur-xl relative z-10">
-          <IconTab icon="📋" label="List"  active={rightPanel === 'questions'}  onClick={() => setRightPanel(p => p === 'questions'  ? null : 'questions')}  badge={questions.length || null} />
-          <IconTab icon="🤖" label="AI"    active={rightPanel === 'ai'}         onClick={() => setRightPanel(p => p === 'ai'         ? null : 'ai')}         />
-          <IconTab icon="📊" label="Cmplx" active={rightPanel === 'complexity'} onClick={() => setRightPanel(p => p === 'complexity' ? null : 'complexity')} />
+        <div className="w-[76px] shrink-0 flex flex-col border-l border-white/[0.05] bg-[#000000]/80 backdrop-blur-xl relative z-10">
+          <IconTab icon={ListChecks} label="Problems"  active={rightPanel === 'questions'}  onClick={() => setRightPanel(p => p === 'questions'  ? null : 'questions')}  badge={questions.length || null} />
+          <IconTab icon={Bot} label="Coach" active={rightPanel === 'ai'}         onClick={() => setRightPanel(p => p === 'ai'         ? null : 'ai')}         />
+          <IconTab icon={Gauge} label="Complexity" active={rightPanel === 'complexity'} onClick={() => setRightPanel(p => p === 'complexity' ? null : 'complexity')} />
         </div>
 
         {/* ══ RIGHT SLIDING PANEL ══ */}
         {rightPanel && (
-          <div className="w-80 shrink-0 flex flex-col border-l border-white/[0.05] bg-[#0a0f1c]/80 backdrop-blur-xl overflow-hidden relative z-10">
+          <div className="w-80 shrink-0 flex flex-col border-l border-white/[0.05] bg-[#000000]/80 backdrop-blur-xl overflow-hidden relative z-10">
 
             {/* ── QUESTIONS panel ── */}
             {rightPanel === 'questions' && (
@@ -850,7 +835,7 @@ export default function OfflinePractice() {
                 {/* Generator */}
                 <div className="border-b border-white/[0.05] p-3 space-y-2.5">
                   <div className="flex gap-1 p-1 bg-white/[0.03] rounded-xl border border-white/[0.04]">
-                    {[['type','✏️ Topic'],['upload','📄 File']].map(([m,l]) => (
+                    {[['type','Topic'],['upload','Syllabus file']].map(([m,l]) => (
                       <button key={m} onClick={() => setInputMode(m)}
                         className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${inputMode === m ? 'bg-blue-600/25 text-violet-200 border border-blue-500/30' : 'text-slate-600 hover:text-slate-300'}`}>{l}</button>
                     ))}
@@ -876,7 +861,7 @@ export default function OfflinePractice() {
                     <>
                       <input type="file" accept=".pdf,.txt,image/*" onChange={e => setFile(e.target.files?.[0])} className="hidden" id="fu" />
                       <label htmlFor="fu" className="flex items-center gap-3 p-3 border-2 border-dashed border-white/[0.06] rounded-xl cursor-pointer hover:border-blue-500/30 hover:bg-blue-500/3 transition-all">
-                        <span className="text-lg">{file ? '✅' : '📄'}</span>
+                        {file ? <FileCheck className="h-5 w-5 text-emerald-400" aria-hidden="true" /> : <FileText className="h-5 w-5 text-slate-400" aria-hidden="true" />}
                         <div><p className="text-xs font-semibold text-white">{file ? file.name : 'Upload Syllabus'}</p><p className="text-[10px] text-slate-600">PDF, TXT, or Image</p></div>
                       </label>
                     </>
@@ -900,7 +885,7 @@ export default function OfflinePractice() {
                     <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600" />
                     <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-all" />
                     <span className="relative z-10 flex items-center justify-center gap-2">
-                      {loading ? <><Spinner color="border-white" /> Generating…</> : <>✨ Generate</>}
+                      {loading ? <><Spinner color="border-white" /> Generating…</> : <>Generate</>}
                     </span>
                   </button>
                   {genError && <p className="text-[10px] text-rose-400 bg-rose-500/8 border border-rose-500/15 rounded-xl px-3 py-2">{genError}</p>}
@@ -943,7 +928,6 @@ export default function OfflinePractice() {
                   })}
                   {questions.length === 0 && (
                     <div className="text-center py-10">
-                      <p className="text-3xl mb-2">✨</p>
                       <p className="text-xs text-slate-600">Generate questions above</p>
                     </div>
                   )}
@@ -972,7 +956,7 @@ export default function OfflinePractice() {
                   {loadingAI && <div className="flex flex-col items-center justify-center py-16 gap-3"><Spinner color="border-blue-500" /><p className="text-xs text-slate-500">Analyzing…</p></div>}
                   {!loadingAI && !aiFeedback && (
                     <div className="flex flex-col items-center justify-center text-center gap-4 py-8 px-4 rounded-2xl bg-white/[0.02] border border-white/[0.05]">
-                      <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-3xl">🤖</div>
+                      <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-300"><Bot className="h-7 w-7" aria-hidden="true" /></div>
                       <div><p className="text-sm font-bold text-white mb-1">AI Code Review</p><p className="text-xs text-slate-500 leading-relaxed">Submit code to get intelligent analysis and suggestions.</p></div>
                       <button onClick={() => fetchAI(submitResult)} className="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600/20 text-blue-300 border border-blue-500/30 hover:bg-blue-600/30 transition-all">Analyze Now</button>
                     </div>
@@ -1018,13 +1002,13 @@ export default function OfflinePractice() {
 
                   {/* ── AI Feedback Chat ── */}
                   {!loadingAI && (
-                    <div className="rounded-xl overflow-hidden" style={{ background: '#101018', border: '1px solid rgba(59, 130, 246,0.3)' }}>
+                    <div className="rounded-xl overflow-hidden" style={{ background: '#0F0F0F', border: '1px solid rgba(59,140,255,0.3)' }}>
                       {/* Chat header */}
-                      <div className="px-3 py-2.5 flex items-center justify-between" style={{ background: 'rgba(59, 130, 246,0.12)', borderBottom: '1px solid rgba(59, 130, 246,0.2)' }}>
+                      <div className="px-3 py-2.5 flex items-center justify-between" style={{ background: 'rgba(59,140,255,0.12)', borderBottom: '1px solid rgba(59,140,255,0.2)' }}>
                         <div className="flex items-center gap-2">
-                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-[11px]" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center text-[11px]" style={{ background: '#1A1A1A' }}><Bot className="h-3 w-3 text-arc" aria-hidden="true" /></div>
                           <span className="text-xs font-bold text-white">Ask AI Coach</span>
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase" style={{ background: 'rgba(59, 130, 246,0.25)', color: '#60a5fa' }}>NVIDIA</span>
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase" style={{ background: 'rgba(59,140,255,0.25)', color: '#5AA2FF' }}>NVIDIA</span>
                         </div>
                         {grokMessages.length > 0 && (
                           <button
@@ -1041,7 +1025,7 @@ export default function OfflinePractice() {
                       <div className="overflow-y-auto p-3 space-y-3" style={{ maxHeight: '320px', minHeight: grokMessages.length === 0 ? '0px' : '120px' }}>
                         {grokMessages.length === 0 && (
                           <div className="text-center py-4">
-                            <div className="text-2xl mb-2">✦</div>
+                            <div className="text-2xl mb-2"><Bot className="h-3 w-3 text-arc" aria-hidden="true" /></div>
                             <div className="text-[11px] text-slate-400 mb-1">Ask anything about your code</div>
                             <div className="text-[10px] text-slate-600">e.g. "Why is my solution O(n²)?" or "How do I fix this bug?"</div>
                           </div>
@@ -1049,13 +1033,13 @@ export default function OfflinePractice() {
                         {grokMessages.map((msg, i) => (
                           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             {msg.role === 'assistant' && (
-                              <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
+                              <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: '#1A1A1A' }}><Bot className="h-3 w-3 text-arc" aria-hidden="true" /></div>
                             )}
                             <div
                               className="rounded-xl px-3 py-2 text-[11px] leading-relaxed max-w-[85%]"
                               style={msg.role === 'user'
-                                ? { background: 'rgba(59, 130, 246,0.25)', color: '#e2e8f0', borderBottomRightRadius: '4px' }
-                                : { background: 'rgba(255,255,255,0.05)', color: '#cbd5e1', borderBottomLeftRadius: '4px', border: '1px solid rgba(255,255,255,0.07)' }
+                                ? { background: 'rgba(59,140,255,0.25)', color: '#D0D0D0', borderBottomRightRadius: '4px' }
+                                : { background: 'rgba(255,255,255,0.05)', color: '#B0B0B0', borderBottomLeftRadius: '4px', border: '1px solid rgba(255,255,255,0.07)' }
                               }
                             >
                               {msg.content}
@@ -1064,7 +1048,7 @@ export default function OfflinePractice() {
                         ))}
                         {grokLoading && (
                           <div className="flex justify-start">
-                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: 'linear-gradient(135deg,#2563eb,#db2777)' }}>✦</div>
+                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] shrink-0 mr-2 mt-0.5" style={{ background: '#1A1A1A' }}><Bot className="h-3 w-3 text-arc" aria-hidden="true" /></div>
                             <div className="rounded-xl px-3 py-2" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
                               <div className="flex gap-1 items-center h-4">
                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -1091,7 +1075,7 @@ export default function OfflinePractice() {
                               onClick={() => sendGrokMessage(prompt)}
                               disabled={grokLoading}
                               className="px-2 py-1 rounded-full text-[10px] transition-all hover:scale-105 active:scale-95 disabled:opacity-40"
-                              style={{ background: 'rgba(59, 130, 246,0.15)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246,0.25)' }}
+                              style={{ background: 'rgba(59,140,255,0.15)', color: '#5AA2FF', border: '1px solid rgba(59,140,255,0.25)' }}
                             >
                               {prompt}
                             </button>
@@ -1101,7 +1085,7 @@ export default function OfflinePractice() {
 
                       {/* Input box */}
                       <div className="p-2.5 pt-0" style={{ borderTop: grokMessages.length > 0 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-                        <div className="flex gap-2 items-end rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(59, 130, 246,0.25)' }}>
+                        <div className="flex gap-2 items-end rounded-xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(59,140,255,0.25)' }}>
                           <textarea
                             value={grokInput}
                             onChange={e => setGrokInput(e.target.value)}
@@ -1121,7 +1105,7 @@ export default function OfflinePractice() {
                             onClick={() => sendGrokMessage()}
                             disabled={grokLoading || !grokInput.trim()}
                             className="m-1.5 w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
-                            style={{ background: grokInput.trim() ? 'linear-gradient(135deg,#2563eb,#a855f7)' : 'rgba(59, 130, 246,0.2)' }}
+                            style={{ background: grokInput.trim() ? 'linear-gradient(135deg,#2B70E8,#A387FF)' : 'rgba(59,140,255,0.2)' }}
                           >
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                               <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -1150,7 +1134,7 @@ export default function OfflinePractice() {
                   {loadingCx && <div className="flex flex-col items-center justify-center h-full gap-3"><Spinner color="border-amber-500" /><p className="text-xs text-slate-500">Analyzing…</p></div>}
                   {!loadingCx && !complexity && (
                     <div className="flex flex-col items-center justify-center h-full text-center gap-4 p-6">
-                      <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-3xl">📊</div>
+                      <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-300"><Gauge className="h-7 w-7" aria-hidden="true" /></div>
                       <div><p className="text-sm font-bold text-white mb-1">Complexity Analyzer</p><p className="text-xs text-slate-500 leading-relaxed">Analyze time & space complexity of your solution.</p></div>
                       <button onClick={fetchComplexity} className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-600/20 text-amber-300 border border-amber-500/30 hover:bg-amber-600/30 transition-all">Analyze Now</button>
                     </div>
@@ -1158,7 +1142,7 @@ export default function OfflinePractice() {
                   {!loadingCx && complexity && (
                     <div className="p-4 space-y-3">
                       {[['Time Complexity', complexity.time_complexity, { Best:'#10b981', Avg:'#f59e0b', Worst:'#ef4444' }],
-                        ['Space Complexity', complexity.space_complexity, { Best:'#818cf8', Avg:'#818cf8', Worst:'#818cf8' }]
+                        ['Space Complexity', complexity.space_complexity, { Best:'#A387FF', Avg:'#A387FF', Worst:'#A387FF' }]
                       ].map(([title, cx, colors]) => cx && (
                         <div key={title} className="p-3.5 rounded-2xl bg-white/[0.025] border border-white/[0.05]">
                           <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest mb-3">{title}</p>
@@ -1205,7 +1189,7 @@ export default function OfflinePractice() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
             <div className="w-20 h-20 mx-auto bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20">
-              <span className="text-4xl">✨</span>
+              <CheckCircle2 className="h-9 w-9 text-black" aria-hidden="true" />
             </div>
             <h2 className="text-2xl font-black text-white mb-2">Practice Complete!</h2>
             <p className="text-slate-400 text-sm mb-6">You have finished this practice session.</p>
@@ -1239,7 +1223,7 @@ export default function OfflinePractice() {
                   )}
                   {laggingTopics.length === 0 && (
                     <div className="pt-4 border-t border-white/5">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Perfect Score! 🎉</p>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Perfect score</p>
                     </div>
                   )}
                 </div>

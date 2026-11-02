@@ -522,7 +522,7 @@ const HOME_STYLES = `
   .animate-pulse-slow { animation: pulseSlow 4s ease-in-out infinite; }
   .animate-float { animation: float 3s ease-in-out infinite; }
   .animate-gradient {
-    background: linear-gradient(270deg, #818cf8, #c084fc, #60a5fa);
+    background: linear-gradient(270deg, #A387FF, #B8A0FF, #5AA2FF);
     background-size: 300% 300%;
     animation: gradient 5s ease infinite;
     -webkit-background-clip: text;
@@ -557,9 +557,9 @@ export default function Home() {
       'O(log n)', '( )', 'dp[i][j]', 'while(true)',
       '--', 'const', 'void', 'break',
     ]
-    const colors = ['#6366f1','#3b82f6','#60a5fa','#60a5fa','#3b82f6',
-                    '#c084fc','#f87171','#fb923c','#22d3ee','#38bdf8',
-                    '#34d399','#818cf8','#4ade80','#fbbf24','#e879f9']
+    const colors = ['#8B6CFF','#3B8CFF','#5AA2FF','#5AA2FF','#3B8CFF',
+                    '#B8A0FF','#f87171','#fb923c','#3DE0FF','#3DE0FF',
+                    '#34d399','#A387FF','#4ade80','#fbbf24','#B8A0FF']
     const anims = ['codeFloat', 'codeFloat2', 'codeDrift']
 
     // Divide the space into a 5×4 grid of cells, pick one random point per cell
@@ -708,16 +708,16 @@ export default function Home() {
         <div className="absolute inset-0 pointer-events-none">
           {/* Moving orbs - purple/pink theme */}
           <div className="absolute top-[-100px] left-[10%] w-[700px] h-[700px] rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(59, 130, 246,0.18) 0%, transparent 70%)', animation: 'orb1 12s ease-in-out infinite', willChange: 'transform' }} />
+            style={{ background: 'radial-gradient(circle, rgba(59,140,255,0.18) 0%, transparent 70%)', animation: 'orb1 12s ease-in-out infinite', willChange: 'transform' }} />
           <div className="absolute top-[20%] right-[-100px] w-[600px] h-[600px] rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(6, 182, 212,0.15) 0%, transparent 70%)', animation: 'orb2 15s ease-in-out infinite', willChange: 'transform' }} />
+            style={{ background: 'radial-gradient(circle, rgba(23,205,239,0.15) 0%, transparent 70%)', animation: 'orb2 15s ease-in-out infinite', willChange: 'transform' }} />
           <div className="absolute bottom-[-50px] left-[30%] w-[500px] h-[500px] rounded-full"
-            style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.12) 0%, transparent 70%)', animation: 'orb3 10s ease-in-out infinite', willChange: 'transform' }} />
+            style={{ background: 'radial-gradient(circle, rgba(163,135,255,0.12) 0%, transparent 70%)', animation: 'orb3 10s ease-in-out infinite', willChange: 'transform' }} />
 
           {/* Static grid — no animation, no repaint */}
           <div className="absolute inset-0 opacity-[0.03]"
             style={{
-              backgroundImage: 'linear-gradient(rgba(59, 130, 246,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(59, 130, 246,0.8) 1px, transparent 1px)',
+              backgroundImage: 'linear-gradient(rgba(59,140,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(59,140,255,0.8) 1px, transparent 1px)',
               backgroundSize: '60px 60px',
             }} />
 
@@ -742,13 +742,13 @@ export default function Home() {
 
           {/* Corner accents */}
           <div className="absolute top-0 left-0 w-64 h-64 opacity-20"
-            style={{ background: 'conic-gradient(from 180deg at 0% 0%, #3b82f6, transparent 40%)' }} />
+            style={{ background: 'conic-gradient(from 180deg at 0% 0%, #3B8CFF, transparent 40%)' }} />
           <div className="absolute top-0 right-0 w-64 h-64 opacity-20"
-            style={{ background: 'conic-gradient(from 270deg at 100% 0%, #06b6d4, transparent 40%)' }} />
+            style={{ background: 'conic-gradient(from 270deg at 100% 0%, #17CDEF, transparent 40%)' }} />
 
           {/* Bottom fade */}
           <div className="absolute bottom-0 left-0 right-0 h-32"
-            style={{ background: 'linear-gradient(to bottom, transparent, #0f172a)' }} />
+            style={{ background: 'linear-gradient(to bottom, transparent, #0F0F0F)' }} />
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10">

@@ -1,43 +1,23 @@
 import React from 'react'
 
+// The mark: two brackets, one for you and one for the rival, crossing in the middle. Cyan and ultraviolet on midnight.
 export default function Logo({ size = 40, className = '' }) {
-  const id = `cx${size}`
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 40 40"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-    >
-      <defs>
-        <linearGradient id={`${id}-a`} x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#6366f1" />
-          <stop offset="100%" stopColor="#3b82f6" />
-        </linearGradient>
-        <linearGradient id={`${id}-b`} x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor="#a5b4fc" />
-          <stop offset="100%" stopColor="#e879f9" />
-        </linearGradient>
-      </defs>
-
-      {/* Background */}
-      <rect width="40" height="40" rx="10" fill={`url(#${id}-a)`} />
-
-      {/* Bold "cx" text-style mark using paths */}
-      {/* C — open arc left side */}
-      <path
-        d="M19 13 C14.5 13 11 16.1 11 20 C11 23.9 14.5 27 19 27"
-        stroke="white"
-        strokeWidth="3.2"
-        strokeLinecap="round"
-        fill="none"
-      />
-
-      {/* X — two diagonal strokes */}
-      <line x1="22" y1="14" x2="29" y2="26" stroke={`url(#${id}-b)`} strokeWidth="3.2" strokeLinecap="round" />
-      <line x1="29" y1="14" x2="22" y2="26" stroke={`url(#${id}-b)`} strokeWidth="3.2" strokeLinecap="round" />
+    <svg width={size} height={size} viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg" className={className} role="img" aria-label="CompileX">
+      <rect width="40" height="40" rx="10" fill="#0A0A0A" />
+      <rect x="0.5" y="0.5" width="39" height="39" rx="9.5" fill="none" stroke="rgba(255,255,255,0.28)" />
+      <path d="M17 11 8 20l9 9" fill="none" stroke="#3DE0FF" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M23 11l9 9-9 9" fill="none" stroke="#9B7BFF" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  )
+}
+
+// The wordmark: Compile in Sora, closed by an arc-coloured X.
+export function Wordmark({ className = '' }) {
+  return (
+    <span className={`font-display inline-flex items-baseline font-bold leading-none tracking-[-0.04em] text-white ${className}`} aria-label="CompileX">
+      <span aria-hidden="true">Compile</span>
+      <span aria-hidden="true" className="text-arc">X</span>
+    </span>
   )
 }

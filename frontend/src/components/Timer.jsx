@@ -48,7 +48,7 @@ export default function Timer({ startedAt, timeLimit, onExpire }) {
           <circle cx="12" cy="12" r="10" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="2.5" />
           <circle
             cx="12" cy="12" r="10" fill="none"
-            stroke={isUrgent ? '#f43f5e' : '#6366f1'}
+            stroke={isUrgent ? '#f43f5e' : '#8B6CFF'}
             strokeWidth="2.5"
             strokeDasharray={`${2 * Math.PI * 10}`}
             strokeDashoffset={`${2 * Math.PI * 10 * (1 - progress / 100)}`}

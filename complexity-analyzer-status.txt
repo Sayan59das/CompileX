@@ -1,0 +1,34 @@
+COMPLEXITY ANALYZER - WHERE WE STOPPED (2026-11-02)
+
+State right now (added after the report below was written):
+- The work is committed and pushed to origin/main as two commits, both authored by Sayan-Das, no Claude attribution:
+    2df5a51  Grade the skill assessment on the server and keep hidden tests off the browser
+    6d72dfb  Analyze complexity by costing the code instead of matching patterns
+- The backend that is running on port 8000 still has the OLD engine. Restart it to load the new one.
+- To continue: re-run the pool check with the script in the Claude scratchpad (cx_pool_check.py) or add a program to
+  backend/tests/test_complexity_pool.py for every wrong answer you find.
+
+----------------------------------------------------------------------------------------------------
+Report as it was written (unchanged):
+
+What it found
+- The earlier version was wrong on about 25 of the 266 programs, in 15 kinds of logic.
+- Backtracking: used[c] = True … used[c] = False was reported as n² instead of exponential.
+- Linear logic reported as n²: union-find, a queue drained in a while, a lifted two-pointer, and run grouping with start = end.
+- itertools.combinations(range(n), 3): reported as O(n), now O(n³).
+- Adjacency lists built with .append: these made graph searches look like n².
+- Each fix has a test. The offline backend tests now pass: 324, of which 49 are new.
+
+Still imprecise
+- Digit-sum-of-digit-sum loops give log² instead of log.
+- A search over all permutations (119 brute) is shown as polynomial, with medium confidence.
+- Queries and items both count as n, so O(n·q) prints as O(n²).
+- A popcount over an array prints as n log n.
+- When it can't tell, it says "medium" in the explanation rather than guessing.
+
+Not verified
+- I didn't read the 118 solutions where the line-count check agreed.
+- The pool check is Python only. C, C++, Java and JavaScript share the engine and still pass the 48 earlier programs, but I didn't run pool-style solutions in them.
+- The correct answers are my own reading of the code, with no second reviewer.
+
+The running backend still has the old engine. I didn't restart it, in case you're playing. Everything is uncommitted, including the new harness.py, which reads each Python argument's type from the locked harness. Should I restart the backend and commit, without Claude attribution?

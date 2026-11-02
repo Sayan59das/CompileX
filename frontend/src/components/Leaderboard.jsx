@@ -1,12 +1,18 @@
 import React from 'react'
+import { BarChart3 } from 'lucide-react'
 
-const MEDALS = ['🥇', '🥈', '🥉']
+// Renders an icon component, or plain text, at the size of the surrounding text.
+const Ico = ({ of, className = 'inline-block h-[1em] w-[1em] align-[-0.125em]' }) =>
+  of == null ? null : typeof of === 'string' ? of : React.createElement(of, { className, 'aria-hidden': true })
+
+
+const MEDALS = []
 
 export default function Leaderboard({ entries = [], currentPlayerId }) {
   if (!entries.length) {
     return (
       <div className="text-center py-8">
-        <div className="text-3xl mb-2">📊</div>
+        <div className="text-3xl mb-2"><Ico of={BarChart3} /></div>
         <p className="text-slate-500 text-xs">No scores yet</p>
       </div>
     )
