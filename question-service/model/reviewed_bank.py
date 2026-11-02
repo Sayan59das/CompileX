@@ -128,6 +128,23 @@ def get_question(topic: str, difficulty: str, exclude_titles: Optional[list] = N
     return chosen
 
 
+def topic_key(topic: str) -> str:
+    """The canonical spelling this bank uses for a topic ('Array' and 'array' both give 'arrays')."""
+    return _topic_key(topic)
+
+
+def questions(topic: str, difficulty: str) -> list:
+    """Every reviewed question of exactly this topic and difficulty (copies), for callers that choose among them themselves."""
+    _load()
+    return [copy.deepcopy(q) for q in _store.get((_topic_key(topic), (difficulty or "").strip().lower()), [])]
+
+
+def buckets() -> list:
+    """[(topic, difficulty), ...] that hold at least one reviewed question."""
+    _load()
+    return list(_store)
+
+
 def get_stats() -> dict:
     """{topic: {difficulty: count}} for what is loaded."""
     _load()

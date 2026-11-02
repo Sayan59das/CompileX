@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 
 import main_dynamic
 from model import reviewed_bank as rb
+from model import scaffold
 
 STARTER = {lang: f"// {lang} starter\n" for lang in ("python", "cpp", "java", "javascript")}
 
@@ -138,14 +139,13 @@ def test_generate_passes_the_typed_fields_through(bank, client):
     body = r.json()
     assert body["title"] == body["base_title"] == "Alpha"
     assert body["function_name"] == "solve_it" and body["return_type"] == "int"
-    assert set(body["starter_code"]) == {"python", "cpp", "java", "javascript"}
+    assert set(body["starter_code"]) == {"python", "cpp", "java", "javascript", "c"}   # the four stored ones, plus the C entry added when it is served
     assert body["constraints"] == "1 <= n <= 100"
     assert len(body["test_cases"]) == 3
 
 
 def test_generate_respects_the_players_history_then_falls_back(bank, client, monkeypatch):
     bank(record("Alpha"), record("Beta"))
-    monkeypatch.setattr(main_dynamic, "_trained_generator", None)
     seen, reviewed = [], []
     for _ in range(2):
         body = client.post("/generate", json={"topic": "arrays", "difficulty": "easy", "exclude_titles": seen}).json()
@@ -156,10 +156,15 @@ def test_generate_respects_the_players_history_then_falls_back(bank, client, mon
     assert third["title"] not in ("Alpha", "Beta")      # both reviewed questions are used up for this player
 
 
-def test_questions_from_other_banks_keep_the_old_response_shape(bank, client):
-    bank()  # nothing reviewed
-    body = client.post("/generate", json={"topic": "arrays", "difficulty": "medium"}).json()
-    assert "starter_code" not in body and "function_name" not in body
+def test_questions_from_other_banks_come_with_a_verified_locked_starter(bank, client):
+    bank()  # nothing reviewed, so the older banks answer
+    r = client.post("/generate", json={"topic": "arrays", "difficulty": "medium"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["function_name"] == "solve" and body["parameters"] and body["input_schema"] and body["output_schema"]
+    assert {"python", "cpp", "java", "javascript"} <= set(body["starter_code"])
+    for language, code in body["starter_code"].items():
+        assert scaffold.MARKER_TEXT in code, language   # the line the editor locks from
 
 
 def test_stats_counts_the_reviewed_questions(bank, client):

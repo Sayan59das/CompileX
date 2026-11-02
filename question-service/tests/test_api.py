@@ -5,6 +5,7 @@ Uses FastAPI TestClient (synchronous, no running server needed).
 
 import sys
 import os
+import importlib.util
 
 # Make sure the backend root is on the path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -14,6 +15,9 @@ from fastapi.testclient import TestClient
 from main import app
 
 client = TestClient(app)
+
+# torch is not in requirements.txt (the transformer is retired from the serving image); its dataset classes are only tested where it is installed
+requires_torch = pytest.mark.skipif(importlib.util.find_spec("torch") is None, reason="torch is not installed")
 
 
 # ─────────────────────────────────────────────
@@ -317,6 +321,7 @@ class TestTokenizer:
 # 7. Dataset unit tests
 # ─────────────────────────────────────────────
 
+@requires_torch
 class TestDataset:
     def setup_method(self):
         from model.tokenizer import SimpleTokenizer
@@ -591,6 +596,7 @@ class TestDebuggerGeneratorUnit:
 # 10. DebuggerDataset unit tests
 # ─────────────────────────────────────────────
 
+@requires_torch
 class TestDebuggerDataset:
     def setup_method(self):
         import json, tempfile

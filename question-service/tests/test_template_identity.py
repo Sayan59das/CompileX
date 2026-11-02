@@ -74,7 +74,7 @@ def test_other_topics_are_unaffected_when_one_runs_out():
 def templates_only(monkeypatch):
     """Route /generate straight to the template generator so the banks do not answer first."""
     monkeypatch.setattr(main_dynamic, "_bank_order", lambda topic, difficulty: [])
-    monkeypatch.setattr(main_dynamic, "_trained_generator", None)
+    monkeypatch.setattr(main_dynamic, "_pool_service", None)       # and the pool does not answer first either
     return TestClient(main_dynamic.app)
 
 
@@ -82,7 +82,8 @@ def test_generate_reports_the_identity_and_then_a_clean_404(templates_only):
     client = templates_only
     exclude, served = [], []
     for _ in range(40):
-        r = client.post("/generate", json={"topic": "sorting", "difficulty": "easy", "exclude_titles": exclude})
+        # a topic whose templates can be typed: a template whose sample and tests disagree is (rightly) not served any more
+        r = client.post("/generate", json={"topic": "strings", "difficulty": "easy", "exclude_titles": exclude})
         if r.status_code == 404:
             assert "No unseen" in r.json()["detail"]
             break

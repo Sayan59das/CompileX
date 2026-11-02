@@ -10,7 +10,6 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements and install
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir torch==2.3.0 --index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
@@ -18,6 +17,9 @@ COPY main_dynamic.py main.py
 
 # Copy entire model package (all generators, tokenizer, weights, etc.)
 COPY model/ ./model/
+
+# The question pool: storage, per-player history and the serving logic (no machine-learning libraries)
+COPY pool/ ./pool/
 
 # Copy the curated question dataset
 COPY data/ ./data/
