@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 import Editor from '@monaco-editor/react'
+import { attachProtectedRegion } from '../utils/protectedRegion'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTS
@@ -29,6 +30,15 @@ const TIER_CONFIG = {
   Advanced:     { icon: '🔥', color: '#3b82f6', glow: '#3b82f640', grad: 'from-blue-600 to-indigo-700',     desc: 'Strong problem-solver — tackling complex algorithms!' },
   Expert:       { icon: '💎', color: '#3b82f6', glow: '#3b82f640', grad: 'from-blue-600 to-purple-700',   desc: 'Elite coder — mastering advanced data structures!' },
   Master:       { icon: '👑', color: '#f59e0b', glow: '#f59e0b40', grad: 'from-amber-500 to-orange-600',    desc: 'Top-tier competitive programmer — legendary!' },
+}
+
+// The starter code a question comes with for one language (what the editor is loaded with, and what it locks against)
+function starterFor(question, language) {
+  if (!question?.starter_code) return ''
+  try {
+    const sc = typeof question.starter_code === 'string' ? JSON.parse(question.starter_code) : question.starter_code
+    return sc[language] || sc.python || ''
+  } catch { return '' }
 }
 
 const LANGUAGES = [
@@ -419,6 +429,9 @@ export default function SkillAssessment() {
   const [finalTopicScores, setFinalTopicScores] = useState({})
 
   const editorRef = useRef(null)
+  // The starter code for the question on screen, in the language chosen: the editor locks its harness against this
+  const starterRef = useRef('')
+  starterRef.current = starterFor(currentQuestion, language)
 
   useEffect(() => {
     if (user?.skill_quiz_completed) navigate('/home')
@@ -764,7 +777,7 @@ export default function SkillAssessment() {
               language={LANGUAGES.find(l => l.value === language)?.monaco || 'python'}
               value={code}
               onChange={v => setCode(v || '')}
-              onMount={e => { editorRef.current = e }}
+              onMount={(e, monaco) => { editorRef.current = e; attachProtectedRegion(e, monaco, () => starterRef.current) }}
               theme="vs-dark"
               options={{
                 fontSize: 14, minimap: { enabled: false },

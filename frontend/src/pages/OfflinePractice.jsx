@@ -176,6 +176,9 @@ export default function OfflinePractice() {
   const [code,     setCode]     = useState('')
   const editorRef = useRef(null)
   const protectedRef = useRef(null)
+  // The starter code for the question on screen, in the language chosen: the editor locks its harness against this
+  const starterRef = useRef('')
+  starterRef.current = parseStarterCode(questions[activeQ]?.starter_code, language)
 
   // Problem panel width
   const [problemW,  setProblemW]  = useState(380)
@@ -593,7 +596,7 @@ export default function OfflinePractice() {
                     language={LANGUAGES.find(l => l.value === language)?.monaco || language}
                     theme="vs-dark" value={code}
                     onChange={v => setCode(v || '')}
-                    onMount={(e, monaco) => { editorRef.current = e; protectedRef.current = attachProtectedRegion(e, monaco) }}
+                    onMount={(e, monaco) => { editorRef.current = e; protectedRef.current = attachProtectedRegion(e, monaco, () => starterRef.current) }}
                     options={{ minimap: { enabled: false }, fontSize: 13.5, fontFamily: '"JetBrains Mono","Fira Code",monospace', fontLigatures: true, padding: { top: 16, bottom: 16 }, lineNumbers: 'on', scrollBeyondLastLine: false, renderLineHighlight: 'all', bracketPairColorization: { enabled: true }, smoothScrolling: true, cursorBlinking: 'smooth' }}
                   />
                 </div>

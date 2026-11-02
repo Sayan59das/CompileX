@@ -532,6 +532,9 @@ export default function Game() {
   const [question, setQuestion] = useState(null)
   const [lang, setLang] = useState('python')
   const [editorCode, setEditorCode] = useState(STARTER['python'])
+  // The starter code for the question on screen, in the language chosen: the editor locks its harness against this
+  const starterRef = useRef('')
+  starterRef.current = question ? generateCodeTemplate(question, lang) : STARTER[lang]
   const [leaderboard, setLeaderboard] = useState([])
   const [result, setResult] = useState(null)
   
@@ -2895,7 +2898,7 @@ export default function Game() {
             }}
             onMount={(editor, monaco) => {
               monaco.editor.setTheme('vsCodeDark')
-              attachProtectedRegion(editor, monaco)
+              attachProtectedRegion(editor, monaco, () => starterRef.current)
             }}
             options={{
               fontSize: 14,
