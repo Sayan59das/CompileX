@@ -518,7 +518,7 @@ export default function OfflinePractice() {
                           {q.diagram && (
                             <div className="rounded-xl overflow-hidden border border-white/[0.06]">
                               <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest px-3 py-2 border-b border-white/[0.05]">Diagram</p>
-                              <img src={q.diagram} alt="diagram" className="w-full" />
+                              <img src={q.diagram} alt="Diagram of the sample input" className="mx-auto block max-h-[420px] w-full object-contain" />
                             </div>
                           )}
                           {/* Test case examples (replaces Sample Input/Output) */}

@@ -3465,32 +3465,24 @@ async def _build_result(
 
     print(f"[ai] Function signature: {function_signature['function_name']}({len(function_signature['parameters'])} params) -> {function_signature['return_type']}")
 
-    # Generate diagram for tree/graph questions or image via Nvidia API
+    # A diagram for graph and tree questions, drawn from the question's own sample input and schema. Nothing is painted by
+    # an image model (it cannot be trusted to draw exactly these edges), and when the structure cannot be established for
+    # certain there is no diagram rather than a wrong one.
     diagram = None
-    question_text_for_check = f"{title}\n{raw_desc}"
-    tags = [data.get("topic", topic) or "general"]
-    
     try:
-        from app.services.nvidia_image_service import nvidia_image_service
-        print(f"[ai] Checking if image is required via Nvidia LLM...")
-        diagram = await nvidia_image_service.analyze_and_generate_image(question_text_for_check)
+        from app.services.diagram_generator import diagram_generator
+        diagram = diagram_generator.diagram_for_question({
+            "title": title,
+            "topic": data.get("topic", topic),
+            "problem_statement": raw_desc,
+            "input_format": input_fmt or data.get("input_format", ""),
+            "input_schema": data.get("input_schema"),
+            "sample_input": si,
+        })
+        if diagram:
+            print(f"[ai] Diagram drawn for: {title}")
     except Exception as e:
-        print(f"[ai] Nvidia API image generation failed: {e}")
-        
-    if not diagram:
-        try:
-            from app.services.diagram_generator import diagram_generator
-            # Only check title and description, NOT sample input
-            if diagram_generator.should_generate_diagram(question_text_for_check, tags):
-                print(f"[ai] Generating diagram for: {title}")
-                # Pass the original description (not full_description) for better BST detection
-                diagram = diagram_generator.generate_diagram(title, raw_desc, si)
-                if diagram:
-                    print(f"[ai] Diagram generated successfully")
-                else:
-                    print(f"[ai] Diagram generation returned None")
-        except Exception as e:
-            print(f"[ai] Diagram generation failed: {e}")
+        print(f"[ai] Diagram generation failed: {e}")
 
     # Generate function-based starter code using the function signature
     # The test harness (I/O parsing) is added automatically at execution time

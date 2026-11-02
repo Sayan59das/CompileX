@@ -23,6 +23,13 @@ jobs:
       - name: Explainer video endpoints
         # Drives a stub renderer, so no manim, ffmpeg or API key is needed.
         run: python backend/tests/test_videogen.py
+      - name: Graph and tree diagrams
+        # Draws every graph and tree question of the reviewed bank, checks each picture against its data, and recomputes
+        # the questions' own answers from what is drawn.
+        working-directory: backend
+        run: |
+          pip install pytest
+          pytest tests/test_diagrams.py tests/test_diagrams_older_templates.py -q
 
   question-service:
     name: Question service

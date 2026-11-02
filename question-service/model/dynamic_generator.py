@@ -958,7 +958,7 @@ _PS_DIJKSTRA = [
         f"Use -1 for nodes that cannot be reached."
     ),
     lambda n, max_w: (
-        f"You have a weighted graph with {n} vertices (edge weights ≤ {max_w}). "
+        f"You have a weighted undirected graph with {n} vertices (edge weights ≤ {max_w}). "
         f"Find the shortest weighted distance from `src` to each other node. "
         f"Output -1 if a node is unreachable."
     ),
@@ -968,7 +968,7 @@ _PS_DIJKSTRA = [
         f"Unreachable nodes should output -1."
     ),
     lambda n, max_w: (
-        f"Apply Dijkstra's shortest path algorithm on a {n}-node graph "
+        f"Apply Dijkstra's shortest path algorithm on a {n}-node undirected graph "
         f"with edge weights in [1, {max_w}]. "
         f"Return the distance array from `src`; use -1 for disconnected nodes."
     ),
