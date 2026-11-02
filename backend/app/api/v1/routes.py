@@ -58,6 +58,7 @@ from app.schemas.schemas import (
     UserProgressResponse,
 )
 from app.services import question_history
+from app.services import starter_lock
 from app.services.ai_generator import ai_generator
 from app.services.code_executor import TestCase, code_executor
 from app.services.lobby_manager import lobby_manager
@@ -954,6 +955,20 @@ async def join_lobby(
     return {"player_id": player.id, "lobby_code": lobby.code}
 
 
+@router.get("/leaderboard")
+async def global_leaderboard(
+    limit: int = Query(10, ge=1, le=50),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """The top players by rating, for the dashboard's "Top Players" panel (which reads `username` and `score`)."""
+    result = await db.execute(select(User).order_by(User.rating.desc(), User.id).limit(limit))
+    return [
+        {"username": u.username, "rating": u.rating, "score": u.rating, "games_played": u.games_played or 0, "wins": u.wins or 0}
+        for u in result.scalars().all()
+    ]
+
+
 @router.get("/lobbies/{lobby_id}/leaderboard")
 async def get_lobby_leaderboard(lobby_id: int):
     return {"leaderboard": lobby_manager.get_leaderboard(lobby_id)}
@@ -1167,6 +1182,14 @@ from app.schemas.schemas import (
 )
 
 
+def _locked_code(code: str, language: str, question) -> str:
+    """The code to grade: the player's part plus the harness the server holds (see services/starter_lock.py)."""
+    try:
+        return starter_lock.enforce(code, language, getattr(question, "starter_code", None))
+    except starter_lock.LockedHarnessError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.post("/execute", response_model=CustomRunResponse)
 async def execute_custom_run(
     req: CustomRunRequest,
@@ -1176,9 +1199,12 @@ async def execute_custom_run(
     test_cases = [TestCase(input_data=inp, expected_output="") for inp in req.inputs]
     
     function_signature = None
+    run_code = req.code
     if req.question_id:
         result = await db.execute(select(Question).where(Question.id == req.question_id))
         question = result.scalar_one_or_none()
+        if question:
+            run_code = _locked_code(req.code, req.language.value, question)
         if question and question.parameters:
             try:
                 params = json.loads(question.parameters) if isinstance(question.parameters, str) else question.parameters
@@ -1191,7 +1217,7 @@ async def execute_custom_run(
                 print(f"[Execute] Could not parse function signature: {e}")
 
     execution_result = await code_executor.execute_code(
-        req.code,
+        run_code,
         req.language.value,
         test_cases,
         time_limit_ms=3000,
@@ -1316,7 +1342,7 @@ async def run_tests(
         print(f"[RunTests] Could not parse function signature: {e}")
 
     execution_result = await code_executor.execute_code(
-        submission.code,
+        _locked_code(submission.code, submission.language.value, question),
         submission.language.value,
         test_cases,
         question.max_execution_time_ms,
@@ -1399,7 +1425,7 @@ async def submit_code(
         print(f"[Submit] Could not parse function signature: {e}")
 
     execution_result = await code_executor.execute_code(
-        submission.code,
+        _locked_code(submission.code, submission.language.value, question),
         submission.language.value,
         test_cases,
         question.max_execution_time_ms,

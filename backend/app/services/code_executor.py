@@ -40,6 +40,33 @@ try:
 except Exception as e:
     print(f"[Sandbox] Docker not available: {e}")
     docker_client = None
+
+
+def _reconnect_docker() -> bool:
+    """Restarting Docker Desktop kills the connection the client opened at import ("The pipe is being closed"): open a new one."""
+    global docker_client, DOCKER_AVAILABLE
+    try:
+        import docker as _docker
+
+        fresh = _docker.from_env()
+        fresh.ping()
+    except Exception as err:
+        print(f"[Sandbox] Could not reconnect to Docker: {err}")
+        return False
+    docker_client = fresh
+    DOCKER_AVAILABLE = True
+    print("[Sandbox] Reconnected to Docker")
+    return True
+
+
+def _run_container(**kwargs):
+    """Start a container; if the connection has gone stale, reconnect once and try again."""
+    try:
+        return docker_client.containers.run(**kwargs)
+    except Exception:
+        if not _reconnect_docker():
+            raise
+        return docker_client.containers.run(**kwargs)
     DOCKER_AVAILABLE = False
 
 LANGUAGE_CONFIG = {
@@ -509,7 +536,7 @@ class CodeExecutor:
             passed = 0
 
             try:
-                container = docker_client.containers.run(
+                container = _run_container(
                     image=config["docker_image"],
                     command=["tail", "-f", "/dev/null"],
                     detach=True,

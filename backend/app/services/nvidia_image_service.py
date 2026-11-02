@@ -8,6 +8,7 @@ class NvidiaImageService:
         self.api_key = os.getenv("NVIDIA_API_KEY", "REDACTED_NVIDIA_KEY")
         self.llm_url = "https://integrate.api.nvidia.com/v1/chat/completions"
         self.llm_model = "meta/llama-3.1-8b-instruct"
+        self.llm_gone = False   # set when NVIDIA answers 410 Gone (the model is retired): stop asking on every question
         # Since standard image endpoints like stabilityai returned 404 in tests, 
         # we will use the most standard OpenAI-compatible generation endpoint supported by NIM
         # Fallback to the standard stable-diffusion-3-medium string used by NVIDIA
@@ -23,8 +24,10 @@ class NvidiaImageService:
         Analyzes a question to check if it requires an image.
         If YES, it generates an image using NVIDIA's API and returns the base64 string.
         """
+        if self.llm_gone:
+            return None
         image_prompt = await self._analyze_question(question_text)
-        
+
         if image_prompt:
             print(f"[NvidiaImage] LLM decided image is needed. Prompt: {image_prompt}")
             image_b64 = await self._generate_image(image_prompt)
@@ -69,7 +72,11 @@ class NvidiaImageService:
                     if len(parts) > 1:
                         return parts[1].strip()
             else:
-                print(f"[NvidiaImage] LLM returned status {response.status_code}: {response.text}")
+                if response.status_code == 410:
+                    self.llm_gone = True
+                    print(f"[NvidiaImage] The model {self.llm_model} is retired (410 Gone): image analysis is switched off until the server restarts")
+                else:
+                    print(f"[NvidiaImage] LLM returned status {response.status_code}: {response.text}")
                 
         except Exception as e:
             print(f"[NvidiaImage] Error analyzing question: {e}")
