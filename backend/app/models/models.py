@@ -187,6 +187,46 @@ class UserQuestionHistory(Base):
     seen_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+class AssessmentItem(Base):
+    """One question of a player's Skill Assessment, held and graded by the server.
+
+    The full question (with every test case) stays here; the player only ever gets the sample tests. The clock starts when
+    the question is issued, and the result is filled in once, when the server has run the player's code on all tests."""
+    __tablename__ = "assessment_items"
+    __table_args__ = (Index("ix_assessment_user_slot", "user_id", "slot"),)
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    slot = Column(Integer, nullable=False)
+    difficulty = Column(String(10), nullable=False)
+    skill = Column(String(50), nullable=False)
+    topic = Column(String(100), nullable=True)
+    title = Column(String(255), nullable=True)
+    question_json = Column(Text, nullable=False)   # the generator's question, test cases included
+    issued_at = Column(Float, nullable=False)      # epoch seconds
+    time_limit_seconds = Column(Integer, nullable=False)
+
+    graded_at = Column(Float, nullable=True)       # None until the player submits
+    language = Column(String(20), nullable=True)
+    passed_tests = Column(Integer, default=0)
+    total_tests = Column(Integer, default=0)
+    solved = Column(Boolean, default=False)
+    points_earned = Column(Integer, default=0)
+    time_taken_seconds = Column(Integer, nullable=True)
+    timed_out = Column(Boolean, default=False)
+
+
+class IssuedQuestion(Base):
+    """A generated question the server keeps in full while the browser holds the public copy (see services/hidden_tests.py)."""
+    __tablename__ = "issued_questions"
+    __table_args__ = (Index("ix_issued_user", "user_id"),)
+
+    ref = Column(String(64), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    question_json = Column(Text, nullable=False)   # the generator's question, every test case included
+    issued_at = Column(Float, nullable=False)      # epoch seconds
+
+
 class TournamentStatus(str, enum.Enum):
     REGISTRATION = "registration"
     IN_PROGRESS = "in_progress"

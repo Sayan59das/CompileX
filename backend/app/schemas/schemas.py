@@ -50,7 +50,8 @@ class QuestionBase(BaseModel):
 
 
 class QuestionCreate(QuestionBase):
-    pass
+    # Set when the question came from the generator: the server then builds it from its own full copy
+    ref: Optional[str] = None
 
 
 class QuestionResponse(QuestionBase):
@@ -187,6 +188,7 @@ class AIQuestionResponse(BaseModel):
     return_type: Optional[str] = "void"
     return_description: Optional[str] = "The result"
     diagram: Optional[str] = None  # Base64 encoded image for tree/graph questions
+    ref: Optional[str] = None  # hand it back to POST /questions; the tests here are the public copy
 
 
 class TopicStat(BaseModel):

@@ -1,4 +1,6 @@
 import json
+import secrets
+import time
 import requests
 from datetime import datetime, timedelta
 from typing import Optional
@@ -8,15 +10,18 @@ import jwt
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
-from sqlalchemy import select, func as sa_func, desc
+from sqlalchemy import delete, select, func as sa_func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.db.database import get_db
 from app.models.models import (
     Achievement,
+    AssessmentItem,
     DifficultyLevel,
     GameMode,
+    IssuedQuestion,
+    Language,
     Lobby,
     Player,
     Question,
@@ -57,6 +62,8 @@ from app.schemas.schemas import (
     DailyProgress,
     UserProgressResponse,
 )
+from app.services import assessment_grading as grading
+from app.services import hidden_tests
 from app.services import question_history
 from app.services import starter_lock
 from app.services.ai_generator import ai_generator
@@ -1051,6 +1058,16 @@ async def _lobby_audience(db: AsyncSession, current_user: User, lobby_id: Option
     return [current_user.id]
 
 
+async def _issue_question(db: AsyncSession, user_id: int, data: dict) -> dict:
+    """Keep a generated question whole on the server and return the browser's public copy of it (hidden tests blanked)."""
+    now = time.time()
+    await db.execute(delete(IssuedQuestion).where(IssuedQuestion.issued_at < now - hidden_tests.TTL_SECONDS))
+    ref = secrets.token_urlsafe(16)
+    db.add(IssuedQuestion(ref=ref, user_id=user_id, question_json=json.dumps(data, default=str), issued_at=now))
+    await db.commit()
+    return hidden_tests.public_question(data, ref)
+
+
 @router.post("/questions/generate", response_model=AIQuestionResponse)
 async def generate_question(
     request: AIQuestionRequest,
@@ -1081,12 +1098,13 @@ async def generate_question(
             db, [current_user.id], data.get("base_title") or data.get("title"),
             data.get("topic"), data.get("difficulty"),
         )
-    return data
+    return await _issue_question(db, current_user.id, data)
 
 
 @router.post("/questions/prompt", response_model=AIQuestionResponse)
 async def generate_from_prompt(
     request: AIPromptRequest,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     allowed, msg = _check_rate_limit(current_user.id, settings.AI_RATE_LIMIT_PER_MINUTE)
@@ -1097,7 +1115,7 @@ async def generate_from_prompt(
         data = await ai_generator.generate_from_prompt(
             request.prompt, request.difficulty
         )
-    return data
+    return await _issue_question(db, current_user.id, data)
 
 
 @router.get("/questions/topics")
@@ -1147,13 +1165,14 @@ async def get_limits(current_user: User = Depends(get_current_user)):
 async def parse_syllabus(
     file: UploadFile = File(...),
     num_questions: int = 1,
+    db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     content = await file.read()
     data = await ai_generator.parse_syllabus_and_generate(
         content, file.filename, num_questions
     )
-    return data
+    return [await _issue_question(db, current_user.id, q) for q in data]
 
 
 @router.post(
@@ -1164,10 +1183,29 @@ async def create_question(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    db_question = Question(**question.model_dump())
+    payload = question.model_dump()
+    ref = payload.pop("ref", None)
+    if ref:
+        # A generated question: its tests, harness and signature come from the server's copy, never from the client's.
+        issued = (
+            await db.execute(
+                select(IssuedQuestion).where(IssuedQuestion.ref == ref, IssuedQuestion.user_id == current_user.id)
+            )
+        ).scalar_one_or_none()
+        if not issued:
+            raise HTTPException(status_code=410, detail="This question has expired. Generate it again.")
+        stored = json.loads(issued.question_json)
+        for field in hidden_tests.SERVER_FIELDS:
+            if stored.get(field) is not None:
+                payload[field] = stored[field]
+    db_question = Question(**payload)
     db.add(db_question)
     await db.commit()
     await db.refresh(db_question)
+    if ref:
+        return QuestionResponse.model_validate(db_question).model_copy(
+            update={"test_cases": hidden_tests.public_tests(db_question.test_cases)}
+        )
     return db_question
 
 
@@ -1361,6 +1399,7 @@ async def run_tests(
                 "error": res.error,
             }
         )
+    test_case_details = hidden_tests.redact_details(test_case_details)
 
     passed = execution_result.passed_tests == execution_result.total_tests
 
@@ -1445,6 +1484,8 @@ async def submit_code(
                 "error": res.error,
             }
         )
+    # Hidden tests never leave the server: not in the response, and not in what the analyzer is given (its advice is shown)
+    test_case_details = hidden_tests.redact_details(test_case_details)
 
     # AI Logic Analysis - analyze code logic and provide partial credit
     from app.services.logic_analyzer import logic_analyzer
@@ -2177,15 +2218,90 @@ ASSESSMENT_PLAN = [
     {"difficulty": DifficultyLevel.HARD,   "topic": "dynamic programming",  "skill": "advanced"},
 ]
 
-ADAPTIVE_DIFFICULTY_MAP = {
-    # (current_slot_difficulty, passed) -> next_slot_difficulty
-    (DifficultyLevel.EASY,   True):  DifficultyLevel.MEDIUM,
-    (DifficultyLevel.EASY,   False): DifficultyLevel.EASY,
-    (DifficultyLevel.MEDIUM, True):  DifficultyLevel.HARD,
-    (DifficultyLevel.MEDIUM, False): DifficultyLevel.EASY,
-    (DifficultyLevel.HARD,   True):  DifficultyLevel.HARD,
-    (DifficultyLevel.HARD,   False): DifficultyLevel.MEDIUM,
-}
+# One assessment request at a time per player, so a double click cannot grade a question twice.
+_assessment_locks = defaultdict(asyncio.Lock)
+
+
+async def _assessment_items(db: AsyncSession, user_id: int) -> list[AssessmentItem]:
+    rows = await db.execute(
+        select(AssessmentItem)
+        .where(AssessmentItem.user_id == user_id)
+        .order_by(AssessmentItem.slot, AssessmentItem.id)
+    )
+    return list(rows.scalars().all())
+
+
+async def _owned_item(db: AsyncSession, user_id: int, item_id: int) -> AssessmentItem:
+    item = (
+        await db.execute(
+            select(AssessmentItem).where(AssessmentItem.id == item_id, AssessmentItem.user_id == user_id)
+        )
+    ).scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=404, detail="Assessment question not found")
+    return item
+
+
+def _close_unanswered(item: AssessmentItem, now: float) -> None:
+    """Close an open question as unanswered: nothing passed, no points, no speed bonus."""
+    item.graded_at = now
+    item.passed_tests = 0
+    item.total_tests = len(grading.parse_tests(json.loads(item.question_json).get("test_cases")))
+    item.solved = False
+    item.points_earned = 0
+    item.time_taken_seconds = int(now - item.issued_at)
+    item.timed_out = True
+
+
+def _issued_view(item: AssessmentItem, items: list[AssessmentItem], now: float) -> dict:
+    """An assessment question as the player gets it: sample tests only, with the clock the server keeps."""
+    return {
+        **grading.public_question(json.loads(item.question_json)),
+        "item_id": item.id,
+        "slot": item.slot,
+        "skill_dimension": item.skill,
+        "difficulty": item.difficulty,
+        "topic": item.topic,
+        "max_points": grading.max_points(item.slot),
+        "time_limit_seconds": item.time_limit_seconds,
+        "time_remaining_seconds": grading.remaining_seconds(item.issued_at, item.time_limit_seconds, now),
+        "previous_results": [grading.result_view(i) for i in items if i.graded_at is not None],
+    }
+
+
+async def _run_assessment_tests(question: dict, code: str, language: str, tests: list[dict]) -> list[dict]:
+    """Run the player's code (held to the stored harness) on the given tests. Raises starter_lock.LockedHarnessError."""
+    locked = starter_lock.enforce(code, language, question.get("starter_code"))
+    function_signature = None
+    try:
+        params = question.get("parameters") or "[]"
+        params = json.loads(params) if isinstance(params, str) else params
+        if params:
+            function_signature = {
+                "function_name": question.get("function_name") or "solve",
+                "parameters": params,
+                "return_type": question.get("return_type") or "int",
+            }
+    except ValueError:
+        pass
+    execution = await code_executor.execute_code(
+        locked,
+        language,
+        [TestCase(input_data=grading.test_input(t), expected_output=grading.test_output(t)) for t in tests],
+        time_limit_ms=3000,
+        function_signature=function_signature,
+    )
+    details = []
+    for i, test in enumerate(tests):
+        res = execution.results[i] if i < len(execution.results) else None
+        details.append({
+            "input": grading.test_input(test),
+            "expected": grading.test_output(test).strip(),
+            "output": (res.output or "").strip() if res else "",
+            "error": res.error if res else "The code could not be run",
+            "passed": bool(res and res.passed),
+        })
+    return details
 
 
 @router.post("/skill-assessment/generate-question")
@@ -2195,74 +2311,175 @@ async def generate_assessment_question(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Generate a unique AI question for the skill assessment.
-    Each user gets different questions because the AI generator is seeded
-    with the user_id and tracks recently seen titles.
+    Hand out the player's next Skill Assessment question.
 
-    Body: { slot: int, difficulty_override: str|null, exclude_titles: list[str] }
+    The server decides which question comes next and how hard it is, from the answers it graded itself; `slot` and
+    `difficulty_override` in the body are ignored. While a question is open, asking again returns that same question with
+    the time it has left, so a question cannot be re-rolled. Only the sample tests are sent; the rest stay on the server.
+
+    Body: { exclude_titles: list[str] }
     """
-    slot = int(body.get("slot", 0))
-    difficulty_override = body.get("difficulty_override")
-    exclude_titles = body.get("exclude_titles", [])
+    if current_user.skill_quiz_completed:
+        raise HTTPException(status_code=409, detail="The skill assessment is already completed")
+    user_id = current_user.id
+    exclude_titles = body.get("exclude_titles") or []
 
-    plan = ASSESSMENT_PLAN[min(slot, len(ASSESSMENT_PLAN) - 1)]
+    async with _assessment_locks[user_id]:
+        now = time.time()
+        items = await _assessment_items(db, user_id)
+        stale = [i for i in items if i.graded_at is None and grading.expired(i.issued_at, i.time_limit_seconds, now)]
+        for item in stale:
+            _close_unanswered(item, now)
+        if stale:
+            await db.commit()
 
-    # Apply adaptive difficulty override
-    if difficulty_override:
-        diff_map = {
-            "easy":   DifficultyLevel.EASY,
-            "medium": DifficultyLevel.MEDIUM,
-            "hard":   DifficultyLevel.HARD,
-        }
-        difficulty = diff_map.get(difficulty_override, plan["difficulty"])
-    else:
-        difficulty = plan["difficulty"]
+        open_item = next((i for i in items if i.graded_at is None), None)
+        if open_item:
+            return _issued_view(open_item, items, now)
 
-    topic = plan["topic"]
-    skill = plan["skill"]
+        slot = len(items)
+        if slot >= grading.TOTAL_QUESTIONS:
+            raise HTTPException(status_code=409, detail="All questions are answered. Finish the assessment.")
+        plan = ASSESSMENT_PLAN[slot]
+        if slot == 0:
+            difficulty = plan["difficulty"]
+        else:
+            prev = items[-1]
+            difficulty = DifficultyLevel(grading.next_difficulty(prev.difficulty, prev.passed_tests, prev.total_tests))
+        topic = plan["topic"]
 
-    # Rate limit check
-    allowed, msg = _check_rate_limit(current_user.id, settings.AI_RATE_LIMIT_PER_MINUTE)
-    if not allowed:
-        raise HTTPException(status_code=429, detail=msg)
+        allowed, msg = _check_rate_limit(user_id, settings.AI_RATE_LIMIT_PER_MINUTE)
+        if not allowed:
+            raise HTTPException(status_code=429, detail=msg)
 
-    seen = await question_history.seen_titles(db, [current_user.id], topic)
-    exclude = list(set(seen) | {t.lower().strip() for t in exclude_titles if t})
+        seen = await question_history.seen_titles(db, [user_id], topic)
+        exclude = set(seen) | {t.lower().strip() for t in exclude_titles if isinstance(t, str) and t}
+        exclude |= {i.title.lower().strip() for i in items if i.title}
 
-    async with _generation_locks[current_user.id]:
-        data = await ai_generator.generate_question(
-            difficulty=difficulty,
-            topic=topic,
-            num_test_cases=5,
-            exclude_titles=exclude,
+        async with _generation_locks[user_id]:
+            data = await ai_generator.generate_question(
+                difficulty=difficulty,
+                topic=topic,
+                num_test_cases=5,
+                exclude_titles=list(exclude),
+            )
+        if not grading.parse_tests(data.get("test_cases")):
+            raise HTTPException(status_code=503, detail="The question came without tests. Please try again.")
+
+        await question_history.record_seen(
+            db, [user_id], data.get("base_title") or data.get("title"),
+            data.get("topic"), difficulty,
         )
 
-    await question_history.record_seen(
-        db, [current_user.id], data.get("base_title") or data.get("title"),
-        data.get("topic"), difficulty,
-    )
+        item = AssessmentItem(
+            user_id=user_id,
+            slot=slot,
+            difficulty=difficulty.value,
+            skill=plan["skill"],
+            topic=topic,
+            title=(data.get("title") or "")[:255] or None,
+            question_json=json.dumps({**data, "difficulty": difficulty.value}),
+            issued_at=time.time(),
+            time_limit_seconds=grading.time_limit(difficulty.value),
+        )
+        db.add(item)
+        await db.commit()
+        await db.refresh(item)
+        # read the rows again: record_seen may have rolled back, which leaves the ones loaded above expired
+        return _issued_view(item, await _assessment_items(db, user_id), time.time())
 
+
+class AssessmentRunRequest(BaseModel):
+    item_id: int
+    code: str
+    language: Language
+
+
+class AssessmentAnswerRequest(AssessmentRunRequest):
+    timed_out: bool = False   # the page's timer sent this answer
+
+
+@router.post("/skill-assessment/run")
+async def run_assessment_samples(
+    body: AssessmentRunRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """The Run button: the player's code on the sample tests of their open question. Nothing is graded or saved."""
+    item = await _owned_item(db, current_user.id, body.item_id)
+    if item.graded_at is not None:
+        raise HTTPException(status_code=409, detail="This question was already submitted")
+    question = json.loads(item.question_json)
+    tests = grading.parse_tests(question.get("test_cases"))[: grading.SAMPLE_TESTS]
+    try:
+        details = await _run_assessment_tests(question, body.code, body.language.value, tests)
+    except starter_lock.LockedHarnessError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     return {
-        **data,
-        "slot": slot,
-        "skill_dimension": skill,
-        "difficulty": difficulty.value,
-        "topic": topic,
+        "tests": details,
+        "passed_tests": sum(1 for d in details if d["passed"]),
+        "total_tests": len(details),
     }
 
 
-class QuizResult(BaseModel):
-    difficulty: str
-    solved: bool
-    time_taken_seconds: int
-    points_earned: int = 0
-    topic: str = ""
-    passed_tests: int = 0
-    total_tests: int = 0
+@router.post("/skill-assessment/submit-question")
+async def submit_assessment_question(
+    body: AssessmentAnswerRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Grade one Skill Assessment answer on the server.
+
+    The player's code, held to the locked harness, runs on every test of the question; the score, the time taken (from
+    the server's clock) and the next difficulty are decided here. Each question is graded once.
+    """
+    if current_user.skill_quiz_completed:
+        raise HTTPException(status_code=409, detail="The skill assessment is already completed")
+    user_id = current_user.id
+
+    async with _assessment_locks[user_id]:
+        now = time.time()
+        item = await _owned_item(db, user_id, body.item_id)
+        if item.graded_at is not None:
+            raise HTTPException(status_code=409, detail="This question was already submitted")
+
+        question = json.loads(item.question_json)
+        tests = grading.parse_tests(question.get("test_cases"))
+        details: list[dict] = []
+        if not grading.expired(item.issued_at, item.time_limit_seconds, now):   # a late answer scores nothing; not run
+            try:
+                details = await _run_assessment_tests(question, body.code, body.language.value, tests)
+            except starter_lock.LockedHarnessError as e:
+                if not body.timed_out:
+                    raise HTTPException(status_code=400, detail=str(e))
+                # the timer sent code whose harness was broken: graded as nothing passed
+
+        passed = sum(1 for d in details if d["passed"])
+        result = grading.grade(item.slot, passed, len(tests), now - item.issued_at, item.time_limit_seconds, body.timed_out)
+        item.graded_at = now
+        item.language = body.language.value
+        item.passed_tests = passed
+        item.total_tests = len(tests)
+        item.solved = result["solved"]
+        item.points_earned = result["points_earned"]
+        item.time_taken_seconds = result["time_taken_seconds"]
+        item.timed_out = result["timed_out"]
+        await db.commit()
+
+        last = item.slot + 1 >= grading.TOTAL_QUESTIONS
+        return {
+            **grading.result_view(item),
+            "late": result["late"],
+            "tests": details,
+            "finished": last,
+            "next_difficulty": None if last else grading.next_difficulty(item.difficulty, passed, len(tests)),
+        }
 
 
 class SkillAssessmentRequest(BaseModel):
-    results: list[QuizResult]
+    skip: bool = False   # take the default rating without answering, as the page offers
+    results: list = []   # sent by older pages; ignored, the server grades the answers itself
 
 
 @router.post("/skill-assessment")
@@ -2272,8 +2489,8 @@ async def submit_skill_assessment(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Submit skill assessment results and set the user's initial ELO rating.
-    Can only be completed once per user.
+    Finish the Skill Assessment and set the user's starting ELO rating from the answers the server graded.
+    A question still open counts as unanswered; `skip: true` gives the default rating. Can only be completed once.
     """
     if current_user.skill_quiz_completed:
         return {
@@ -2281,32 +2498,34 @@ async def submit_skill_assessment(
             "tier": get_tier(current_user.rating),
             "already_completed": True,
         }
+    user_id = current_user.id
 
-    results_dicts = [r.model_dump() for r in body.results]
-    new_rating = calculate_initial_rating(results_dicts)
+    async with _assessment_locks[user_id]:
+        now = time.time()
+        items = await _assessment_items(db, user_id)
+        for item in items:
+            if item.graded_at is None:
+                _close_unanswered(item, now)
+        graded = [] if body.skip else items
 
-    # Build topic skill breakdown
-    topic_scores: dict[str, list[int]] = {}
-    for r in results_dicts:
-        topic = r.get("topic", "general")
-        passed = r.get("passed_tests", 0)
-        total  = r.get("total_tests", 1) or 1
-        score  = int((passed / total) * 100)
-        topic_scores.setdefault(topic, []).append(score)
+        new_rating = calculate_initial_rating([grading.rating_input(i) for i in graded])
+        topic_averages = grading.topic_scores(graded)
+        results = [grading.result_view(i) for i in graded]
 
-    topic_averages = {t: int(sum(v) / len(v)) for t, v in topic_scores.items()}
+        for item in items:   # the run is over; a reset assessment starts from question 1 again
+            await db.delete(item)
+        current_user.rating = new_rating
+        current_user.peak_rating = new_rating
+        current_user.skill_quiz_completed = True
 
-    current_user.rating = new_rating
-    current_user.peak_rating = new_rating
-    current_user.skill_quiz_completed = True
-
-    await db.commit()
-    await db.refresh(current_user)
+        await db.commit()
+        await db.refresh(current_user)
 
     return {
         "rating": new_rating,
         "tier": get_tier(new_rating),
         "topic_scores": topic_averages,
+        "results": results,
         "already_completed": False,
         "message": f"Assessment complete! Your starting rating is {new_rating}.",
     }

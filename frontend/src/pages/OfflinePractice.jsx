@@ -341,7 +341,7 @@ export default function OfflinePractice() {
     const q = questions[activeQ]; if (!q) return
     setSubmitting(true); setSubmitResult(null); setBottomTab('testcases'); setBottomOpen(true)
     try {
-      const { data: dbQ } = await api.post('/questions', { title: q.title, description: q.description, difficulty: q.difficulty, topic: q.topic || 'general', starter_code: q.starter_code, test_cases: q.test_cases })
+      const { data: dbQ } = await api.post('/questions', { title: q.title, description: q.description, difficulty: q.difficulty, topic: q.topic || 'general', starter_code: q.starter_code, test_cases: q.test_cases, ref: q.ref })
       const { data: lobby } = await api.post('/lobbies', { name: 'solo_' + Math.random().toString(36).slice(7), max_players: 2, time_limit: 3600 })
       await api.post(`/lobbies/${lobby.id}/join`, {})
       const { data: sub } = await api.post('/submissions', { code, language, question_id: dbQ.id })
@@ -357,7 +357,7 @@ export default function OfflinePractice() {
     const q = questions[activeQ]; if (!q) return
     setSubmitting(true); setSubmitResult(null); setBottomTab('testcases'); setBottomOpen(true)
     try {
-      const { data: dbQ } = await api.post('/questions', { title: q.title, description: q.description, difficulty: q.difficulty, topic: q.topic || 'general', starter_code: q.starter_code, test_cases: q.test_cases })
+      const { data: dbQ } = await api.post('/questions', { title: q.title, description: q.description, difficulty: q.difficulty, topic: q.topic || 'general', starter_code: q.starter_code, test_cases: q.test_cases, ref: q.ref })
       const { data: sub } = await api.post('/run-tests', { code, language, question_id: dbQ.id })
       setSubmitResult(sub)
       if (sub.test_case_details) setTcResults(sub.test_case_details)

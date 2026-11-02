@@ -41,6 +41,22 @@ function starterFor(question, language) {
   } catch { return '' }
 }
 
+// A graded answer from the server, in the shape the page renders
+function fromServerResult(r) {
+  return {
+    slot: r.slot, title: r.title, difficulty: r.difficulty, skillDimension: r.skill_dimension,
+    passed: r.passed, partial: r.partial, passedTests: r.passed_tests, totalTests: r.total_tests,
+    pointsEarned: r.points_earned, maxPoints: r.max_points, timeTaken: r.time_taken_seconds, timedOut: r.timed_out,
+  }
+}
+
+// Per-test results from the server (the Run and Submit panels)
+function fromServerTests(tests) {
+  return (tests || []).map(t => ({
+    input: t.input, expected: t.expected, output: t.output || t.error || '', passed: t.passed,
+  }))
+}
+
 const LANGUAGES = [
   { value: 'python',     label: 'Python',     icon: '🐍', monaco: 'python'     },
   { value: 'javascript', label: 'JavaScript', icon: '💛', monaco: 'javascript' },
@@ -58,7 +74,7 @@ function stripSampleSections(description) {
     .replace(/\*\*Sample Output\*\*[\s\S]*?(?=\*\*[A-Z]|\s*$)/gi, '')
     .trim()
 }
-function CircularTimer({ seconds, onExpire, paused, key: _key }) {
+function CircularTimer({ seconds, total, onExpire, paused }) {
   const [remaining, setRemaining] = useState(seconds)
   const ref = useRef(null)
 
@@ -75,7 +91,7 @@ function CircularTimer({ seconds, onExpire, paused, key: _key }) {
     return () => clearInterval(ref.current)
   }, [seconds, paused, onExpire])
 
-  const pct = remaining / seconds
+  const pct = (total || seconds) > 0 ? remaining / (total || seconds) : 0
   const r = 52, cx = 60, cy = 60, circ = 2 * Math.PI * r
   const color = pct > 0.5 ? '#10b981' : pct > 0.25 ? '#f59e0b' : '#ef4444'
   const mins = Math.floor(remaining / 60), secs = remaining % 60
@@ -411,8 +427,10 @@ export default function SkillAssessment() {
   const [currentSlot, setCurrentSlot] = useState(0)
   const [currentDiff, setCurrentDiff] = useState('easy')
   const [timerKey, setTimerKey] = useState(0)
-  const [startTime, setStartTime] = useState(null)
+  const [timeLeft, setTimeLeft] = useState(300)      // from the server's clock when the question arrived
+  const [timeLimit, setTimeLimit] = useState(300)
   const [timeExpired, setTimeExpired] = useState(false)
+  const [submitted, setSubmitted] = useState(false)  // the server has graded the question on screen
 
   // Execution state
   const [running, setRunning] = useState(false)
@@ -429,13 +447,18 @@ export default function SkillAssessment() {
   const [finalTopicScores, setFinalTopicScores] = useState({})
 
   const editorRef = useRef(null)
+  // The latest editor text, so an answer sent by the timer carries what was typed last
+  const codeRef = useRef('')
+  codeRef.current = code
   // The starter code for the question on screen, in the language chosen: the editor locks its harness against this
   const starterRef = useRef('')
   starterRef.current = starterFor(currentQuestion, language)
 
+  // Someone who already finished is sent home when they open this page. It only applies on the intro screen:
+  // finishing refreshes the user (completed = true) and the result screen has to stay up for them to read.
   useEffect(() => {
-    if (user?.skill_quiz_completed) navigate('/home')
-  }, [user, navigate])
+    if (user?.skill_quiz_completed && phase === 'intro') navigate('/home')
+  }, [user, phase, navigate])
 
   // When language changes, reset to starter code for current question
   useEffect(() => {
@@ -449,36 +472,34 @@ export default function SkillAssessment() {
     }
   }, [language, currentQuestion])
 
-  // ── Load a question from the AI ──────────────────────────────────────────
-  async function loadQuestion(slot, diffOverride, prevResults) {
+  // ── Load the next question ───────────────────────────────────────────
+  // The server picks the question and its difficulty and keeps the clock; an open question comes back with the time it has left.
+  async function loadQuestion() {
     setPhase('loading')
     setRunResult(null)
     setExecError('')
     setTimeExpired(false)
+    setSubmitted(false)
 
     try {
-      const { data } = await api.post('/skill-assessment/generate-question', {
-        slot,
-        difficulty_override: diffOverride || null,
-        exclude_titles: [...usedTitles, ...(prevResults || []).map(r => r.title).filter(Boolean)],
-      })
+      const { data } = await api.post('/skill-assessment/generate-question', { exclude_titles: usedTitles })
 
       setCurrentQuestion(data)
-      setCurrentDiff(data.difficulty || diffOverride || 'easy')
-
-      // Set starter code
-      try {
-        const sc = typeof data.starter_code === 'string'
-          ? JSON.parse(data.starter_code)
-          : (data.starter_code || {})
-        setCode(sc[language] || sc.python || `# Write your solution here\n`)
-      } catch { setCode(`# Write your solution here\n`) }
-
+      setCurrentSlot(data.slot ?? 0)
+      setCurrentDiff(data.difficulty || 'easy')
+      setQuestionResults((data.previous_results || []).map(fromServerResult))
+      setCode(starterFor(data, language) || `# Write your solution here\n`)
       setUsedTitles(prev => [...prev, data.title].filter(Boolean))
-      setStartTime(Date.now())
+      setTimeLimit(data.time_limit_seconds || 300)
+      setTimeLeft(data.time_remaining_seconds ?? data.time_limit_seconds ?? 300)
       setTimerKey(k => k + 1)
       setPhase('quiz')
     } catch (err) {
+      if (err.response?.status === 409) {
+        // every question is answered (finish), or the assessment is already done
+        if (String(err.response?.data?.detail || '').startsWith('All questions')) return finishAssessment()
+        return navigate('/home')
+      }
       setExecError(err.response?.data?.detail || 'Failed to generate question. Please try again.')
       setPhase('quiz')
     }
@@ -488,118 +509,78 @@ export default function SkillAssessment() {
     setCurrentSlot(0)
     setQuestionResults([])
     setUsedTitles([])
-    loadQuestion(0, 'easy', [])
+    loadQuestion()
   }
 
-  // ── Timer expired ────────────────────────────────────────────────────────
-  const handleTimerExpire = useCallback(() => {
-    setTimeExpired(true)
-    setTimeout(() => submitQuestion(true), 2500)
-  }, [currentQuestion, code, language, currentSlot, currentDiff, questionResults])
+  // ── Timer expired: send the current code once nothing is running ─────────
+  const handleTimerExpire = useCallback(() => setTimeExpired(true), [])
 
-  // ── Run tests (preview — first 2 test cases) ─────────────────────────────
+  useEffect(() => {
+    if (!timeExpired || running || submitted || phase !== 'quiz' || !currentQuestion) return
+    const t = setTimeout(() => submitQuestion(true), 1500)
+    return () => clearTimeout(t)
+  }, [timeExpired, running, submitted, phase, currentQuestion])
+
+  // ── Run (the sample tests; nothing is graded) ────────────────────────────
   async function runPreview() {
-    if (!currentQuestion || running) return
+    if (!currentQuestion || running || submitted) return
     setRunning(true)
     setRunResult(null)
     setExecError('')
     try {
-      const tcs = parseTestCases(currentQuestion.test_cases).slice(0, 2)
-      const results = []
-      for (const tc of tcs) {
-        const { data } = await api.post('/execute', {
-          code, language,
-          inputs: [tc.input ?? tc.stdin ?? ''],
-        })
-        const out = (data.results?.[0]?.output || '').trim()
-        const exp = (tc.expected_output ?? tc.output ?? '').trim()
-        results.push({ input: tc.input ?? tc.stdin ?? '', expected: exp, output: out, passed: out === exp })
-      }
-      setRunResult({ preview: true, results, passedTests: results.filter(r => r.passed).length, totalTests: results.length })
+      const { data } = await api.post('/skill-assessment/run', {
+        item_id: currentQuestion.item_id, code: codeRef.current, language,
+      })
+      const results = fromServerTests(data.tests)
+      setRunResult({ preview: true, results, passedTests: data.passed_tests, totalTests: data.total_tests })
     } catch (err) {
       setExecError(err.response?.data?.detail || 'Execution failed')
     } finally { setRunning(false) }
   }
 
-  // ── Submit question (run all test cases) ─────────────────────────────────
+  // ── Submit (the server runs every test and grades the answer) ────────────
   async function submitQuestion(fromTimer = false) {
-    if (!currentQuestion || running) return
+    if (!currentQuestion || running || submitted) return
     setRunning(true)
     setExecError('')
     try {
-      const tcs = parseTestCases(currentQuestion.test_cases)
-      const results = []
-      for (const tc of tcs) {
-        const { data } = await api.post('/execute', {
-          code, language,
-          inputs: [tc.input ?? tc.stdin ?? ''],
-        })
-        const out = (data.results?.[0]?.output || '').trim()
-        const exp = (tc.expected_output ?? tc.output ?? '').trim()
-        results.push({ input: tc.input ?? tc.stdin ?? '', expected: exp, output: out, passed: out === exp })
-      }
-
-      const passedTests = results.filter(r => r.passed).length
-      const totalTests  = results.length
-      const passed      = passedTests === totalTests
-      const partial     = passedTests > 0 && !passed
-      const maxPoints   = currentSlot === 4 ? 500 : currentSlot === 3 ? 400 : currentSlot === 2 ? 300 : 200
-      const pointsEarned = passed ? maxPoints : partial ? Math.round(maxPoints * (passedTests / totalTests) * 0.7) : 0
-      const timeTaken   = fromTimer ? null : Math.round((Date.now() - startTime) / 1000)
-
-      const result = {
-        slot: currentSlot,
-        title: currentQuestion.title,
-        difficulty: currentDiff,
-        skillDimension: currentQuestion.skill_dimension || SKILL_DIMENSIONS[currentSlot]?.key || 'logic',
-        passed, partial, passedTests, totalTests,
-        pointsEarned, maxPoints, timeTaken,
-        timedOut: fromTimer,
-      }
-
+      const { data } = await api.post('/skill-assessment/submit-question', {
+        item_id: currentQuestion.item_id, code: codeRef.current, language, timed_out: fromTimer,
+      })
+      setSubmitted(true)
+      const result = fromServerResult(data)
       const newResults = [...questionResults, result]
       setQuestionResults(newResults)
-      setRunResult({ preview: false, results, passed, passedTests, totalTests })
+      setRunResult({
+        preview: false, results: fromServerTests(data.tests),
+        passed: data.passed, passedTests: data.passed_tests, totalTests: data.total_tests,
+      })
+      if (data.late) setExecError('Sent after the time limit, so it scores no points.')
 
-      // Adaptive difficulty for next question
-      let nextDiff = currentDiff
-      if (passed && currentDiff === 'easy')   nextDiff = 'medium'
-      else if (passed && currentDiff === 'medium') nextDiff = 'hard'
-      else if (!passed && !partial && currentDiff === 'hard')   nextDiff = 'medium'
-      else if (!passed && !partial && currentDiff === 'medium') nextDiff = 'easy'
-
-      // Move to next question after 2.5s
+      // Move to the next question after 2.5s
       setTimeout(() => {
-        const nextSlot = currentSlot + 1
-        if (nextSlot >= TOTAL_QUESTIONS) {
-          finishAssessment(newResults)
-        } else {
-          setCurrentSlot(nextSlot)
-          loadQuestion(nextSlot, nextDiff, newResults)
-        }
+        if (data.finished) finishAssessment()
+        else loadQuestion()
       }, 2500)
     } catch (err) {
-      setExecError(err.response?.data?.detail || 'Submission failed')
+      if (err.response?.status === 409) {   // already graded (a double submit): carry on
+        setSubmitted(true)
+        setTimeout(() => loadQuestion(), 1000)
+      } else {
+        setExecError(err.response?.data?.detail || 'Submission failed')
+      }
     } finally { setRunning(false) }
   }
 
-  // ── Finish and submit to backend ─────────────────────────────────────────
-  async function finishAssessment(results) {
+  // ── Finish: the server rates the answers it graded ───────────────────────
+  async function finishAssessment() {
     setPhase('submitting')
     try {
-      const payload = results.map(r => ({
-        difficulty: r.difficulty,
-        solved: r.passed,
-        time_taken_seconds: r.timeTaken || 9999,
-        points_earned: r.pointsEarned,
-        topic: r.skillDimension,
-        passed_tests: r.passedTests,
-        total_tests: r.totalTests,
-      }))
-      const { data } = await api.post('/skill-assessment', { results: payload })
+      const { data } = await api.post('/skill-assessment', {})
       setFinalRating(data.rating)
       setFinalTier(data.tier)
       setFinalTopicScores(data.topic_scores || {})
+      if (Array.isArray(data.results)) setQuestionResults(data.results.map(fromServerResult))
       const meRes = await api.get('/users/me')
       login(meRes.data, localStorage.getItem('token'))
       setPhase('result')
@@ -612,7 +593,7 @@ export default function SkillAssessment() {
   async function handleSkip() {
     setPhase('submitting')
     try {
-      const { data } = await api.post('/skill-assessment', { results: [] })
+      const { data } = await api.post('/skill-assessment', { skip: true })
       setFinalRating(data.rating)
       setFinalTier(data.tier)
       const meRes = await api.get('/users/me')
@@ -653,7 +634,7 @@ export default function SkillAssessment() {
   if (!currentQuestion && phase === 'quiz') return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-950 gap-4">
       {execError && <p className="text-red-400 text-sm">{execError}</p>}
-      <button onClick={() => loadQuestion(currentSlot, currentDiff, questionResults)}
+      <button onClick={() => loadQuestion()}
         className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold">
         Retry
       </button>
@@ -664,7 +645,6 @@ export default function SkillAssessment() {
   const ds = DIFF_STYLE[currentDiff] || DIFF_STYLE.easy
   const dim = SKILL_DIMENSIONS[currentSlot] || SKILL_DIMENSIONS[0]
   const tcs = parseTestCases(currentQuestion?.test_cases || '[]')
-  const timeLimit = currentDiff === 'hard' ? 600 : currentDiff === 'medium' ? 420 : 300
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -713,7 +693,7 @@ export default function SkillAssessment() {
           <div className="p-5">
             {/* Timer */}
             <div className="flex justify-center mb-5">
-              <CircularTimer key={timerKey} seconds={timeLimit} onExpire={handleTimerExpire} paused={running} />
+              <CircularTimer key={timerKey} seconds={timeLeft} total={timeLimit} onExpire={handleTimerExpire} paused={submitted} />
             </div>
 
             {timeExpired && (
@@ -801,12 +781,12 @@ export default function SkillAssessment() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={runPreview} disabled={running}
+                <button onClick={runPreview} disabled={running || submitted}
                   className="px-4 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-white text-xs font-semibold transition-all disabled:opacity-40 flex items-center gap-1.5">
                   {running && !runResult ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '▶'}
                   Run
                 </button>
-                <button onClick={() => submitQuestion(false)} disabled={running}
+                <button onClick={() => submitQuestion(false)} disabled={running || submitted}
                   className="px-5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-black transition-all disabled:opacity-40 flex items-center gap-1.5">
                   {running ? <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : '⚡'}
                   Submit
