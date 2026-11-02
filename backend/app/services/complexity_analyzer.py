@@ -16,6 +16,8 @@ import re
 import ast
 from typing import Dict, List, Optional, Tuple
 
+from app.services.starter_lock import MARKER as _LOCKED_MARKER   # the line the locked harness starts at
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Data classes / helpers
@@ -119,6 +121,276 @@ def _all_recursive_calls_in_exclusive_branches(func_node: ast.AST, fname: str) -
 # Python AST analyser
 # ─────────────────────────────────────────────────────────────────────────────
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Logarithmic loops
+#
+# A loop whose counter is halved, divided by a constant or doubled on every pass runs O(log n) times, not O(n):
+#     while n > 0: n //= 10        for (i = 1; i < n; i *= 2)        while (e) { ...; e >>= 1; }
+# They are told apart from linear loops along the nesting path, so a log loop inside a scan is O(n log n) and a lone one
+# is O(log n).
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _const_int(node) -> Optional[int]:
+    if isinstance(node, ast.Constant) and isinstance(node.value, int) and not isinstance(node.value, bool):
+        return node.value
+    return None
+
+
+def _scaled_name(value, name: str) -> Optional[str]:
+    """'shrink' or 'grow' when `value` is `name <op> constant` (also inside int()/floor()/trunc()), else None."""
+    while isinstance(value, ast.Call) and len(value.args) == 1 and (
+        (isinstance(value.func, ast.Name) and value.func.id in ("int", "floor", "round"))
+        or (isinstance(value.func, ast.Attribute) and value.func.attr in ("floor", "trunc"))
+    ):
+        value = value.args[0]
+    if isinstance(value, ast.BinOp) and isinstance(value.left, ast.Name) and value.left.id == name:
+        k = _const_int(value.right)
+        if k is None:
+            return None
+        if isinstance(value.op, (ast.FloorDiv, ast.Div)) and k >= 2:
+            return "shrink"
+        if isinstance(value.op, ast.RShift) and k >= 1:
+            return "shrink"
+        if isinstance(value.op, ast.Mult) and k >= 2:
+            return "grow"
+        if isinstance(value.op, ast.LShift) and k >= 1:
+            return "grow"
+    return None
+
+
+def _scaling_update(node) -> Optional[Tuple[str, str]]:
+    """(variable, 'shrink' | 'grow') when the statement divides/shifts or multiplies a variable by a constant."""
+    if isinstance(node, ast.AugAssign) and isinstance(node.target, ast.Name):
+        k = _const_int(node.value)
+        if k is None:
+            return None
+        if isinstance(node.op, (ast.FloorDiv, ast.Div)) and k >= 2:
+            return node.target.id, "shrink"
+        if isinstance(node.op, ast.RShift) and k >= 1:
+            return node.target.id, "shrink"
+        if isinstance(node.op, ast.Mult) and k >= 2:
+            return node.target.id, "grow"
+        if isinstance(node.op, ast.LShift) and k >= 1:
+            return node.target.id, "grow"
+    elif isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+        name = node.targets[0].id
+        kind = _scaled_name(node.value, name) or ("shrink" if _is_remainder_by(node.value, name) else None)
+        if kind:
+            return name, kind
+    elif (isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Tuple)
+          and isinstance(node.value, ast.Tuple) and len(node.targets[0].elts) == len(node.value.elts)):
+        # a, b = b, a % b  (Euclid): the variable is replaced by a remainder modulo itself, which at least halves every 2 steps
+        for target, value in zip(node.targets[0].elts, node.value.elts):
+            if isinstance(target, ast.Name) and _is_remainder_by(value, target.id):
+                return target.id, "shrink"
+    return None
+
+
+def _is_remainder_by(value, name: str) -> bool:
+    """`<something> % name`: the remainder modulo the very variable being assigned."""
+    return (isinstance(value, ast.BinOp) and isinstance(value.op, ast.Mod)
+            and isinstance(value.right, ast.Name) and value.right.id == name)
+
+
+def _is_log_loop_py(node: ast.While) -> bool:
+    """A while loop whose condition variable is halved (or doubled while bounded above) on every pass."""
+    cond = {n.id for n in ast.walk(node.test) if isinstance(n, ast.Name)}
+    if not cond:
+        return False
+    bounded = set()   # names the condition keeps below a limit (i < n, i <= n, n > i): they may grow geometrically
+    for cmp_ in (n for n in ast.walk(node.test) if isinstance(n, ast.Compare)):
+        left = cmp_.left
+        for op, right in zip(cmp_.ops, cmp_.comparators):
+            if isinstance(op, (ast.Lt, ast.LtE)) and isinstance(left, ast.Name):
+                bounded.add(left.id)
+            if isinstance(op, (ast.Gt, ast.GtE)) and isinstance(right, ast.Name):
+                bounded.add(right.id)
+            left = right
+    for stmt in node.body:
+        for n in ast.walk(stmt):
+            upd = _scaling_update(n)
+            if upd and upd[0] in cond and (upd[1] == "shrink" or upd[0] in bounded):
+                return True
+    return False
+
+
+_LOOP_HEAD = re.compile(r"\b(for|while)\s*\(")
+_IF_HEAD = re.compile(r"\bif\s*\(")
+_DO_BLOCK = re.compile(r"\bdo\s*\{")
+_IDENT = re.compile(r"[A-Za-z_]\w*")
+
+
+def _blank_comments_and_strings(code: str) -> str:
+    """The code with comments and string/char literals blanked out (same length, newlines kept), so that keywords and
+    brackets inside them are not mistaken for code."""
+    out = list(code)
+    n = len(code)
+    i = 0
+    while i < n:
+        ch = code[i]
+        nxt = code[i + 1] if i + 1 < n else ""
+        if ch == "/" and nxt == "/":
+            while i < n and code[i] != "\n":
+                out[i] = " "
+                i += 1
+        elif ch == "/" and nxt == "*":
+            end = code.find("*/", i + 2)
+            end = n if end < 0 else end + 2
+            for k in range(i, end):
+                if code[k] != "\n":
+                    out[k] = " "
+            i = end
+        elif ch in "\"'`":
+            quote = ch
+            out[i] = " "
+            i += 1
+            while i < n and code[i] != quote:
+                if code[i] == "\\" and i + 1 < n:
+                    out[i] = " "
+                    i += 1
+                if code[i] == "\n" and quote != "`":
+                    break
+                if code[i] != "\n":
+                    out[i] = " "
+                i += 1
+            if i < n and code[i] == quote:
+                out[i] = " "
+                i += 1
+        else:
+            i += 1
+    return "".join(out)
+
+
+def _match(code: str, i: int, open_ch: str, close_ch: str) -> int:
+    """Index just past the bracket that closes the one at code[i] (len(code) when unbalanced)."""
+    depth = 0
+    for j in range(i, len(code)):
+        if code[j] == open_ch:
+            depth += 1
+        elif code[j] == close_ch:
+            depth -= 1
+            if depth == 0:
+                return j + 1
+    return len(code)
+
+
+def _statement_end(code: str, i: int) -> int:
+    """Index just past the statement that starts at or after code[i]: a block, an if/loop with its body, or up to ';'."""
+    n = len(code)
+    while i < n and code[i].isspace():
+        i += 1
+    if i >= n:
+        return n
+    if code[i] == "{":
+        return _match(code, i, "{", "}")
+    m = _LOOP_HEAD.match(code, i) or _IF_HEAD.match(code, i)
+    if m:
+        end = _statement_end(code, _match(code, m.end() - 1, "(", ")"))
+        if m.group(0).startswith("if"):
+            j = end
+            while j < n and code[j].isspace():
+                j += 1
+            if code.startswith("else", j) and not (j + 4 < n and (code[j + 4].isalnum() or code[j + 4] == "_")):
+                return _statement_end(code, j + 4)
+        return end
+    depth = 0
+    for j in range(i, n):
+        c = code[j]
+        if c in "({[":
+            depth += 1
+        elif c in ")}]":
+            depth -= 1
+        elif c == ";" and depth <= 0:
+            return j + 1
+    return n
+
+
+def _is_log_loop_text(kind: str, header: str, body: str) -> bool:
+    """For brace languages: the loop's condition variable is halved/shifted down, or doubled while bounded above."""
+    if kind == "for":
+        parts = header.split(";")
+        cond, scan = (parts[1], parts[2] + " " + body) if len(parts) == 3 else (header, body)
+    else:
+        cond, scan = header, body
+    for v in set(_IDENT.findall(cond)):
+        e = re.escape(v)
+        shrink = (
+            rf"\b{e}\s*(?:/=\s*(?:[2-9]|[1-9]\d+)\b|>>>?=\s*[1-9]\d*\b)"
+            rf"|\b{e}\s*=[^;=]*?\b{e}\s*(?:/\s*(?:[2-9]|[1-9]\d+)\b|>>>?\s*[1-9]\d*\b)"
+            rf"|\b{e}\s*=[^;=]*%\s*{e}\b"                       # b = a % b  (Euclid)
+            rf"|\[[^\]=]*\b{e}\b[^\]=]*\]\s*=\s*\[[^\]]*%\s*{e}\b"   # [a, b] = [b, a % b]  (JS destructuring)
+        )
+        if re.search(shrink, scan):
+            return True
+        # t = a % b; ...; b = t   (Euclid with a temporary)
+        for rem in re.finditer(rf"\b(\w+)\s*=[^;=]*%\s*{e}\b", scan):
+            if re.search(rf"\b{e}\s*=\s*{re.escape(rem.group(1))}\b", scan):
+                return True
+        grow = (
+            rf"\b{e}\s*(?:\*=\s*(?:[2-9]|[1-9]\d+)\b|<<=\s*[1-9]\d*\b)"
+            rf"|\b{e}\s*=[^;=]*?\b{e}\s*(?:\*\s*(?:[2-9]|[1-9]\d+)\b|<<\s*[1-9]\d*\b)"
+        )
+        if re.search(grow, scan) and re.search(rf"\b{e}\s*<=?|>=?\s*\b{e}\b", cond):
+            return True
+    return False
+
+
+def _brace_loop_profile(code: str) -> Tuple[int, int, bool]:
+    """(deepest chain of non-log loops, the same over chains that contain a log loop, any log loop?) for C-like code."""
+    clean = _blank_comments_and_strings(code)
+    loops: List[Tuple[int, int, bool]] = []   # (start, end, is_log)
+    skip = set()                              # the `while (...)` that closes a do-while is not a loop of its own
+
+    for m in _DO_BLOCK.finditer(clean):
+        body_end = _match(clean, m.end() - 1, "{", "}")
+        rest = clean[body_end:]
+        w = re.match(r"\s*while\s*\(", rest)
+        if not w:
+            continue
+        open_at = body_end + w.end() - 1
+        close_at = _match(clean, open_at, "(", ")")
+        skip.add(body_end + len(rest) - len(rest.lstrip()))   # where that trailing `while` starts
+        end = close_at
+        while end < len(clean) and clean[end].isspace():
+            end += 1
+        if end < len(clean) and clean[end] == ";":
+            end += 1
+        loops.append((m.start(), end, _is_log_loop_text("while", clean[open_at + 1:close_at - 1], clean[m.start():body_end])))
+
+    for m in _LOOP_HEAD.finditer(clean):
+        if m.start() in skip:
+            continue
+        open_at = m.end() - 1
+        close_at = _match(clean, open_at, "(", ")")
+        end = _statement_end(clean, close_at)
+        loops.append((m.start(), end, _is_log_loop_text(m.group(1), clean[open_at + 1:close_at - 1], clean[close_at:end])))
+
+    loops.sort()
+    stack: List[Tuple[int, int, int]] = []    # (end, non-log loops, log loops) of the chain of enclosing loops
+    max_nonlog = max_with_log = 0
+    has_log = False
+    for start, end, is_log in loops:
+        while stack and stack[-1][0] <= start:
+            stack.pop()
+        nonlog = (stack[-1][1] if stack else 0) + (0 if is_log else 1)
+        logs = (stack[-1][2] if stack else 0) + (1 if is_log else 0)
+        stack.append((end, nonlog, logs))
+        max_nonlog = max(max_nonlog, nonlog)
+        if logs:
+            has_log = True
+            max_with_log = max(max_with_log, nonlog)
+    return max_nonlog, max_with_log, has_log
+
+
+def _c_sized_alloc(code: str) -> bool:
+    """malloc/calloc/realloc sized by a variable (not just sizeof(...)): memory that grows with the input."""
+    for m in re.finditer(r"\b(?:malloc|calloc|realloc)\s*\(([^;]*)", code):
+        args = re.sub(r"sizeof\s*\([^)]*\)", " ", m.group(1))
+        if re.search(r"[A-Za-z_]", args):
+            return True
+    return False
+
+
 class _PythonASTAnalyzer(ast.NodeVisitor):
     """Walk the AST and collect structural facts."""
 
@@ -129,6 +401,12 @@ class _PythonASTAnalyzer(ast.NodeVisitor):
         # Loop nesting
         self._loop_depth   = 0
         self.max_loop_depth = 0
+        # ...split into linear loops and logarithmic ones (counter halved/doubled each pass)
+        self._nonlog_depth = 0
+        self._log_depth = 0
+        self.max_nonlog_depth = 0
+        self.max_nonlog_depth_with_log = 0
+        self.has_log_loop = False
 
         # Recursion
         self.recursive_funcs: Dict[str, int] = {}   # fname -> call count in body
@@ -169,17 +447,29 @@ class _PythonASTAnalyzer(ast.NodeVisitor):
 
     # ── Loop tracking ────────────────────────────────────────────────────
 
-    def visit_For(self, node):
+    def _enter_loop(self, node, is_log: bool):
         self._loop_depth += 1
         self.max_loop_depth = max(self.max_loop_depth, self._loop_depth)
+        if is_log:
+            self._log_depth += 1
+            self.has_log_loop = True
+        else:
+            self._nonlog_depth += 1
+            self.max_nonlog_depth = max(self.max_nonlog_depth, self._nonlog_depth)
+        if self._log_depth:
+            self.max_nonlog_depth_with_log = max(self.max_nonlog_depth_with_log, self._nonlog_depth)
         self.generic_visit(node)
         self._loop_depth -= 1
+        if is_log:
+            self._log_depth -= 1
+        else:
+            self._nonlog_depth -= 1
+
+    def visit_For(self, node):
+        self._enter_loop(node, False)
 
     def visit_While(self, node):
-        self._loop_depth += 1
-        self.max_loop_depth = max(self.max_loop_depth, self._loop_depth)
-        self.generic_visit(node)
-        self._loop_depth -= 1
+        self._enter_loop(node, _is_log_loop_py(node))
 
     # ── Function / recursion tracking ────────────────────────────────────
 
@@ -418,6 +708,9 @@ class _StructuralAnalyzer:
         self.lines    = code.split("\n")
 
         self.max_loop_depth    = 0
+        self.max_nonlog_depth  = 0   # deepest chain of loops that are not halving/doubling ones
+        self.max_nonlog_depth_with_log = 0
+        self.has_log_loop      = False
         self.has_sorting       = False
         self.has_binary_search = False
         self.has_hash_map      = False
@@ -518,6 +811,9 @@ class _StructuralAnalyzer:
                         in_for_header = False
 
             i += 1
+
+        # ── Logarithmic loops (counter halved/doubled each pass) ──────────────
+        self.max_nonlog_depth, self.max_nonlog_depth_with_log, self.has_log_loop = _brace_loop_profile(code)
 
         # ── Sorting ───────────────────────────────────────────────────────
         # Use word-boundary patterns that won't match user-defined function names
@@ -621,11 +917,18 @@ class _StructuralAnalyzer:
         if any(re.search(p, code) for p in implicit_on_patterns):
             # Treat as a single loop if no explicit loops detected yet
             self.max_loop_depth = max(self.max_loop_depth, 1)
+            self.max_nonlog_depth = max(self.max_nonlog_depth, 1)
 
         # ── 2D array ──────────────────────────────────────────────────────
         # Use precise patterns — avoid matching two separate vector<T> params
         # as a 2D array. Require vector<vector< or arr[i][j] subscript patterns.
-        if re.search(r'\[\s*\]\s*\[|\bint\s+\w+\s*\[.*\]\s*\[|vector\s*<\s*vector\s*<', code):
+        if re.search(
+            r'\[\s*\]\s*\[|\bint\s+\w+\s*\[.*\]\s*\[|vector\s*<\s*vector\s*<'
+            r'|Array\.from\s*\(\s*\{[^}]*\}\s*,\s*\(\s*\)\s*=>\s*(?:new\s+)?Array\b'      # JS: Array.from({length: n}, () => new Array(m))
+            r'|\.map\s*\(\s*\(\s*\)\s*=>\s*(?:new\s+)?Array\s*\('                          # JS: [...Array(n)].map(() => Array(m))
+            r'|\b(?:malloc|calloc)\s*\(\s*\(?\s*[A-Za-z_]\w*\s*\*\s*(?!sizeof\b)[A-Za-z_]\w*',  # C: calloc(n * m, ...)
+            code,
+        ):
             self.has_2d_array = True
 
         # ── Recursion ─────────────────────────────────────────────────────
@@ -781,6 +1084,7 @@ def _derive_time_complexity(
     has_ordered_map: bool,
     has_2d_array: bool,
     code_hint: str = "",
+    log_factor: bool = False,
 ) -> Tuple[str, str, str, str]:
     """
     Returns (best, average, worst, reason).
@@ -881,6 +1185,16 @@ def _derive_time_complexity(
     if has_dp_table and max_loop_depth == 1:
         return ("O(n)", "O(n)", "O(n)",
                 "1D DP table with a single loop → O(n).")
+
+    # A counter halved/doubled every pass (while n > 0: n //= 10) runs O(log n) times; the linear loops around it multiply.
+    if log_factor:
+        k = max_loop_depth
+        if k == 0:
+            return ("O(log n)", "O(log n)", "O(log n)",
+                    "A loop whose counter is halved or doubled on every pass runs O(log n) times → O(log n).")
+        t = "O(n log n)" if k == 1 else "O(n² log n)" if k == 2 else f"O(n^{k} log n)"
+        return (t, t, t,
+                f"{k} linear loop level(s) around a loop whose counter is halved or doubled each pass → {t}.")
 
     # Pure loop analysis
     if max_loop_depth == 0:
@@ -1013,13 +1327,12 @@ def _derive_space_complexity(
     has_sized_alloc = bool(re.search(
         r"\[\s*\w[^]]*\]\s*\*\s*[\w(]"   # [0] * n  or  [val] * (expr)
         r"|\bnew\s+Array\s*\(\s*[a-zA-Z_]"  # JS: new Array(n)
-        r"|\bnew\s+int\s*\[\s*[a-zA-Z_]"    # Java/C: new int[n]
-        r"|\bnew\s+long\s*\[\s*[a-zA-Z_]"
-        r"|\bnew\s+boolean\s*\[\s*[a-zA-Z_]"
-        r"|\bnew\s+double\s*\[\s*[a-zA-Z_]"
-        r"|\bvector\s*<[^>]+>\s*\w+\s*\(\s*[a-zA-Z_]",  # C++: vector<int> dp(n)
+        r"|\bnew\s+(?:int|long|boolean|double|char|byte|short|float)\s*\[\s*(?:\(\s*\w+\s*\)\s*)?\(?\s*[a-zA-Z_]"  # new int[n], new long[(int) n + 1]
+        r"|\bvector\s*<[^>]+>\s*\w+\s*\(\s*[a-zA-Z_][^;{}]*\)\s*;",  # C++ declaration vector<int> dp(n); (not a function header)
         code
     ))
+
+    has_sized_alloc = has_sized_alloc or _c_sized_alloc(code)   # C: malloc/calloc/realloc sized by a variable
 
     # Detect deque/queue usage (BFS/DFS) — grows with input
     has_queue_alloc = bool(re.search(
@@ -1050,7 +1363,21 @@ _RANK = {
 }
 
 def _rank(c: str) -> int:
-    return _RANK.get(c, 3)
+    if c in _RANK:
+        return _RANK[c]
+    try:
+        from app.services.complexity.mag import parse_o
+        m = parse_o(c)
+    except Exception:
+        m = None
+    if m is None:
+        return 3
+    if m.exp:
+        return 10
+    by_exponent = {0: 0, 0.5: 2, 1: 3, 1.5: 6, 2: 7, 2.5: 8, 3: 9}
+    a = float(m.a)
+    base = max((rank for exp, rank in by_exponent.items() if exp <= a), default=0) if a < 3 else 9 + min(2, int(a) - 3)
+    return base + (1 if m.b > 0 and a > 0 else 0) if a > 0 else (1 if m.b > 0 else 0)
 
 
 def _is_optimal(time_worst: str, space_worst: str,
@@ -1450,6 +1777,19 @@ def _tag_suggestions(tips: List[str]) -> List[Dict]:
     return result
 
 
+def _players_part(code: str) -> str:
+    """The code the player wrote, without the locked harness.
+
+    Typed starters end in a harness (below the marker line) that reads the input and prints the answer. Its loops, helper
+    lambdas and containers are the same for every solution, so counting them made an untouched stub look like O(n) time
+    and a correct O(n) C solution like O(n^2). Code without the marker (older or custom questions) is analyzed whole."""
+    lines = code.replace("\r\n", "\n").split("\n")
+    for i, line in enumerate(lines):
+        if _LOCKED_MARKER in line:
+            return "\n".join(lines[:i])
+    return code
+
+
 class ComplexityAnalyzer:
     """Accurate AST-based complexity analyzer."""
 
@@ -1465,6 +1805,8 @@ class ComplexityAnalyzer:
         total_tests: Optional[int] = None,
     ) -> Dict:
         lang = language.lower().strip()
+        full_code = code
+        code = _players_part(code)
 
         # ── Gather structural facts ───────────────────────────────────────
         if lang == "python":
@@ -1494,12 +1836,18 @@ class ComplexityAnalyzer:
             has_2d_array    = a.has_2d_array
             allocations     = []
 
+        # ── Logarithmic loops: a counter halved/doubled each pass is O(log n), not O(n) ──
+        log_factor = False
+        if a.has_log_loop:
+            log_factor = a.max_nonlog_depth_with_log >= a.max_nonlog_depth
+            max_loop_depth = a.max_nonlog_depth
+
         # ── Derive complexities ───────────────────────────────────────────
         t_best, t_avg, t_worst, t_reason = _derive_time_complexity(
             max_loop_depth, recursion_type,
             has_sorting, has_binary_search, has_heap,
             has_dp_table, has_hash_map, has_ordered_map, has_2d_array,
-            code_hint=code,
+            code_hint=code, log_factor=log_factor,
         )
         s_best, s_avg, s_worst, s_reason = _derive_space_complexity(
             max_loop_depth, recursion_type,
@@ -1508,10 +1856,26 @@ class ComplexityAnalyzer:
             has_ordered_map=has_ordered_map,
         )
 
+        # ── The cost analysis: reads what the code does and replaces the pattern guesses above whenever it can ──
+        engine_result = None
+        try:
+            from app.services.complexity import analyze_source
+            engine_result = analyze_source(code, lang, harness_code=full_code)
+        except Exception as exc:                       # the pattern rules below are the fallback; never take the endpoint down
+            print(f"[ComplexityAnalyzer] cost analysis failed, using the pattern rules: {exc}")
+        if engine_result is not None:
+            legacy_t_best, legacy_s_best = t_best, s_best
+            t_worst, s_worst = engine_result.time.fmt(), engine_result.space.fmt()
+            t_avg, s_avg = t_worst, s_worst
+            t_best = legacy_t_best if _rank(legacy_t_best) <= _rank(t_worst) else t_worst
+            s_best = legacy_s_best if _rank(legacy_s_best) <= _rank(s_worst) else s_worst
+
         # ── Build explanation ─────────────────────────────────────────────
         detected = []
         if max_loop_depth > 0:
             detected.append(f"{max_loop_depth} level(s) of nested loops")
+        if a.has_log_loop:
+            detected.append("logarithmic loop (counter halved/doubled each pass)")
         if recursion_type:
             detected.append(f"{recursion_type.replace('_', '-')} recursion")
         if has_sorting:
@@ -1532,6 +1896,13 @@ class ComplexityAnalyzer:
             f"The time complexity is {t_worst} because {t_reason.lower()} "
             f"The space complexity is {s_worst} because {s_reason.lower()}"
         )
+        if engine_result is not None:
+            time_why = "; ".join(engine_result.notes[:5]) if engine_result.notes else (
+                "there are no loops over the input and no recursion, so everything runs in constant time"
+                if t_worst == "O(1)" else "it comes from the library calls on the input (sorting, searching, copying)")
+            space_why = "; ".join(engine_result.space_notes) if engine_result.space_notes else \
+                "only a constant number of variables is used"
+            analysis = f"The time complexity is {t_worst}: {time_why}. The space complexity is {s_worst}: {space_why}."
 
         is_optimal, raw_tips = _suggestions(
             t_worst, s_worst,
@@ -1564,7 +1935,7 @@ class ComplexityAnalyzer:
             from app.core.config import get_settings
             settings = get_settings()
             api_key = getattr(settings, "COMPLEXITY_NVIDIA_API_KEY", "")
-            if api_key:
+            if api_key and engine_result is None:          # the AI is only a fallback for code the cost analysis cannot read
                 from openai import AsyncOpenAI
                 client = AsyncOpenAI(
                     base_url="https://integrate.api.nvidia.com/v1",
@@ -1670,6 +2041,11 @@ class ComplexityAnalyzer:
             "verdict_explanation": verdict_explanation,
             "detected_patterns":  detected,
             "execution_stats":    exec_stats,
+            "engine":             "cost-model" if engine_result is not None else "pattern-rules",
+            "confidence":         engine_result.confidence if engine_result is not None else "low",
+            "confidence_notes":   list(engine_result.uncertain) if engine_result is not None else
+                                  ["The code could not be analyzed structurally; this is a pattern-based estimate."],
+            "derivation":         (list(engine_result.notes) + list(engine_result.space_notes)) if engine_result is not None else [],
         }
 
 
