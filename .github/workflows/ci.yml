@@ -29,11 +29,32 @@ jobs:
         working-directory: backend
         run: |
           pip install pytest
-          pytest tests/test_diagrams.py tests/test_diagrams_older_templates.py -q
+          pytest tests/test_diagrams.py tests/test_diagrams_older_templates.py tests/test_diagrams_builtin_pool.py tests/test_diagrams_symmetry.py tests/test_diagrams_accuracy.py tests/test_diagrams_dataset_pin.py tests/test_diagrams_hard_templates.py tests/test_diagrams_every_template.py -q
+      - name: Built-in question starters
+        # Every built-in question must carry a starter whose reader can read the question's own tests, in all five languages
+        # (the C starters are compiled with gcc), and the backend's copies of scaffold.py and legacy_typing.py must match
+        # the question service's.
+        working-directory: backend
+        run: |
+          pip install pytest
+          pytest tests/test_pool_starters.py -q
 
   question-service:
     name: Question service
     runs-on: ubuntu-latest
+    services:
+      # a throwaway database for the pool repository's PostgreSQL test, which is skipped when COMPILEX_TEST_PG_URL is not set
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -52,7 +73,9 @@ jobs:
         run: python -c "import main_dynamic; print('question-service imports OK')"
       - name: Tests
         working-directory: question-service
-        run: pytest tests -q
+        env:
+          COMPILEX_TEST_PG_URL: postgresql://postgres:postgres@localhost:5432/postgres
+        run: pytest tests -q -rs
 
   frontend:
     name: Frontend
@@ -70,3 +93,9 @@ jobs:
       - name: Build
         working-directory: frontend
         run: npm run build
+      - name: Undefined identifiers
+        # An icon or helper that is used but never imported still builds, and then crashes the page when it is opened.
+        working-directory: frontend
+        run: |
+          npm install --no-save --no-package-lock eslint@8.57.0 eslint-plugin-react@7.34.1
+          npx eslint --no-eslintrc -c eslint.undef.json --ext .js,.jsx src
