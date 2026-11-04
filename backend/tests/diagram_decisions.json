@@ -1,0 +1,1440 @@
+{
+ "question_db.json:A tree is a graph with n vertices and exactly n - 1 edges; this graph": null,
+ "question_db.json:A tree is an undirected connected graph without cycles": null,
+ "question_db.json:After making bad dives into swimming pools, Wilbur wants to build a sw": null,
+ "question_db.json:Appleman has a tree with n vertices": null,
+ "question_db.json:Arkady needs your help again": null,
+ "question_db.json:As we all know, Max is the best video game player among her friends": null,
+ "question_db.json:BFS Shortest Path": {
+  "directed": false,
+  "edges": [
+   [
+    1,
+    2,
+    null
+   ],
+   [
+    1,
+    3,
+    null
+   ],
+   [
+    2,
+    4,
+    null
+   ],
+   [
+    3,
+    4,
+    null
+   ],
+   [
+    4,
+    5,
+    null
+   ]
+  ],
+  "kind": "graph",
+  "m": 5,
+  "marks": {
+   "1": [
+    "src"
+   ],
+   "5": [
+    "dst"
+   ]
+  },
+  "n": 5,
+  "notes": {},
+  "weight": null
+ },
+ "question_db.json:Barney lives in NYC": null,
+ "question_db.json:Barney lives in country USC (United States of Charzeh)": null,
+ "question_db.json:Binary Tree Maximum Path Sum": null,
+ "question_db.json:Clone Graph": null,
+ "question_db.json:Detect Cycle in Directed Graph": {
+  "directed": true,
+  "edges": [
+   [
+    1,
+    2,
+    null
+   ],
+   [
+    2,
+    3,
+    null
+   ],
+   [
+    3,
+    4,
+    null
+   ],
+   [
+    4,
+    2,
+    null
+   ]
+  ],
+  "kind": "graph",
+  "m": 4,
+  "marks": {},
+  "n": 4,
+  "notes": {},
+  "weight": null
+ },
+ "question_db.json:Dijkstra Shortest Path": {
+  "directed": true,
+  "edges": [
+   [
+    1,
+    2,
+    1
+   ],
+   [
+    1,
+    3,
+    4
+   ],
+   [
+    2,
+    3,
+    2
+   ],
+   [
+    2,
+    4,
+    5
+   ],
+   [
+    3,
+    4,
+    1
+   ]
+  ],
+  "kind": "graph",
+  "m": 5,
+  "marks": {
+   "1": [
+    "src"
+   ]
+  },
+  "n": 4,
+  "notes": {},
+  "weight": "distance"
+ },
+ "question_db.json:Doubly linked list is one of the fundamental data structures": null,
+ "question_db.json:Each New Year Timofey and his friends cut down a tree of n vertices an": null,
+ "question_db.json:Gerald bought two very rare paintings at the Sotheby's auction and he": null,
+ "question_db.json:Gerald plays the following game": null,
+ "question_db.json:Iahub is very proud of his recent discovery, propagating trees": null,
+ "question_db.json:Iahub likes trees very much": null,
+ "question_db.json:In Finite Encyclopedia of Integer Sequences (FEIS), all integer sequen": null,
+ "question_db.json:In order to fly to the Moon Mister B just needs to solve the following": null,
+ "question_db.json:In the State of Takahashi in AtCoderian Federation, there are N cities": null,
+ "question_db.json:Inorder Traversal": {
+  "directed": false,
+  "edges": [
+   [
+    0,
+    1,
+    null
+   ],
+   [
+    0,
+    2,
+    null
+   ],
+   [
+    1,
+    3,
+    null
+   ],
+   [
+    1,
+    4,
+    null
+   ],
+   [
+    2,
+    5,
+    null
+   ],
+   [
+    2,
+    6,
+    null
+   ]
+  ],
+  "kind": "binary_tree",
+  "m": 6,
+  "marks": {},
+  "n": 7,
+  "notes": {},
+  "weight": null
+ },
+ "question_db.json:John Doe started thinking about graphs": null,
+ "question_db.json:Jzzhu has picked n apples from his big apple tree": null,
+ "question_db.json:Jzzhu is the president of country A": null,
+ "question_db.json:Leha plays a computer game, where is on each level is given a connecte": {
+  "directed": false,
+  "edges": [],
+  "kind": "graph",
+  "m": 0,
+  "marks": {},
+  "n": 1,
+  "notes": {
+   "1": "d=1"
+  },
+  "weight": null
+ },
+ "question_db.json:Let N be a positive even number": null,
+ "question_db.json:Lowest Common Ancestor": null,
+ "question_db.json:Mary has just graduated from one well-known University and is now atte": null,
+ "question_db.json:Maximum Depth of Binary Tree": null,
+ "question_db.json:Meanwhile, the kingdom of K is getting ready for the marriage of the K": null,
+ "question_db.json:Minimum Spanning Tree": {
+  "directed": false,
+  "edges": [
+   [
+    1,
+    2,
+    1
+   ],
+   [
+    1,
+    3,
+    3
+   ],
+   [
+    2,
+    3,
+    1
+   ],
+   [
+    2,
+    4,
+    6
+   ],
+   [
+    3,
+    4,
+    2
+   ]
+  ],
+  "kind": "graph",
+  "m": 5,
+  "marks": {},
+  "n": 4,
+  "notes": {},
+  "weight": "weight"
+ },
+ "question_db.json:Momiji has got a rooted tree, consisting of n nodes": null,
+ "question_db.json:Niwel is a little golden bear": {
+  "directed": true,
+  "edges": [
+   [
+    1,
+    2,
+    2
+   ],
+   [
+    2,
+    4,
+    1
+   ],
+   [
+    1,
+    3,
+    1
+   ],
+   [
+    3,
+    4,
+    2
+   ]
+  ],
+  "kind": "graph",
+  "m": 4,
+  "marks": {
+   "1": [
+    "src"
+   ],
+   "4": [
+    "dst"
+   ]
+  },
+  "n": 4,
+  "notes": {},
+  "weight": "weight"
+ },
+ "question_db.json:Number of Islands": null,
+ "question_db.json:Polycarp is making a quest for his friends": null,
+ "question_db.json:Reverse Nodes in K-Group": null,
+ "question_db.json:Sagheer is walking in the street when he comes to an intersection of t": null,
+ "question_db.json:Sasha is taking part in a programming competition": null,
+ "question_db.json:Serialize and Deserialize Binary Tree": null,
+ "question_db.json:Snuke has a rooted tree with N+1 vertices": null,
+ "question_db.json:Takahashi has an ability to generate a tree using a permutation (p_1,p": null,
+ "question_db.json:The country has n cities and n - 1 bidirectional roads, it is possible": null,
+ "question_db.json:There is a directed graph with N vertices and N edges": null,
+ "question_db.json:Topological Sort": {
+  "directed": true,
+  "edges": [
+   [
+    5,
+    2,
+    null
+   ],
+   [
+    5,
+    0,
+    null
+   ],
+   [
+    4,
+    0,
+    null
+   ],
+   [
+    4,
+    1,
+    null
+   ],
+   [
+    2,
+    3,
+    null
+   ],
+   [
+    3,
+    1,
+    null
+   ]
+  ],
+  "kind": "graph",
+  "m": 6,
+  "marks": {},
+  "n": 6,
+  "notes": {},
+  "weight": null
+ },
+ "question_db.json:Validate Binary Search Tree": null,
+ "question_db.json:Vanya wants to minimize a tree": null,
+ "question_db.json:Vova and Marina love offering puzzles to each other": {
+  "directed": false,
+  "edges": [
+   [
+    1,
+    2,
+    null
+   ],
+   [
+    2,
+    3,
+    null
+   ],
+   [
+    3,
+    4,
+    null
+   ],
+   [
+    3,
+    5,
+    null
+   ]
+  ],
+  "kind": "graph",
+  "m": 4,
+  "marks": {},
+  "n": 5,
+  "notes": {},
+  "weight": null
+ },
+ "question_db.json:We have a graph with N vertices and M edges, and there are two people": {
+  "directed": false,
+  "edges": [
+   [
+    1,
+    2,
+    1
+   ],
+   [
+    2,
+    3,
+    1
+   ],
+   [
+    3,
+    4,
+    1
+   ],
+   [
+    4,
+    1,
+    1
+   ]
+  ],
+  "kind": "graph",
+  "m": 4,
+  "marks": {
+   "1": [
+    "S"
+   ],
+   "3": [
+    "T"
+   ]
+  },
+  "n": 4,
+  "notes": {},
+  "weight": "time"
+ },
+ "question_db.json:We have a tree with N vertices": null,
+ "question_db.json:Wherever the destination is, whoever we meet, let's render this song t": null,
+ "question_db.json:You are given matrix with n rows and n columns filled with zeroes": null,
+ "questions.json:\"How did you get the deal,how did he agree": null,
+ "questions.json:\"Say my Name\"": null,
+ "questions.json:$Jaggu$ monkey a friend of $Choota$ $Bheem$ a great warrior of $Dholak": null,
+ "questions.json:-----Indian National Olympiad in Informatics 2014-----": null,
+ "questions.json:3R2 as DJ Mashiro - Happiness Breeze Ice - DJ Mashiro is dead or alive": null,
+ "questions.json:A group of n cities is connected by a network of roads": null,
+ "questions.json:A hypergraph is a generalization of a graph, where an edge can connect": null,
+ "questions.json:A long way back I have taken $5000 from Golu when I used to live in Jo": null,
+ "questions.json:A permutation of length n is an array of size n consisting of n distin": null,
+ "questions.json:AND gates and OR gates are basic components used in building digital c": null,
+ "questions.json:Alex decided to go on a touristic trip over the country": null,
+ "questions.json:Alice and Bob are playing a fun game of tree tag": null,
+ "questions.json:Anmol gained a lot of weight last semester": null,
+ "questions.json:Arya and Aryan live in a country called Nadaca": null,
+ "questions.json:As we all know caterpillars love to eat leaves": null,
+ "questions.json:Assume that you have $k$ one-dimensional segments $s_1, s_2, \\dots s_k": null,
+ "questions.json:Autobots are instructed by Optimus Prime to mobilize in the form of a ": null,
+ "questions.json:Blob is a computer science student": null,
+ "questions.json:Chef Ada is building a new restaurant in the following way:": null,
+ "questions.json:Chef and his competitor Kefa own two restaurants located at a straight": null,
+ "questions.json:Chef and his friend Miron were getting bored and decided to play a gam": null,
+ "questions.json:Chef and his girlfriend are going to have a promenade": null,
+ "questions.json:Chef and his mother are going travelling": null,
+ "questions.json:Chef bought a huge (effectively infinite) planar island and built $N$ ": null,
+ "questions.json:Chef has  $N$ doggo (dogs) , Lets number them $1$ to $N$": null,
+ "questions.json:Chef has $N$ axis-parallel rectangles in a 2D Cartesian coordinate sys": null,
+ "questions.json:Chef has a nice complete binary tree in his garden": null,
+ "questions.json:Chef has decided to start home delivery from his restaurant": null,
+ "questions.json:Chef has just finished the construction of his new garden": null,
+ "questions.json:Chef has just learned a new data structure - Fenwick tree": null,
+ "questions.json:Chef is a private detective": null,
+ "questions.json:Chef is an advocate for Go Green Initiative": null,
+ "questions.json:Chef is the new king of the country Chefland": null,
+ "questions.json:Chef just come up with a very good idea for his business": null,
+ "questions.json:Chef likes to travel a lot": null,
+ "questions.json:Chef likes to travel very much": null,
+ "questions.json:Chef recently developed an affinity for undirected graphs": null,
+ "questions.json:Chef recently printed directions from his home to a hot new restaurant": null,
+ "questions.json:Chef works in a similar way to a travelling salesman \u2015 he always trave": null,
+ "questions.json:Chef's new hobby is painting, but he learned the fact that it's not ea": null,
+ "questions.json:Chefland has all the cities on a straight line": null,
+ "questions.json:Chef\u2019s girlfriend is angry with him because he forgot her birthday": null,
+ "questions.json:Codefortia is a small island country located somewhere in the West Pac": {
+  "directed": false,
+  "edges": [
+   [
+    1,
+    2,
+    25
+   ],
+   [
+    2,
+    3,
+    25
+   ],
+   [
+    3,
+    4,
+    20
+   ],
+   [
+    4,
+    5,
+    20
+   ],
+   [
+    5,
+    1,
+    20
+   ]
+  ],
+  "kind": "graph",
+  "m": 5,
+  "marks": {},
+  "n": 5,
+  "notes": {},
+  "weight": "time"
+ },
+ "questions.json:Consider a 2d-grid": null,
+ "questions.json:Consider a tree $T$ (that is, a connected graph without cycles) with $": null,
+ "questions.json:Consider an infinite full binary tree (each node has two children exce": null,
+ "questions.json:Corruption is on the rise in the country of Freedonia, Gru's home": null,
+ "questions.json:DZY loves Physics, and he enjoys calculating density": {
+  "directed": false,
+  "edges": [],
+  "kind": "graph",
+  "m": 0,
+  "marks": {},
+  "n": 1,
+  "notes": {
+   "1": "1"
+  },
+  "weight": "value"
+ },
+ "questions.json:DZY loves planting, and he enjoys solving tree problems": null,
+ "questions.json:Evlampiy was gifted a rooted tree": null,
+ "questions.json:Fennec and Snuke are playing a board game": null,
+ "questions.json:Firdavs is living on planet F": null,
+ "questions.json:For years you have been working hard in Santa's factory to manufacture": null,
+ "questions.json:Given a Complete Binary Tree of \u2018n\u2019 depth, you can perform 4 types of ": null,
+ "questions.json:Given a complete binary tree with the height of H, we index the nodes ": null,
+ "questions.json:Given is an undirected connected graph with N vertices numbered 1 to N": {
+  "directed": false,
+  "edges": [
+   [
+    1,
+    2,
+    1
+   ],
+   [
+    2,
+    3,
+    2
+   ],
+   [
+    3,
+    1,
+    3
+   ],
+   [
+    1,
+    3,
+    1
+   ]
+  ],
+  "kind": "graph",
+  "m": 4,
+  "marks": {},
+  "n": 3,
+  "notes": {},
+  "weight": "label"
+ },
+ "questions.json:Given the values at the leaf nodes of a complete binary tree": null,
+ "questions.json:Greg has a weighed directed graph, consisting of n vertices": null,
+ "questions.json:HALLOWEEN EVE": null,
+ "questions.json:In Byteland there are N cities, numbered 1 through N": null,
+ "questions.json:In some country there are exactly n cities and m bidirectional roads c": null,
+ "questions.json:Ishank lives in a country in which there are N$N$ cities and N\u22121$N-1$ ": null,
+ "questions.json:It is Borya's eleventh birthday, and he has got a great present: n car": null,
+ "questions.json:It is an interesting exercise to write a program to print out all perm": null,
+ "questions.json:It's autumn now, the time of the leaf fall": null,
+ "questions.json:Jamie is preparing a Codeforces round": null,
+ "questions.json:January and February are usually very cold in ChefLand": null,
+ "questions.json:Johnny has some difficulty memorizing the small prime numbers": null,
+ "questions.json:Jon Snow is on the lookout for some orbs required to defeat the white ": null,
+ "questions.json:Kalila and Dimna are two jackals living in a huge jungle": null,
+ "questions.json:Kefaa has developed a novel decomposition of a tree": null,
+ "questions.json:Kuro has recently won the \"Most intelligent cat ever\" contest": null,
+ "questions.json:Lavanya and Nikhil have K months of holidays ahead of them, and they w": null,
+ "questions.json:Lee is going to fashionably decorate his house for a party, using some": null,
+ "questions.json:Let's consider a rooted binary tree with the following properties:": null,
+ "questions.json:Many things in this first paragraph are references to some pretty famo": null,
+ "questions.json:Mark loves eating chocolates and also likes to be fit": null,
+ "questions.json:Mitya has a rooted tree with $n$ vertices indexed from $1$ to $n$, whe": null,
+ "questions.json:Monocarp had a tree which consisted of $n$ vertices and was rooted at ": null,
+ "questions.json:Most problems on CodeChef highlight chef's love for food and cooking b": null,
+ "questions.json:Nadaca is a country with N$N$ cities": null,
+ "questions.json:Nature photographing may be fun for tourists, but it is one of the mos": null,
+ "questions.json:Nauuo is a girl who loves drawing circles": null,
+ "questions.json:Nobody outside the cooking community knows that Chef is a big fan of C": null,
+ "questions.json:Now that Heidi has made sure her Zombie Contamination level checker wo": null,
+ "questions.json:On her way to ChefLand, Marichka noticed $10^K$ road signs (numbered $": null,
+ "questions.json:One day, Tanya was studying graph theory": null,
+ "questions.json:Pavel made a photo of his favourite stars in the sky": null,
+ "questions.json:Please notice the unusual memory limit of this problem": null,
+ "questions.json:Problem Statement:Captain America and Iron Man are at WAR and the rage": null,
+ "questions.json:Raju has created a program to find the square root of a number": null,
+ "questions.json:Recall that a binary search tree is a rooted binary tree, whose nodes ": null,
+ "questions.json:Recently in JEC ants have become huge, the Principal is on a journey t": null,
+ "questions.json:Recently, Pari and Arya did some research about NP-Hard problems and t": {
+  "directed": false,
+  "edges": [
+   [
+    1,
+    2,
+    null
+   ],
+   [
+    2,
+    3,
+    null
+   ]
+  ],
+  "kind": "graph",
+  "m": 2,
+  "marks": {},
+  "n": 4,
+  "notes": {},
+  "weight": null
+ },
+ "questions.json:Rupsa really loves triangles": null,
+ "questions.json:Salmon runs a fish delivery company in Fish City": null,
+ "questions.json:Sergey Semyonovich is a mayor of a county city N and he used to spend ": null,
+ "questions.json:Snuke loves constructing integer sequences": null,
+ "questions.json:Suppose there is a X x Y x Z 3D matrix A of numbers having coordinates": null,
+ "questions.json:Takaki Tono is a Computer Programmer in Tokyo": null,
+ "questions.json:The Chef has a huge square napkin of size 2n X 2n": null,
+ "questions.json:The Fair Nut is going to travel to the Tree Country, in which there ar": null,
+ "questions.json:The GoC Timber Mafia is notorious for its deforestation": null,
+ "questions.json:The Government of Siruseri is no different from any other when it come": null,
+ "questions.json:The MEX of a set of integers is defined as the smallest non-negative i": null,
+ "questions.json:The chef is placing the laddus on the large square plat": null,
+ "questions.json:The country of Siruseri has A\u2217B$A*B$ districts": null,
+ "questions.json:The following graph G is called a Petersen graph and its vertices have": null,
+ "questions.json:The garden has a tree with too many leaves on it and gardner wants to ": null,
+ "questions.json:The government of Siruseri has just commissioned one of the longest an": null,
+ "questions.json:The statement of this problem is the same as the statement of problem ": null,
+ "questions.json:There are $5$ cities in the country": null,
+ "questions.json:There are $N$ cities on a circle, numbered $1$ through $N$": null,
+ "questions.json:There are $N$ villages numbered $1$ to $N$": null,
+ "questions.json:There are $n$ cities in Berland and some pairs of them are connected b": null,
+ "questions.json:There are $n$ water tanks in a row, $i$-th of them contains $a_i$ lite": null,
+ "questions.json:There are a lot of problems related to the shortest paths": null,
+ "questions.json:There is a city with $N$ numbered $0 - N-1$ shops": null,
+ "questions.json:There is a haunted town called HauntedLand": null,
+ "questions.json:There is a road with length $l$ meters": null,
+ "questions.json:There is a tree with N vertices numbered 1 to N": null,
+ "questions.json:There is an undirected tree of $n$ vertices, connected by $n-1$ bidire": null,
+ "questions.json:There is only little time left until the New Year": null,
+ "questions.json:There's a tree and every one of its nodes has a cost associated with i": null,
+ "questions.json:Ujan has a lot of useless stuff in his drawers, a considerable part of": null,
+ "questions.json:Uttu got to know about an interesting two-player mobile game recently ": null,
+ "questions.json:Vasya's older brother, Petya, attends an algorithm course in his schoo": null,
+ "questions.json:We are committed to the well being of all participants": null,
+ "questions.json:We have a tree with N vertices, whose i-th edge connects Vertex u_i an": null,
+ "questions.json:Writing light novels is the most important thing in Linova's life": null,
+ "questions.json:You are given $n$ points on the plane": null,
+ "questions.json:You are given a 1\u00d71\u00d72$1 \\times 1 \\times 2$ bar (a cuboid) and a grid A": null,
+ "questions.json:You are given a convex polygon $P$ with vertices $P_0, P_1, \\ldots, P_": null,
+ "questions.json:You are given a directed graph of $n$ vertices and $m$ edges": {
+  "directed": true,
+  "edges": [
+   [
+    1,
+    2,
+    null
+   ],
+   [
+    2,
+    3,
+    null
+   ],
+   [
+    3,
+    4,
+    null
+   ],
+   [
+    4,
+    1,
+    null
+   ]
+  ],
+  "kind": "graph",
+  "m": 4,
+  "marks": {},
+  "n": 4,
+  "notes": {},
+  "weight": null
+ },
+ "questions.json:You are given a graph with $3 \\cdot n$ vertices and $m$ edges": null,
+ "questions.json:You are given a grid with dimension $n$ x $m$ and two points with coor": null,
+ "questions.json:You are given a rooted tree on N vertices": null,
+ "questions.json:You are given a set of size $m$ with integer elements between $0$ and ": null,
+ "questions.json:You are given a special jigsaw puzzle consisting of $n\\cdot m$ identic": null,
+ "questions.json:You are given a tree consisting of n nodes numbered from 1 to n": null,
+ "questions.json:You are given a tree rooted at node $1$ with $N$ vertices": null,
+ "questions.json:You are given a tree with $N$ vertices (numbered $1$ through $N$) and ": null,
+ "questions.json:You are given a weighted graph with $N$ nodes and $M$ edges": null,
+ "questions.json:You are given a weighted undirected graph consisting of n$n$ nodes and": null,
+ "questions.json:You are given an equilateral triangle \u0394ABC with the side BC being the ": null,
+ "questions.json:You are given an undirected unweighted graph consisting of $n$ vertice": null,
+ "questions.json:You are given an unweighted tree with N$N$ nodes (numbered 1$1$ throug": null,
+ "questions.json:You are given an unweighted, undirected graph": {
+  "directed": false,
+  "edges": [
+   [
+    1,
+    2,
+    null
+   ],
+   [
+    2,
+    3,
+    null
+   ]
+  ],
+  "kind": "graph",
+  "m": 2,
+  "marks": {},
+  "n": 3,
+  "notes": {},
+  "weight": null
+ },
+ "questions.json:You are working for the Gryzzl company, headquartered in Pawnee, India": null,
+ "questions.json:You have a tree consisting of n vertices": null,
+ "questions.json:You have unweighted tree of $n$ vertices": null,
+ "questions.json:You may have helped Chef and prevented Doof from destroying the even n": null,
+ "questions.json:Young Sheldon is given the task to teach Chemistry to his brother Geor": null,
+ "questions.json:ZS the Coder is playing a game": null,
+ "questions.json:Zaikia has $N$ sticks of distinct positive lengths $A_1,A_2,\\dots,A_N$": null,
+ "reviewed_bank.jsonl:Cheapest Route Between Two Cities": {
+  "directed": false,
+  "edges": [
+   [
+    3,
+    1,
+    7
+   ],
+   [
+    2,
+    3,
+    6
+   ]
+  ],
+  "kind": "graph",
+  "m": 2,
+  "marks": {
+   "1": [
+    "s"
+   ],
+   "2": [
+    "t"
+   ]
+  },
+  "n": 3,
+  "notes": {},
+  "weight": "toll"
+ },
+ "reviewed_bank.jsonl:Extra Roads": {
+  "directed": false,
+  "edges": [
+   [
+    2,
+    7,
+    null
+   ],
+   [
+    6,
+    7,
+    null
+   ],
+   [
+    4,
+    2,
+    null
+   ],
+   [
+    3,
+    4,
+    null
+   ],
+   [
+    6,
+    5,
+    null
+   ],
+   [
+    6,
+    3,
+    null
+   ],
+   [
+    1,
+    6,
+    null
+   ],
+   [
+    5,
+    1,
+    null
+   ],
+   [
+    1,
+    7,
+    null
+   ]
+  ],
+  "kind": "graph",
+  "m": 9,
+  "marks": {},
+  "n": 7,
+  "notes": {},
+  "weight": null
+ },
+ "reviewed_bank.jsonl:Friend Groups": {
+  "directed": false,
+  "edges": [
+   [
+    8,
+    9,
+    null
+   ]
+  ],
+  "kind": "graph",
+  "m": 1,
+  "marks": {},
+  "n": 16,
+  "notes": {},
+  "weight": null
+ },
+ "reviewed_bank.jsonl:Friend Triangles": {
+  "directed": false,
+  "edges": [
+   [
+    2,
+    5,
+    null
+   ],
+   [
+    1,
+    3,
+    null
+   ],
+   [
+    3,
+    2,
+    null
+   ],
+   [
+    4,
+    1,
+    null
+   ],
+   [
+    1,
+    2,
+    null
+   ],
+   [
+    1,
+    5,
+    null
+   ]
+  ],
+  "kind": "graph",
+  "m": 6,
+  "marks": {},
+  "n": 5,
+  "notes": {},
+  "weight": null
+ },
+ "reviewed_bank.jsonl:Heap Violations": {
+  "directed": false,
+  "edges": [
+   [
+    0,
+    1,
+    null
+   ],
+   [
+    0,
+    2,
+    null
+   ],
+   [
+    1,
+    3,
+    null
+   ],
+   [
+    1,
+    4,
+    null
+   ],
+   [
+    2,
+    5,
+    null
+   ],
+   [
+    2,
+    6,
+    null
+   ],
+   [
+    3,
+    7,
+    null
+   ],
+   [
+    3,
+    8,
+    null
+   ],
+   [
+    4,
+    9,
+    null
+   ]
+  ],
+  "kind": "binary_tree",
+  "m": 9,
+  "marks": {},
+  "n": 10,
+  "notes": {},
+  "weight": null
+ },
+ "reviewed_bank.jsonl:Largest Friend Group": {
+  "directed": false,
+  "edges": [
+   [
+    4,
+    6,
+    null
+   ],
+   [
+    4,
+    7,
+    null
+   ],
+   [
+    7,
+    3,
+    null
+   ],
+   [
+    4,
+    3,
+    null
+   ],
+   [
+    6,
+    7,
+    null
+   ],
+   [
+    2,
+    7,
+    null
+   ],
+   [
+    1,
+    7,
+    null
+   ]
+  ],
+  "kind": "graph",
+  "m": 7,
+  "marks": {},
+  "n": 8,
+  "notes": {},
+  "weight": null
+ },
+ "reviewed_bank.jsonl:Length of the Loop": null,
+ "reviewed_bank.jsonl:Lowest Common Boss": {
+  "directed": false,
+  "edges": [
+   [
+    8,
+    1,
+    null
+   ],
+   [
+    4,
+    2,
+    null
+   ],
+   [
+    8,
+    3,
+    null
+   ],
+   [
+    5,
+    4,
+    null
+   ],
+   [
+    7,
+    5,
+    null
+   ],
+   [
+    5,
+    6,
+    null
+   ],
+   [
+    4,
+    8,
+    null
+   ]
+  ],
+  "kind": "tree",
+  "m": 7,
+  "marks": {
+   "6": [
+    "x"
+   ],
+   "7": [
+    "y"
+   ]
+  },
+  "n": 8,
+  "notes": {},
+  "weight": null
+ },
+ "reviewed_bank.jsonl:Middle of the Chain": null,
+ "reviewed_bank.jsonl:Most Connected Person": {
+  "directed": false,
+  "edges": [
+   [
+    4,
+    2,
+    null
+   ],
+   [
+    6,
+    4,
+    null
+   ]
+  ],
+  "kind": "graph",
+  "m": 2,
+  "marks": {},
+  "n": 8,
+  "notes": {},
+  "weight": null
+ },
+ "reviewed_bank.jsonl:Most Crowded Generation": {
+  "directed": false,
+  "edges": [
+   [
+    12,
+    1,
+    null
+   ],
+   [
+    12,
+    2,
+    null
+   ],
+   [
+    11,
+    3,
+    null
+   ],
+   [
+    9,
+    4,
+    null
+   ],
+   [
+    9,
+    5,
+    null
+   ],
+   [
+    9,
+    6,
+    null
+   ],
+   [
+    2,
+    7,
+    null
+   ],
+   [
+    12,
+    8,
+    null
+   ],
+   [
+    2,
+    9,
+    null
+   ],
+   [
+    9,
+    10,
+    null
+   ],
+   [
+    4,
+    11,
+    null
+   ]
+  ],
+  "kind": "tree",
+  "m": 11,
+  "marks": {},
+  "n": 12,
+  "notes": {},
+  "weight": null
+ },
+ "reviewed_bank.jsonl:People Without Friends": {
+  "directed": false,
+  "edges": [
+   [
+    5,
+    2,
+    null
+   ]
+  ],
+  "kind": "graph",
+  "m": 1,
+  "marks": {},
+  "n": 6,
+  "notes": {},
+  "weight": null
+ },
+ "reviewed_bank.jsonl:People Without Reports": {
+  "directed": false,
+  "edges": [
+   [
+    3,
+    1,
+    null
+   ],
+   [
+    15,
+    3,
+    null
+   ],
+   [
+    12,
+    4,
+    null
+   ],
+   [
+    2,
+    5,
+    null
+   ],
+   [
+    15,
+    6,
+    null
+   ],
+   [
+    1,
+    7,
+    null
+   ],
+   [
+    3,
+    8,
+    null
+   ],
+   [
+    15,
+    9,
+    null
+   ],
+   [
+    14,
+    10,
+    null
+   ],
+   [
+    5,
+    11,
+    null
+   ],
+   [
+    5,
+    12,
+    null
+   ],
+   [
+    18,
+    13,
+    null
+   ],
+   [
+    8,
+    14,
+    null
+   ],
+   [
+    2,
+    15,
+    null
+   ],
+   [
+    15,
+    16,
+    null
+   ],
+   [
+    15,
+    17,
+    null
+   ],
+   [
+    6,
+    18,
+    null
+   ]
+  ],
+  "kind": "tree",
+  "m": 17,
+  "marks": {},
+  "n": 18,
+  "notes": {},
+  "weight": null
+ },
+ "reviewed_bank.jsonl:Size of a Folder": {
+  "directed": false,
+  "edges": [
+   [
+    7,
+    1,
+    null
+   ],
+   [
+    1,
+    3,
+    null
+   ],
+   [
+    3,
+    4,
+    null
+   ],
+   [
+    4,
+    5,
+    null
+   ],
+   [
+    2,
+    6,
+    null
+   ],
+   [
+    6,
+    7,
+    null
+   ]
+  ],
+  "kind": "tree",
+  "m": 6,
+  "marks": {
+   "2": [
+    "x"
+   ]
+  },
+  "n": 7,
+  "notes": {},
+  "weight": null
+ },
+ "reviewed_bank.jsonl:Steps Between Two Employees": {
+  "directed": false,
+  "edges": [
+   [
+    7,
+    1,
+    null
+   ],
+   [
+    1,
+    3,
+    null
+   ],
+   [
+    3,
+    4,
+    null
+   ],
+   [
+    4,
+    5,
+    null
+   ],
+   [
+    2,
+    6,
+    null
+   ],
+   [
+    6,
+    7,
+    null
+   ]
+  ],
+  "kind": "tree",
+  "m": 6,
+  "marks": {
+   "2": [
+    "x"
+   ],
+   "4": [
+    "y"
+   ]
+  },
+  "n": 7,
+  "notes": {},
+  "weight": null
+ },
+ "reviewed_bank.jsonl:Tasks That Can Be Finished": {
+  "directed": true,
+  "edges": [
+   [
+    5,
+    2,
+    null
+   ]
+  ],
+  "kind": "graph",
+  "m": 1,
+  "marks": {},
+  "n": 6,
+  "notes": {},
+  "weight": null
+ },
+ "reviewed_bank.jsonl:The Longest Chain of Command": {
+  "directed": false,
+  "edges": [
+   [
+    6,
+    1,
+    null
+   ],
+   [
+    7,
+    2,
+    null
+   ],
+   [
+    5,
+    3,
+    null
+   ],
+   [
+    5,
+    4,
+    null
+   ],
+   [
+    1,
+    5,
+    null
+   ],
+   [
+    6,
+    7,
+    null
+   ],
+   [
+    2,
+    8,
+    null
+   ]
+  ],
+  "kind": "tree",
+  "m": 7,
+  "marks": {},
+  "n": 8,
+  "notes": {},
+  "weight": null
+ },
+ "reviewed_bank.jsonl:Who Hears the News": {
+  "directed": true,
+  "edges": [
+   [
+    8,
+    11,
+    null
+   ],
+   [
+    5,
+    1,
+    null
+   ],
+   [
+    11,
+    6,
+    null
+   ],
+   [
+    13,
+    11,
+    null
+   ],
+   [
+    7,
+    4,
+    null
+   ],
+   [
+    12,
+    14,
+    null
+   ],
+   [
+    1,
+    7,
+    null
+   ],
+   [
+    6,
+    2,
+    null
+   ],
+   [
+    3,
+    7,
+    null
+   ],
+   [
+    2,
+    10,
+    null
+   ],
+   [
+    4,
+    5,
+    null
+   ],
+   [
+    14,
+    1,
+    null
+   ],
+   [
+    13,
+    5,
+    null
+   ],
+   [
+    12,
+    3,
+    null
+   ],
+   [
+    5,
+    12,
+    null
+   ],
+   [
+    12,
+    13,
+    null
+   ]
+  ],
+  "kind": "graph",
+  "m": 16,
+  "marks": {},
+  "n": 14,
+  "notes": {},
+  "weight": null
+ }
+}

@@ -52,13 +52,20 @@ EDGE = "#6B7787"
 ROOT_RING = "#9B7BFF"
 TEXT = "#F2F2F2"
 MUTED = "#8C8C8C"
+_MINT, _AMBER = "#35F2A0", "#FFC857"
 MARK_COLOURS = {  # the first of a pair is mint, the second amber
-    "s": "#35F2A0", "x": "#35F2A0", "p": "#35F2A0", "src": "#35F2A0", "source": "#35F2A0", "start": "#35F2A0",
-    "t": "#FFC857", "y": "#FFC857", "q": "#FFC857", "dst": "#FFC857", "dest": "#FFC857", "target": "#FFC857", "end": "#FFC857",
+    "src": _MINT, "source": _MINT, "start": _MINT,
+    "dst": _AMBER, "dest": _AMBER, "target": _AMBER, "end": _AMBER,
 }
+# the two vertices a question names are tagged with the letters it uses (S and T, S and D, X and Y, U and V, A and B, P and Q, in either case)
+MARK_COLOURS.update({c: _MINT for c in "sxupail"})
+MARK_COLOURS.update({c: _AMBER for c in "tyvqbde"})
+MARK_COLOURS.update({c.upper(): _MINT for c in "sxupail"})
+MARK_COLOURS.update({c.upper(): _AMBER for c in "tyvqbde"})
 LAND = "#35F2A0"
 WATER = "#10202C"
 WEIGHT_TEXT = "#FFC857"
+CAPTION_BAND = 0.9  # the strip under a drawing that holds its caption, in layout units
 
 
 class _Reject(Exception):
@@ -81,6 +88,7 @@ class Diagram:
     layout: str = "spring"                      # 'spring' | 'tree' | 'binary'
     sides: Dict[int, str] = field(default_factory=dict)  # binary trees: child -> 'L' or 'R'
     grid: List[List[int]] = field(default_factory=list)  # kind 'grid': the cells
+    notes: Dict[int, str] = field(default_factory=dict)  # vertex -> the value the question gives that vertex ('d=1'), drawn beside it
 
     def label(self, node: int) -> str:
         return self.labels.get(node, str(node))
@@ -154,7 +162,10 @@ def read_sample(schema: str, sample: str) -> dict:
             name, typ, dims = fields[0]
             if typ != "int":
                 raise _Reject(f"type {typ}")
-            if len(dims) == 1:
+            if len(dims) == 1 and dims[0] == "0":
+                # the typed schemas write "one line of integers, any length" as int[0]: the whole line is the list
+                values[name] = _ints(next_row())
+            elif len(dims) == 1:
                 d = dim(dims[0])
                 nums = _ints(next_row()) if d > 0 else []
                 if len(nums) != d:
@@ -193,6 +204,10 @@ def _head_names(fmt: str, count: int) -> List[str]:
     return ["n", "m", "s", "t"][:count]
 
 
+_PAIR_CUE = re.compile(r"\bparent\b[\s,/-]*(?:and\s+)?\bchild\b")
+_SIDE_ROW = re.compile(r"^(\d+)\s+(\d+)\s+([LRlr])$")
+
+
 def infer_schema(sample: str, input_format: str = "", statement: str = "") -> Optional[str]:
     """For a question without a schema: only the shapes that cannot be mistaken for anything else.
 
@@ -222,6 +237,17 @@ def infer_schema(sample: str, input_format: str = "", statement: str = "") -> Op
             if len(widths) == 1 and widths.pop() in (2, 3):
                 text = " ".join(f"{n}:int" for n in names) + f"\nedges:int[m][{len(edge_rows[0])}]"
                 return text + ("\nsrc:int dst:int" if trailing else "")
+    # 'n', then n-1 rows that the format itself calls "parent child pairs" (optionally a last row naming two nodes)  ->  a rooted tree
+    if _PAIR_CUE.search(fmt) and len(head) == 1 and head[0] >= 2:
+        body = grid[1:]
+        k = head[0] - 1
+        if len(body) == k and all(len(r) == 2 for r in body):
+            return f"n:int\nedges:int[{k}][2]"
+        if len(body) == k + 1 and all(len(r) == 2 for r in body):
+            last = re.search(r"last line\W+([a-z])\s*(?:and|,)\s*([a-z])\b", fmt)
+            if last and last.group(1) != last.group(2) and {last.group(1), last.group(2)} <= set("uvxystpq"):
+                return f"n:int\nedges:int[{k}][2]\n{last.group(1)}:int {last.group(2)}:int"
+        return None
     if len(head) == 1 and len(grid) == 2 and len(grid[1]) == head[0] and head[0] > 0:
         return "n:int\na:int[n]"
     if "insertion order" in fmt:
@@ -240,8 +266,11 @@ def _has(patterns, text: str) -> bool:
     return any(re.search(p, text) for p in patterns)
 
 
-_UNDIRECTED_STRONG = [r"\bundirected\b", r"\btwo[- ]way\b", r"\bbidirectional\b", r"\bin either direction\b", r"\bboth directions\b", r"\bboth ways\b"]
-_DIRECTED_STRONG = [r"\bone-way\b", r"\bone way (?:roads?|streets?|edges?|links?|routes?|paths?|messages?|connections?|flights?)\b", r"(?<!un)\bdirected\b", r"\barrows?\b"]
+_UNDIRECTED_STRONG = [r"\bundirected\b", r"\bnon-?directed\b", r"\bnot directed\b", r"\bindirected\b", r"\bunoriented\b", r"\btwo[- ]way\b", r"\bbidirectional\b",
+                      r"\bin either direction\b", r"\bboth directions\b", r"\bboth ways\b"]
+# "directed" inside "undirected", "non-directed" or "not directed" is the opposite word, so it is not matched there
+_DIRECTED_STRONG = [r"\bone-way\b", r"\bone way (?:roads?|streets?|edges?|links?|routes?|paths?|messages?|connections?|flights?)\b",
+                    r"(?<!un)(?<!non-)(?<!non)(?<!in)(?<!not )\bdirected\b", r"\barrows?\b"]
 _UNDIRECTED_EDGE = [r"\bbetween\b", r"\bfriends?\b", r"\bfriendship", r"\bconnects?\b", r"\bconnected\b", r"\blinked?\b", r"\badjacent\b", r"\bneighbou?rs?\b", r"\bare (?:related|partners|twins)\b"]
 _DIRECTED_EDGE = [
     r"\btells?\b", r"\bbefore\b", r"\bpoints? to\b", r"\bdepends? on\b", r"\bprerequisite", r"\brequires?\b",
@@ -273,10 +302,23 @@ def classify_direction(text: str, edge_line: str) -> Optional[bool]:
 _WEIGHT_WORDS = ["toll", "cost", "weight", "distance", "length", "time", "price", "fee", "capacity", "duration", "penalty", "risk"]
 
 
+_EDGE_NOUNS = r"(?:edges?|roads?|streets?|links?|connections?|pipes?|bridges?|flights?|corridors?|tunnels?|paths?|routes?|wires?|cables?|arcs?)"
+
+
 def weight_name(text: str) -> Optional[str]:
+    # the sentences that talk about an edge name what it carries ("Each edge has an integer label", "the time needed to pass each road"):
+    # those words win over a weight-like word that happens to appear somewhere else in the statement
+    for sentence in re.split(r"(?<=[.!?])\s+|\n", text):
+        if re.search(rf"\b{_EDGE_NOUNS}\b", sentence):
+            for w in ["label"] + _WEIGHT_WORDS:
+                if re.search(rf"\b{w}s?\b", sentence):
+                    return w
     for w in _WEIGHT_WORDS:
         if re.search(rf"\b{w}s?\b", text):
             return w
+    # an edge that "has a value": only when the statement says so about the edges themselves ("the value of an edge", "edge values")
+    if re.search(r"\bvalues? of (?:an? |the |each |every )?edges?\b|\bedge values?\b|\bedges? (?:of the graph )?(?:has|have|with)\s+(?:an? |some )?values?\b|\bnodes and edges[^.]{0,40}\bvalues?\b", text):
+        return "value"
     return None
 
 
@@ -290,7 +332,38 @@ def _names_a_vertex(text: str, name: str) -> bool:
     return bool(re.search(rf"\b(?:city|town|vertex|node|nodes|value|values|person|task|room|station|point|start|starts|source|target|destination|reach|reaches|from|to|between|of|and)\s+(?:the\s+)?['\"`]?{re.escape(name)}\b", text))
 
 
-_TAG_ORDER = ("s", "src", "source", "start", "t", "dst", "dest", "target", "end", "p", "q", "x", "y")
+_TAG_ORDER = ("s", "src", "source", "start", "t", "dst", "dest", "target", "end", "p", "q", "x", "y", "U", "V")
+
+# "each vertex has an integer d_i", "the nodes and edges of the graph have some values": the statement gives every vertex a value
+_PER_VERTEX = re.compile(
+    r"(?:each|every)\s+(?:vertex|node|city|person|town)\s+(?:has|is\s+(?:assigned|given|labell?ed)|gets|holds|contains|carries)\b"
+    r"|(?:vertices|nodes)\s+(?:and\s+edges\s+)?(?:of\s+the\s+graph\s+)?have\s+(?:some\s+|an?\s+)?(?:values?|weights?|integers?|numbers?|colou?rs?|labels?)"
+    r"|\bvalues?\s+(?:of|on|written\s+on)\s+(?:the\s+)?(?:vertices|nodes)\b"
+    r"|(?:the\s+)?(?:i-th|\$i\$-th)\s+(?:vertex|node)\s+(?:has|is)\b")
+_ORDINARY_COUNTS = {"n", "m"}
+
+# the pairs of an input are queries, tests, forbidden or missing links, or a graph's complement: not its edge set
+_NOT_THE_EDGES = re.compile(
+    r"\bquer(?:y|ies)\b|\btest cases?\b|\bcomplement\b|\bnon-?edges?\b|"
+    r"\bforbidden\b|\bprohibited\b|\bdislikes?\b|\benem(?:y|ies)\b|\bconflicts?\b|\bincompatible\b|\bblacklist")
+# "not connected by an edge" is only worrying when the sentence is about the listed pairs ("the next m lines give pairs that are not connected");
+# as the precondition of an operation ("two vertices that are not connected by an edge") it says nothing about the input
+_NO_EDGE_PHRASE = re.compile(
+    r"\bno edge between\b|\b(?:not|isn't|aren't|never) (?:directly (?:connected|joined|linked)|connected (?:directly|by (?:an? )?(?:edge|road|link|path))|joined by|adjacent)\b")
+_ABOUT_THE_INPUT = re.compile(r"\bpairs?\b|\blines?\b|\bthe input\b|\beach of the next\b|\bthe following\b|\blisted\b|\bgiven pairs\b")
+
+
+def _vertex_letters(raw: str) -> List[str]:
+    """The single letters a statement uses as vertices ("from node S to node D", "Vertex S ... Vertex T"), in order of first mention.
+
+    A letter followed by an underscore or digit ("Vertex U_i") is an edge endpoint in a formula, not a named vertex."""
+    found: List[str] = []
+    for m in re.finditer(r"\b(?:node|vertex|city|town|settlement|room|island|person|station|planet|village)\s+\$?([A-Za-z])\$?(?![A-Za-z0-9_])", raw, re.I):
+        letter = m.group(1)
+        if letter.lower() in _ORDINARY_COUNTS or letter in found:
+            continue
+        found.append(letter)
+    return found
 
 
 def _legend(marks: Dict[int, List[str]], value=lambda v: v) -> List[str]:
@@ -348,7 +421,8 @@ class DiagramGenerator:
         statement = str(q.get("problem_statement") or q.get("description") or q.get("statement") or "")
         fmt = str(q.get("input_format") or "")
         sample = str(q.get("sample_input") or "")
-        text = f"{title}\n{statement}\n{fmt}".lower()
+        raw = f"{title}\n{statement}\n{fmt}".replace("*", "")  # Markdown emphasis ("node **S**") must not hide a name from the readers below
+        text = raw.lower()
 
         graphish = topic in GRAPH_TOPICS
         treeish = topic in TREE_TOPICS
@@ -360,6 +434,13 @@ class DiagramGenerator:
             treeish = not graphish
         if not sample.strip():
             raise _Reject("no sample input")
+
+        # 'parent child L/R' rows: a binary tree whose sides are given outright
+        if _PAIR_CUE.search(fmt.lower()) and re.search(r"\bl\s*/\s*r\b|left\s*/\s*right", fmt.lower()) and not q.get("input_schema"):
+            lines = [l.strip() for l in sample.strip().splitlines() if l.strip()]
+            if lines and lines[0].isdigit() and len(lines) == int(lines[0]) and all(_SIDE_ROW.match(l) for l in lines[1:]):
+                rows = [(int(m.group(1)), int(m.group(2)), m.group(3).upper()) for m in (_SIDE_ROW.match(l) for l in lines[1:])]
+                return self._side_tree(int(lines[0]), rows, text)
 
         schema = q.get("input_schema") or infer_schema(sample, fmt, statement)
         if not schema:
@@ -374,15 +455,75 @@ class DiagramGenerator:
         grids = {k: v for k, v in arrays2.items() if all(x.isdigit() for x in dims_of[k])}
         if grids and len(grids) == 1 and re.search(r"\b(grid|matrix)\b", text):
             return self._grid(next(iter(grids.items())), text, fmt)
+        if len(arrays2) == 1 and not arrays1 and re.search(r"\badjacency matrix\b", text):
+            return self._adjacency(next(iter(arrays2.values())), scalars, text)
+        pair_lists = [k for k, dims in dims_of.items() if k in arrays2 and len(dims) == 2 and dims[0].isdigit() and dims[1] == "2"]
+        if pair_lists and len(arrays2) == 1 and (treeish or re.search(r"\b(?:binary tree|tree)\b", text)) and _PAIR_CUE.search(text):
+            return self._pair_tree(arrays2[pair_lists[0]], scalars, text)
         if arrays2 and (graphish or treeish or re.search(r"\b(graph|vertices)\b", text)):
-            return self._graph(arrays2, scalars, text, fmt, dims_of)
+            return self._graph(arrays2, scalars, text, fmt, dims_of, arrays1, raw, statement.replace("*", "").lower())
+        if len(arrays1) == 2 and not arrays2 and treeish:
+            # "n target", then the tree as an array of n numbers: the first line says how long the array is
+            (_, head), (name, body) = list(arrays1.items())
+            if 1 < len(head) <= 3 and head[0] == len(body):
+                return self._tree_array((name, body), scalars, text)
         if len(arrays1) == 1 and not arrays2 and (treeish or graphish):
             return self._tree_array(next(iter(arrays1.items())), scalars, text)
         raise _Reject("no edge list or tree array in the sample")
 
-    def _graph(self, arrays2: dict, scalars: dict, text: str, fmt: str, dims_of: dict) -> Diagram:
+    def _adjacency(self, rows: List[List[int]], scalars: dict, text: str) -> Diagram:
+        """A graph given as an n by n matrix, when the statement says which entry means 'no edge'."""
+        n = scalars.get("n")
+        if n is None or n < 1 or n > MAX_NODES or len(rows) != n or any(len(r) != n for r in rows):
+            raise _Reject("the adjacency matrix is not n by n")
+        none = re.search(r"(-?\d+)\s+(?:in the matrix\s+)?(?:means|denotes|indicates|represents)\s+(?:that\s+)?(?:there is\s+)?no\s+(?:direct\s+)?(?:edge|path|road|connection)", text)
+        if not none:
+            raise _Reject("the statement does not say which matrix entry means 'no edge'")
+        absent = int(none.group(1))
+        directed = classify_direction(text, "")
+        if directed is None:
+            raise _Reject("the wording does not say whether the edges are directed")
+        # which number each row stands for is the statement's to say ("(0-indexed)", "numbered 1 to n"); a picture must not choose it
+        zero = re.search(r"0-indexed|zero[- ]indexed|0-based|numbered (?:from )?0\b|\b0 to n\s*-\s*1\b", text)
+        one = re.search(r"1-indexed|one[- ]indexed|1-based|numbered (?:from )?1\b|\b1 to n\b", text)
+        if bool(zero) == bool(one):
+            raise _Reject("the statement does not say how the vertices of the matrix are numbered")
+        base = 0 if zero else 1
+        weighted = bool(re.search(r"\bweighted\b|\bweights?\b|\bcosts?\b|\bdistances?\b", text))
+        edges: List[Tuple[int, int, Optional[int]]] = []
+        for i in range(n):
+            for j in range(n):
+                v = rows[i][j]
+                if v == absent or (i == j and v == 0):
+                    continue
+                if not directed and j < i:
+                    if rows[j][i] != v:
+                        raise _Reject("an undirected graph with an asymmetric matrix")
+                    continue
+                if not weighted and v != 1:
+                    raise _Reject("an unweighted matrix entry other than 1")
+                edges.append((i + base, j + base, v if weighted else None))
+        if len(edges) > MAX_EDGES:
+            raise _Reject("too many edges to draw")
+        bits = [f"n = {n}", f"adjacency matrix, vertex = row number (from {base})", "directed" if directed else "undirected"]
+        if weighted:
+            bits.append("edge labels: weight")
+        return Diagram(kind="graph", nodes=list(range(base, base + n)), edges=edges, directed=directed, weight_name="weight" if weighted else None,
+                       caption="Sample input: " + " · ".join(bits), layout="spring")
+
+    def _graph(self, arrays2: dict, scalars: dict, text: str, fmt: str, dims_of: dict, arrays1: Optional[dict] = None, raw: str = "", statement: str = "") -> Diagram:
         if len(arrays2) != 1:
             raise _Reject("more than one edge list")
+        # wording that says the listed pairs are something other than the graph's own edges. A statement like that is not drawn as that
+        # graph whatever else it says, so a wording nobody has met yet cannot slip a wrong picture through on these
+        not_edges = _NOT_THE_EDGES.search(statement)
+        if not not_edges:
+            for sentence in re.split(r"(?<=[.!?])\s+|\n", statement):
+                if _NO_EDGE_PHRASE.search(sentence) and _ABOUT_THE_INPUT.search(sentence):
+                    not_edges = _NO_EDGE_PHRASE.search(sentence)
+                    break
+        if not_edges:
+            raise _Reject(f"the statement mentions {not_edges.group(0)!r}: the listed pairs may not be the graph's edges")
         name, rows = next(iter(arrays2.items()))
         dims = dims_of.get(name, [])
         # an edge list is `m` rows of a fixed 2 or 3 numbers. A grid, or a list of intervals, has another shape or another count
@@ -396,9 +537,21 @@ class DiagramGenerator:
             raise _Reject("m does not match the number of edge rows")
         if n < 1 or n > MAX_NODES or len(rows) > MAX_EDGES:
             raise _Reject(f"too large to draw ({n} vertices, {len(rows)} edges)")
+        if re.search(r"\bcomplete graph\b|\bclique\b", text) and len(rows) != n * (n - 1) // 2:
+            # the question's graph has every pair connected, so a list of fewer pairs is a property of some edges, not the edge set
+            raise _Reject("a complete graph whose input lists only some of its edges")
 
         labels = [r[0] for r in rows] + [r[1] for r in rows]
-        zero_based = bool(re.search(r"numbered (?:from )?0\b|\b0 to n\s*-\s*1\b|\bzero[- ]indexed\b|0-indexed|0-based", text)) or (0 in labels)
+        vertex_names = r"[uvabxy](?:_\{?\w+\}?)?(?:\s*,\s*[uvabxy](?:_\{?\w+\}?)?)*"   # "u, v" or "u_{i}, v_{i}": the endpoints, not any variable
+        says_zero = bool(re.search(r"numbered (?:from )?0\b|\b0 to n\s*-\s*1\b|\bzero[- ]indexed\b|0-indexed|0-based"
+                                   rf"|\b0\s*(?:≤|<=|\\le(?:q)?)\s*{vertex_names}\s*(?:<|\\lt)\s*n\b", text))
+        says_one = bool(re.search(r"numbered (?:from )?1\b|\b1\s*(?:to|\.\.)\s*n\b|\bone[- ]indexed\b|1-indexed|1-based"
+                                  rf"|\b1\s*(?:≤|<=|\\le(?:q)?)\s*{vertex_names}\s*(?:≤|<=|\\le(?:q)?)\s*n\b", text))
+        if not (says_zero or says_one or 0 in labels or n in labels):
+            # an isolated vertex 0 (vertices 0..n-1) and an isolated vertex n (vertices 1..n) fit the edges equally well, and drawing one
+            # would show a vertex that does not exist and hide one that does
+            raise _Reject("the vertex numbering is not stated and the edges do not settle it")
+        zero_based = says_zero or (0 in labels)
         base = 0 if zero_based else 1
         nodes = list(range(base, base + n))
         if any(not (base <= v < base + n) for v in labels):
@@ -416,18 +569,155 @@ class DiagramGenerator:
         edges = [(r[0], r[1], r[2] if width == 3 else None) for r in rows]
 
         marks: Dict[int, List[str]] = {}
+        used: set = set()
         for key in _MARKS:
             if key in scalars and base <= scalars[key] < base + n and key not in _SCALAR_N and key != "m" and _names_a_vertex(text, key):
                 marks.setdefault(scalars[key], [])
+                used.add(key)
                 if key not in marks[scalars[key]]:
                     marks[scalars[key]].append(key)
+
+        # the statement names vertex variables ("from node S to node D", "Vertex S ... Vertex T") that the input has to supply: a number the format
+        # calls by the same letter is that vertex, and the numbers left unexplained ("the integers n, m, k, q") are the remaining named vertices, in
+        # order, when there are exactly as many of them. A variable can also be written `src`.
+        named = _vertex_letters(raw)
+        if named:
+            pending = [letter for letter in named if letter.lower() not in {t.lower() for ts in marks.values() for t in ts}]
+            spare = [k for k in scalars if k not in _SCALAR_N and k != "m" and k not in used]
+            for letter in list(pending):
+                if letter.lower() in spare and base <= scalars[letter.lower()] < base + n:
+                    marks.setdefault(scalars[letter.lower()], []).append(letter)
+                    pending.remove(letter)
+                    spare.remove(letter.lower())
+            if pending and len(pending) == len(spare) and all(base <= scalars[k] < base + n for k in spare):
+                for letter, key in zip(pending, spare):
+                    marks.setdefault(scalars[key], []).append(letter)
+            case_of = {letter.lower(): letter for letter in named}  # write every tag the way the statement writes it
+            marks = {v: [case_of.get(t.lower(), t) if len(t) == 1 else t for t in ts] for v, ts in marks.items()}
+        elif not marks:
+            spare = [k for k in scalars if k not in _SCALAR_N and k != "m"]
+            quoted = sorted(set(re.findall(r"`(src|source|start|dst|dest|target)`", text)))
+            if quoted and len(quoted) == len(spare) and all(base <= scalars[k] < base + n for k in spare):
+                for tag, key in zip(quoted, spare):
+                    marks.setdefault(scalars[key], []).append(tag)
+        if not marks:
+            # two vertices the statement names by number, or as the last vertex ("find the shortest path from node 1 to node N")
+            pair = re.search(r"\bfrom\s+(?:node|vertex|city)\s+(\d+)\s+to\s+(?:node|vertex|city)\s+(\d+|n)\b", text)
+            if pair:
+                first = int(pair.group(1))
+                last = base + n - 1 if pair.group(2) == "n" else int(pair.group(2))
+                if base <= first < base + n and base <= last < base + n and first != last:
+                    marks[first] = ["src"]
+                    marks[last] = ["dst"]
+        if not marks:
+            # a vertex the statement names by its number ("shortest distance from source node 0", "from node 1 to all other nodes",
+            # "perform BFS from node 3")
+            literal = re.search(r"\bsource\s+(?:node|vertex|city|town)?\s*(\d+)\b|\bfrom\s+(?:node|vertex|city)\s+(\d+)\s+to\s+(?:all|every|each)\b"
+                                r"|\b(?:bfs|dfs)\s+(?:traversal\s+)?(?:starting\s+)?from\s+(?:node|vertex|city)\s+(\d+)\b", text)
+            if literal:
+                v = int(next(g for g in literal.groups() if g is not None))
+                if base <= v < base + n:
+                    marks[v] = ["src"]
+
+        # a list the input gives besides the edges: one value for every vertex when the statement says each vertex has one,
+        # otherwise the picture would silently leave part of the input out, so there is none
+        notes: Dict[int, str] = {}
+        symbol = None
+        for key, values in (arrays1 or {}).items():
+            cue = _PER_VERTEX.search(text)
+            if len(values) == n and not notes and cue:
+                # the variable the statement gives each vertex ("an integer d_{i}"), read from the words right after the cue, as an indexed name
+                found = re.search(r"(?:integers?|values?|numbers?|weights?|colou?rs?)\s+\$?([A-Za-z])_\{?[a-z]\}?", raw[cue.end():cue.end() + 60])
+                symbol = found.group(1) if found else None
+                notes = {node: (f"{symbol}={value}" if symbol else str(value)) for node, value in zip(nodes, values)}
+            else:
+                raise _Reject(f"the list {key} is not tied to the vertices by the statement")
 
         bits = [f"n = {n}", f"m = {len(rows)}", "directed" if directed else "undirected"]
         if wname:
             bits.append(f"edge labels: {wname}")
+        if notes:
+            bits.append(f"beside each vertex: {symbol + '_i' if symbol else 'its value'}")
         legend = _legend(marks)
         caption = "Sample input: " + " · ".join(bits) + (("   |   " + ", ".join(legend)) if legend else "")
-        return Diagram(kind="graph", nodes=nodes, edges=edges, directed=directed, marks=marks, weight_name=wname, caption=caption, layout="spring")
+        return Diagram(kind="graph", nodes=nodes, edges=edges, directed=directed, marks=marks, weight_name=wname, caption=caption, layout="spring", notes=notes)
+
+    def _side_tree(self, n: int, rows: List[Tuple[int, int, str]], text: str) -> Diagram:
+        """A binary tree given as n-1 rows 'parent child L|R'."""
+        if n < 2 or n > MAX_NODES or len(rows) != n - 1:
+            raise _Reject("the parent-child-side rows do not match n")
+        labels = [v for r in rows for v in r[:2]]
+        base = 0 if (0 in labels or re.search(r"numbered (?:from )?0\b|\bzero[- ]indexed\b|0-indexed|0-based", text)) else 1
+        nodes = list(range(base, base + n))
+        if any(not (base <= v < base + n) for v in labels):
+            raise _Reject("a row names a node outside 1..n")
+        parent_of: Dict[int, int] = {}
+        taken = set()
+        for p, c, side in rows:
+            if p == c or c in parent_of or (p, side) in taken:
+                raise _Reject("a node has two parents, or a parent has two children on one side")
+            parent_of[c] = p
+            taken.add((p, side))
+        roots = [v for v in nodes if v not in parent_of]
+        if len(roots) != 1:
+            raise _Reject("a tree has exactly one root")
+        for v in nodes:
+            seen, cur = set(), v
+            while cur in parent_of:
+                if cur in seen:
+                    raise _Reject("the rows form a cycle")
+                seen.add(cur)
+                cur = parent_of[cur]
+            if cur != roots[0]:
+                raise _Reject("a node is not connected to the root")
+        edges = [(p, c, None) for p, c, _ in rows]
+        sides = {c: side for _, c, side in rows}
+        caption = f"Sample input: n = {n} · root {roots[0]} · L = left child, R = right child"
+        return Diagram(kind="binary_tree", nodes=nodes, edges=edges, directed=False, roots=roots, caption=caption, layout="binary", sides=sides)
+
+    def _pair_tree(self, rows: List[List[int]], scalars: dict, text: str) -> Diagram:
+        """A rooted tree given as n-1 'parent child' rows. Drawn with each parent's children left to right in the order given."""
+        n = scalars.get("n")
+        if n is None or n < 2 or n > MAX_NODES or len(rows) != n - 1:
+            raise _Reject("the parent-child rows do not match n")
+        labels = [v for r in rows for v in r]
+        base = 0 if (0 in labels or re.search(r"numbered (?:from )?0\b|\bzero[- ]indexed\b|0-indexed|0-based", text)) else 1
+        nodes = list(range(base, base + n))
+        if any(not (base <= v < base + n) for v in labels):
+            raise _Reject("a row names a node outside 1..n")
+        parent_of: Dict[int, int] = {}
+        for p, c in rows:
+            if p == c or c in parent_of:
+                raise _Reject("a node has two parents")
+            parent_of[c] = p
+        roots = [v for v in nodes if v not in parent_of]
+        if len(roots) != 1:
+            raise _Reject("a tree has exactly one root")
+        for v in nodes:
+            seen, cur = set(), v
+            while cur in parent_of:
+                if cur in seen:
+                    raise _Reject("the rows form a cycle")
+                seen.add(cur)
+                cur = parent_of[cur]
+            if cur != roots[0]:
+                raise _Reject("a node is not connected to the root")
+        if re.search(r"\bbinary tree\b", text):
+            kids: Dict[int, int] = {}
+            for p, _ in rows:
+                kids[p] = kids.get(p, 0) + 1
+            if any(k > 2 for k in kids.values()):
+                raise _Reject("a node of a 'binary tree' has more than two children")
+        # a last row such as 'U V' names two nodes of the tree; the schema gave them the letters the format uses
+        marks: Dict[int, List[str]] = {}
+        for name, value in scalars.items():
+            if name != "n" and len(name) == 1:
+                if not (base <= value < base + n):
+                    raise _Reject(f"{name} is not a node of the tree")
+                marks.setdefault(value, []).append(name.upper())
+        legend = _legend(marks)
+        caption = f"Sample input: n = {n} · root {roots[0]}" + ((" · " + ", ".join(legend)) if legend else "")
+        return Diagram(kind="tree", nodes=nodes, edges=[(p, c, None) for p, c in rows], directed=False, roots=roots, marks=marks, caption=caption, layout="tree")
 
     def _tree_array(self, item, scalars: dict, text: str) -> Diagram:
         name, arr = item
@@ -450,6 +740,10 @@ class DiagramGenerator:
             if marker:
                 tok = marker.group(1)
                 null = int(tok) if re.fullmatch(r"-?\d+", tok) else None
+            if null is None and -1 in arr and not array_cue:
+                # in a level-order list -1 is very often "no node here"; drawing it as a vertex would add nodes the tree does not have,
+                # and the statement does not say. (A heap stored by position 2i+1 / 2i+2 is a complete tree: -1 is just a value there.)
+                raise _Reject("the array holds -1 and the statement does not say whether that is a value or a missing node")
             levelorder = bool(re.search(r"level[- ]order", text)) and null is not None and not re.search(r"2\s*i\s*\+\s*1|position", text)
             return self._implicit_binary(arr, null, levelorder)
         if parent_cue:
@@ -612,7 +906,7 @@ class DiagramGenerator:
         cursor = [0.0]
 
         def walk(node: int, depth: int) -> float:
-            cs = sorted(kids[node])
+            cs = kids[node]  # in the order the question lists them: a parent array lists them by label, 'parent child' rows as given
             if not cs:
                 x = cursor[0]
                 cursor[0] += 1.5
@@ -658,7 +952,7 @@ class DiagramGenerator:
         if k == 2:
             return {nodes[0]: (0.0, 0.0), nodes[1]: (2.2, 0.0)}
         if directed and nx.is_directed_acyclic_graph(g):
-            return self._clear(self._layered(g), list(g.edges))
+            return self._finish(self._clear(self._layered(g), list(g.edges)), g, orient=False)
         if k == 3:
             # a path or a triangle: place it by hand so the corner is where the edges meet
             deg = sorted(g.to_undirected().degree, key=lambda t: -t[1])
@@ -667,6 +961,9 @@ class DiagramGenerator:
             if g.to_undirected().number_of_edges() == 3:
                 return {others[0]: (0.0, 0.0), others[1]: (2.2, 0.0), centre: (1.1, 1.9)}
             return {others[0]: (0.0, 0.0), centre: (2.2, 0.0), others[1]: (4.4, 0.0)}
+        regular = self._regular(g, directed)
+        if regular is not None:
+            return regular
         ug = g.to_undirected()
         hops = dict(nx.all_pairs_shortest_path_length(ug))
         D = np.array([[hops[a][b] for b in nodes] for a in nodes], dtype=float) * EDGE_LEN
@@ -690,7 +987,203 @@ class DiagramGenerator:
                 continue
         if best is None:
             raise _Reject("no usable layout")
-        return best
+        return self._finish(best, g, orient=True)
+
+    # ── symmetry: regular shapes, a canonical orientation, exact mirror images ───────────────────────────────────────────
+
+    def _regular(self, g, directed: bool) -> Optional[Dict[int, Tuple[float, float]]]:
+        """A cycle, a complete graph, a star, a wheel, a short path or a complete bipartite graph is drawn as the regular figure it is."""
+        ug = nx.Graph(g.to_undirected())
+        k, m = ug.number_of_nodes(), ug.number_of_edges()
+        if k < 4 or not nx.is_connected(ug):
+            return None
+        nodes = sorted(ug.nodes)
+        deg = dict(ug.degree)
+        edges = list(ug.edges)
+        L = EDGE_LEN
+
+        def ring(order, R, centre=(0.0, 0.0)):
+            n = len(order)
+            start = math.pi / 2 + (math.pi / n if n % 2 == 0 else 0.0)  # a vertex at the top, or a flat top for an even count
+            return {v: (centre[0] + R * math.cos(start - 2 * math.pi * i / n), centre[1] + R * math.sin(start - 2 * math.pi * i / n)) for i, v in enumerate(order)}
+
+        def accepted(make, R0):
+            for f in (1.0, 1.2, 1.45, 1.8, 2.2):
+                pts = make(R0 * f)
+                if self._violations(pts, edges) == 0:
+                    return pts
+            return None
+
+        def around(start):
+            """The vertices of a cycle in order, following the direction of the edges when they have one."""
+            nbrs = sorted(ug[start])
+            ahead = [n for n in nbrs if g.has_edge(start, n)] if directed else []
+            nxt = ahead[0] if len(ahead) == 1 else nbrs[0]
+            order, prev, cur = [start], start, nxt
+            while cur != start:
+                order.append(cur)
+                step = [n for n in ug[cur] if n != prev]
+                prev, cur = cur, step[0]
+                if len(order) > k:
+                    return None
+            return order
+
+        if m == k * (k - 1) // 2 and k <= 12:  # complete: a regular polygon
+            return accepted(lambda R: ring(nodes, R), L / (2 * math.sin(math.pi / k)))
+        hubs = [v for v in nodes if deg[v] == k - 1]
+        if len(hubs) == 1 and k >= 5 and m == 2 * (k - 1) and k <= 14:  # wheel: the rim as a polygon, the hub in the middle
+            rim = ug.subgraph([v for v in nodes if v != hubs[0]])
+            if all(d == 2 for _, d in rim.degree) and nx.is_connected(rim):
+                order = self._cycle_order(rim)
+                if order:
+                    return accepted(lambda R: {**ring(order, R), hubs[0]: (0.0, 0.0)}, L / (2 * math.sin(math.pi / (k - 1))))
+        if m == k and k <= 16 and all(d == 2 for d in deg.values()):  # cycle: a regular polygon
+            order = around(nodes[0])
+            if order and len(order) == k:
+                return accepted(lambda R: ring(order, R), L / (2 * math.sin(math.pi / k)))
+        if len(hubs) == 1 and m == k - 1 and k <= 13:  # star: leaves evenly round the hub
+            leaves = [v for v in nodes if v != hubs[0]]
+            return accepted(lambda R: {**ring(leaves, R), hubs[0]: (0.0, 0.0)}, max(L, L / (2 * math.sin(math.pi / len(leaves)))))
+        if k <= 7 and m == k - 1 and sorted(deg.values()) == [1, 1] + [2] * (k - 2):  # a short path: a straight line
+            ends = [v for v in nodes if deg[v] == 1]
+            first = next((e for e in ends if directed and g.has_edge(e, next(iter(ug[e])))), ends[0])
+            order, prev, cur = [first], None, first
+            while len(order) < k:
+                cur_next = [n for n in ug[cur] if n != prev][0]
+                order.append(cur_next)
+                prev, cur = cur, cur_next
+            pts = {v: (i * L - (k - 1) * L / 2, 0.0) for i, v in enumerate(order)}
+            return pts if self._violations(pts, edges) == 0 else None
+        if k <= 12:  # complete bipartite: two rows
+            try:
+                top, bottom = nx.bipartite.sets(ug)
+            except nx.NetworkXError:
+                return None
+            if len(top) >= 2 and len(bottom) >= 2 and m == len(top) * len(bottom):
+                a, b = sorted(top), sorted(bottom)
+                if (len(a), a[0]) > (len(b), b[0]):
+                    a, b = b, a
+                for gap in (3.0, 3.6, 4.4):
+                    pts = {v: (i * L - (len(a) - 1) * L / 2, gap / 2) for i, v in enumerate(a)}
+                    pts.update({v: (i * L - (len(b) - 1) * L / 2, -gap / 2) for i, v in enumerate(b)})
+                    if self._violations(pts, edges) == 0:
+                        return pts
+        return None
+
+    @staticmethod
+    def _cycle_order(rim) -> Optional[List[int]]:
+        start = min(rim.nodes)
+        order, prev, cur = [start], None, start
+        while True:
+            step = [n for n in sorted(rim[cur]) if n != prev]
+            nxt = step[0]
+            if nxt == start:
+                break
+            order.append(nxt)
+            prev, cur = cur, nxt
+            if len(order) > rim.number_of_nodes():
+                return None
+        return order if len(order) == rim.number_of_nodes() else None
+
+    def _finish(self, pts, g, orient: bool):
+        """Centre the layout, lay its long axis along x, and make it an exact mirror image of itself wherever the graph is one."""
+        edges = list(g.edges)
+        base = self._violations(pts, edges)
+        cur = dict(pts)
+        if orient:
+            cur = self._orient(cur, g)
+        for step in range(3):  # mirror, then line up rows and columns, then mirror what the lining-up disturbed
+            if step == 1:
+                aligned = self._align(cur)
+                if self._violations(aligned, edges) <= base:
+                    cur = aligned
+                continue
+            for axis in (0, 1):
+                mirrored = self._mirror(cur, g, axis)
+                if mirrored is not None and self._violations(mirrored, edges) <= base:
+                    cur = mirrored
+        return cur
+
+    @staticmethod
+    def _align(pts, tol: float = 0.3):
+        """Vertices whose x (or y) differ by less than tol sit in one column (or row): give them exactly the same coordinate."""
+        out = {n: list(p) for n, p in pts.items()}
+        for axis in (0, 1):
+            order = sorted(pts, key=lambda n: pts[n][axis])
+            groups, group = [], [order[0]]
+            for n in order[1:]:
+                if pts[n][axis] - pts[group[0]][axis] <= 2 * tol and pts[n][axis] - pts[group[-1]][axis] <= tol:
+                    group.append(n)
+                else:
+                    groups.append(group)
+                    group = [n]
+            groups.append(group)
+            for group in groups:
+                mean = sum(pts[n][axis] for n in group) / len(group)
+                for n in group:
+                    out[n][axis] = mean
+        return {n: (p[0], p[1]) for n, p in out.items()}
+
+    @staticmethod
+    def _orient(pts, g):
+        names = sorted(pts)
+        P = np.array([pts[n] for n in names], dtype=float)
+        P -= P.mean(axis=0)
+        if len(names) >= 3:
+            w, v = np.linalg.eigh(P.T @ P)
+            if w[1] > 1.15 * w[0]:  # a long axis exists: lay it along x (a round layout has none)
+                ang = -math.atan2(v[1][1], v[0][1])
+                c, s = math.cos(ang), math.sin(ang)
+                P = P @ np.array([[c, -s], [s, c]]).T
+        index = {n: i for i, n in enumerate(names)}
+        if g.is_directed():
+            flip_x = sum(P[index[b]][0] - P[index[a]][0] for a, b in g.edges) < -1e-9
+        else:
+            flip_x = P[0][0] > 1e-9  # the smallest label on the left
+        if flip_x:
+            P[:, 0] *= -1
+        if P[0][1] < -1e-9:  # ...and in the upper half
+            P[:, 1] *= -1
+        return {n: (float(P[i][0]), float(P[i][1])) for n, i in index.items()}
+
+    @staticmethod
+    def _mirror(pts, g, axis: int, tol: float = 0.55):
+        """Make the layout an exact mirror image across the vertical (axis 0) or horizontal (axis 1) line through its centre, but only
+        when the layout is already nearly one and the mirror is a real symmetry of the graph (it maps every edge onto an edge)."""
+        names = sorted(pts)
+        c = sum(pts[n][axis] for n in names) / len(names)
+
+        def reflect(p):
+            return (2 * c - p[0], p[1]) if axis == 0 else (p[0], 2 * c - p[1])
+
+        deg = dict(g.to_undirected().degree)
+        sigma, used = {}, set()
+        for a in names:
+            if a in used:
+                continue
+            ra = reflect(pts[a])
+            cand = sorted((math.dist(ra, pts[b]), b) for b in names if b not in used and deg[b] == deg[a])
+            if not cand or cand[0][0] >= tol:
+                return None
+            b = cand[0][1]
+            sigma[a] = b
+            sigma[b] = a
+            used.update((a, b))
+        if any(not g.has_edge(sigma[u], sigma[v]) for u, v in g.edges):
+            return None
+        out = {}
+        for a in names:
+            b = sigma[a]
+            if a == b:
+                p = list(pts[a])
+                p[axis] = c
+                out[a] = (p[0], p[1])
+            elif a < b:
+                rb = reflect(pts[b])
+                mid = ((pts[a][0] + rb[0]) / 2, (pts[a][1] + rb[1]) / 2)
+                out[a] = mid
+                out[b] = reflect(mid)
+        return out
 
     @staticmethod
     def _violations(pts, edges) -> int:
@@ -833,6 +1326,21 @@ class DiagramGenerator:
         layer: Dict[int, int] = {}
         for n in nx.topological_sort(g):
             layer[n] = max((layer[p] + 1 for p in g.predecessors(n)), default=0)
+        # an edge that skips layers reserves a slot (a virtual vertex, id < 0) in every layer it passes, so the vertices on those
+        # layers are placed to its side, evenly, and not pushed aside afterwards
+        pred: Dict[int, List[int]] = {n: [] for n in g.nodes}
+        succ: Dict[int, List[int]] = {n: [] for n in g.nodes}
+        virtual = 0
+        for u, v in sorted(g.edges):
+            prev = u
+            for l in range(layer[u] + 1, layer[v]):
+                virtual -= 1
+                layer[virtual] = l
+                pred[virtual], succ[virtual] = [prev], []
+                succ[prev].append(virtual)
+                prev = virtual
+            succ[prev].append(v)
+            pred[v].append(prev)
         rows: Dict[int, List[int]] = {}
         for n, l in layer.items():
             rows.setdefault(l, []).append(n)
@@ -841,16 +1349,17 @@ class DiagramGenerator:
         for _ in range(4):  # barycentre sweeps cut the crossings
             for l in sorted(rows)[1:]:
                 idx = {n: i for i, n in enumerate(rows[l - 1])}
-                rows[l].sort(key=lambda n: (sum(idx[p] for p in g.predecessors(n) if p in idx) / max(1, sum(1 for p in g.predecessors(n) if p in idx)), n))
+                rows[l].sort(key=lambda n: (sum(idx[p] for p in pred[n] if p in idx) / max(1, sum(1 for p in pred[n] if p in idx)), n))
             for l in sorted(rows, reverse=True)[1:]:
                 idx = {n: i for i, n in enumerate(rows[l + 1])}
-                rows[l].sort(key=lambda n: (sum(idx[s] for s in g.successors(n) if s in idx) / max(1, sum(1 for s in g.successors(n) if s in idx)), n))
+                rows[l].sort(key=lambda n: (sum(idx[s] for s in succ[n] if s in idx) / max(1, sum(1 for s in succ[n] if s in idx)), n))
         width = max(len(r) for r in rows.values())
         pos = {}
         for l, row in rows.items():
             off = (width - len(row)) * 1.1
             for i, n in enumerate(row):
-                pos[n] = (off + i * 2.2, -l * 2.0)
+                if n >= 0 or n in g.nodes:
+                    pos[n] = (off + i * 2.2, -l * 2.0)
         return pos
 
     @staticmethod
@@ -897,7 +1406,7 @@ class DiagramGenerator:
                 ax.add_patch(Rectangle((x + 2, y + 2), cell - 4, cell - 4, facecolor=LAND if v else WATER, edgecolor=NODE_RING if v else "#1C3445", linewidth=1.6, zorder=2))
                 ax.text(x + cell / 2, y + cell / 2, str(v), color="#04130C" if v else "#5B7385", fontsize=15, fontweight="bold", ha="center", va="center", zorder=3)
                 cells.append({"row": r_i, "col": c_i, "value": v, "centre_px": (x + cell / 2, y + cell / 2)})
-        ax.text(left, height_px - 22, d.caption, color=MUTED, fontsize=9, ha="left", va="center")
+        ax.text(width_px / 2, height_px - 22, d.caption, color=MUTED, fontsize=9, ha="center", va="center")
         buf = io.BytesIO()
         fig.savefig(buf, format="png", dpi=dpi, facecolor=BG)
         data_url = "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode()
@@ -999,6 +1508,15 @@ class DiagramGenerator:
             if w is not None:
                 mx, my = g["mid"]
                 xmin, xmax, ymin, ymax = min(xmin, mx - 0.6), max(xmax, mx + 0.6), min(ymin, my - 1.4), max(ymax, my + 0.6)
+        for node, note in d.notes.items():  # a value written beside its vertex needs room to its right and below
+            x, y = pos[node]
+            xmax, ymin = max(xmax, x + r * 0.95 + 0.27 * len(note) + 0.3), min(ymin, y - r * 0.85 - 0.9)
+        # symmetric frame: the vertices sit in the middle, with the same room left and right, and above and below (the caption's line is extra)
+        cx, cy = (min(xs) + max(xs)) / 2, (min(ys) + max(ys)) / 2
+        half_x = max(cx - xmin, xmax - cx)
+        xmin, xmax = cx - half_x, cx + half_x
+        half_y = max(ymax - cy, cy - ymin - CAPTION_BAND)
+        ymax, ymin = cy + half_y, cy - half_y - CAPTION_BAND
         unit = 66.0
 
         def size():
@@ -1061,8 +1579,10 @@ class DiagramGenerator:
             ax.text(x, y, d.label(n), color=TEXT, fontsize=font, fontweight="bold", ha="center", va="center", zorder=5)
             if tags:
                 ax.text(x + r * 0.95, y + r * 0.85, "/".join(tags), color=MARK_COLOURS[tags[0]], fontsize=max(7.0, font * 0.7), fontweight="bold", ha="left", va="bottom", zorder=5)
+            if n in d.notes:
+                ax.text(x + r * 0.95, y - r * 0.85, d.notes[n], color=MUTED, fontsize=max(7.0, font * 0.62), ha="left", va="top", zorder=5)
 
-        ax.text(xmin + 0.35, ymin + 0.3, d.caption, color=MUTED, fontsize=max(8.0, min(11.0, W / 90)), ha="left", va="bottom")
+        ax.text((xmin + xmax) / 2, ymin + 0.3, d.caption, color=MUTED, fontsize=max(8.0, min(11.0, W / 90)), ha="center", va="bottom")
 
         buf = io.BytesIO()
         fig.savefig(buf, format="png", dpi=dpi, facecolor=BG)

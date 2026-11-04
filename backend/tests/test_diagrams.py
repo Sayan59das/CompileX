@@ -526,6 +526,8 @@ def random_graph_question(rng):
     if weighted:
         line = line.replace("two integers u and v", "three integers u, v and w").replace("two integers a and b", "three integers u, v and w") + f" The {noun} of using it is w."
         statement += f" Every link has its own {noun}."
+    # real questions say how their vertices are numbered (the generator refuses when neither the words nor the edges settle it)
+    statement += " The vertices are numbered from 1 to n."
     head = [n, m]
     names = "n:int m:int"
     if marks:
@@ -750,3 +752,34 @@ def test_a_question_that_cannot_be_drawn_is_served_without_a_diagram_not_a_wrong
     row["input_schema"] = None
     row["sample_input"] = "this is not a graph"
     assert build(row)["diagram"] is None
+
+
+# ── a vertex variable the statement names but the format calls something else ───────────────────────────────────────────
+
+SRC_STATEMENT = "Given 7 nodes and weighted undirected edges (weights up to 19), determine the minimum travel cost from source `src` to all destinations."
+SRC_FORMAT = "First line: the integers n, m, k.\nThen: m lines of 3 integers each, the grid grid."
+SRC_SAMPLE = "7 6 4\n0 1 1\n0 2 15\n1 3 17\n1 4 18\n2 5 11\n0 6 17"
+
+
+def src_q(statement=SRC_STATEMENT, fmt=SRC_FORMAT, sample=SRC_SAMPLE):
+    return {"title": "Weighted Graph Distance Problem", "topic": "graphs", "problem_statement": statement, "input_format": fmt, "sample_input": sample}
+
+
+def test_the_one_unexplained_number_is_the_vertex_the_statement_names():
+    model = dg.plan(src_q())
+    assert model.marks == {4: ["src"]}
+    assert "src = 4" in model.caption
+
+
+def test_nothing_is_marked_when_the_statement_names_no_vertex_variable():
+    assert dg.plan(src_q(statement=SRC_STATEMENT.replace("`src`", "a source"))).marks == {}
+
+
+def test_two_unexplained_numbers_are_not_guessed():
+    sample = SRC_SAMPLE.replace("7 6 4", "7 6 4 2")
+    model = dg.plan(src_q(fmt="First line: the integers n, m, k, q.\nThen: m lines of 3 integers each, the grid grid.", sample=sample))
+    assert model is not None and model.marks == {}
+
+
+def test_an_unexplained_number_that_is_not_a_vertex_is_not_marked():
+    assert dg.plan(src_q(sample=SRC_SAMPLE.replace("7 6 4", "7 6 40"))).marks == {}
