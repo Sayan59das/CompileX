@@ -60,8 +60,8 @@ for difficulty in ["easy", "medium", "hard"]:
     check(f"Save {difficulty} question to DB", s2 == 201, f"id={r2.get('id')}")
     qid = r2["id"]
 
-    # Submit passthrough code
-    code = "import sys\nfor line in sys.stdin: print(line.strip())"
+    # Submit the starter as served: the backend only accepts code built on the locked harness (a bare program is rejected with 400)
+    code = json.loads(r["starter_code"])["python"]
     r3, s3 = post("/api/v1/submissions", {"code": code, "language": "python", "question_id": qid}, token)
     check(f"Submit against {difficulty} question", s3 == 201,
           f"passed={r3.get('passed_tests')}/{r3.get('total_tests')}")

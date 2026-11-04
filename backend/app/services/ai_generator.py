@@ -1580,7 +1580,7 @@ class AIQuestionGenerator:
                         {"input": "5 3\n1 2\n2 3\n4 5", "output": "2"},
                         {"input": "4 0", "output": "4"},
                         {"input": "3 3\n1 2\n2 3\n1 3", "output": "1"},
-                        {"input": "6 2\n1 2\n3 4", "output": "3"},
+                        {"input": "6 2\n1 2\n3 4", "output": "4"},
                         {"input": "1 0", "output": "1"},
                         {"input": "5 5\n1 2\n2 3\n3 4\n4 5\n5 1", "output": "1"},
                         {"input": "4 2\n1 2\n3 4", "output": "2"},
@@ -2191,7 +2191,7 @@ class AIQuestionGenerator:
                     {"input": "5 0\n-1 1 -2 2 3", "output": "0 1"},
                     {"input": "4 7\n1 3 4 2", "output": "1 2"},
                     {"input": "3 4\n1 2 3", "output": "0 2"},
-                    {"input": "4 6\n2 4 3 3", "output": "1 0"},
+                    {"input": "4 6\n2 4 3 3", "output": "0 1"},
                     {"input": "5 10\n1 2 3 4 6", "output": "3 4"},
                 ],
             },
@@ -3420,6 +3420,39 @@ def _typed_signature(data: dict):
     return signature, {lang: text for lang, text in code.items() if isinstance(text, str) and text.strip()}
 
 
+def _legacy_typed(data: dict, tests: list):
+    """(function_signature, starter_code) for a question that has none of its own, read off its stored tests, else None.
+
+    The starter code of these questions used to be guessed from the wording of the input format, and for most of the built-in
+    questions the guess read the wrong lines (only the first line of a two-line input, one edge of a list of edges), so no
+    solution could pass. This reads the structure from the stored test inputs themselves, requires it to parse EVERY one of
+    them with every line accounted for, and builds the starters of all five languages from it with the same generators the
+    reviewed questions use (app/services/scaffold.py). When the structure cannot be established it answers None and the old
+    guess stays, exactly as before."""
+    try:
+        from app.services import legacy_typing, scaffold
+
+        pairs = [(t["input"], t["output"]) for t in tests if isinstance(t, dict) and isinstance(t.get("input"), str) and isinstance(t.get("output"), str)]
+        if not pairs:
+            return None
+        typed = legacy_typing.type_question(pairs, pairs[0][0], pairs[0][1], extended=True, input_format=str(data.get("input_format") or ""))
+        if typed is None:
+            return None
+        code = scaffold.served_starter(typed)
+        signature = {
+            "function_name": typed["function_name"],
+            "parameters": typed["parameters"],
+            "return_type": typed["return_type"],
+            "return_description": typed["return_description"],
+        }
+        if not isinstance(code, dict) or any(not isinstance(code.get(lang), str) or not code[lang].strip() for lang in _TYPED_STARTER_LANGUAGES):
+            return None
+        return signature, {lang: text for lang, text in code.items() if isinstance(text, str) and text.strip()}
+    except Exception as e:  # an optional improvement: never let it stop a question from being served
+        print(f"[ai] Could not type {data.get('title')!r} from its tests: {e}")
+        return None
+
+
 async def _build_result(
     data: dict, difficulty: DifficultyLevel, topic: Optional[str]
 ) -> dict:
@@ -3459,8 +3492,9 @@ async def _build_result(
     if note:
         full_description += f"\n\n**Note**\n{note}"
 
-    # Function signature metadata: a reviewed question brings its own, otherwise it is guessed from the text
-    typed = _typed_signature(data)
+    # Function signature metadata: a reviewed question brings its own; otherwise it is read off the question's own tests, and
+    # only when that cannot be established is it guessed from the text
+    typed = _typed_signature(data) or _legacy_typed(data, tcs)
     function_signature = typed[0] if typed else _generate_function_signature(title, raw_desc, data.get("topic", topic), input_fmt)
 
     print(f"[ai] Function signature: {function_signature['function_name']}({len(function_signature['parameters'])} params) -> {function_signature['return_type']}")

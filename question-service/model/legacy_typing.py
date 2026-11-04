@@ -31,6 +31,7 @@ _NAMES = {
     "words": ["words", "words2"],
     "grid": ["grid", "grid2"],
     "lines": ["vals", "vals2", "queries"],
+    "texts": ["texts", "texts2"],
 }
 
 
@@ -62,11 +63,20 @@ def _owner(declared: dict, count: int) -> Optional[str]:
     return None
 
 
-def _schema_from(text: str, bare_arrays: bool = False):
+def _schema_from(text: str, bare_arrays: bool = False, extended: bool = False, trailing: bool = False):
     """(schema text, {grid name: columns}, {bare array names}) read off one input text, or None when no reading fits.
 
     With `bare_arrays`, a line of several numbers that no earlier count accounts for is a list in its own right (the whole
-    line, any length) instead of a few separate values: many inputs are just one line of numbers, with no count line."""
+    line, any length) instead of a few separate values: many inputs are just one line of numbers, with no count line.
+
+    With `extended` (only tried after every reading above has failed, so nothing that was typed before reads differently):
+    rows that hang on a count minus one ("n", then n-1 rows, as a tree gives its edges), and a run of text lines that
+    hangs on a count (n words, or q operations such as "PUSH 5" one per line).
+
+    With `trailing`: "n m", then m edges, then "src dst" has m + 1 equal-width rows after the first line, which no count names. The
+    stored tests cannot say whether the odd line comes before or after the rows (both readings fit every test), so by default the
+    first is read: the line is a few values and the next m rows are the grid. `trailing` is for a question whose own format says
+    "last line": the grid takes the rows the most recent earlier count names, and what follows is read on its own."""
     lines = text.strip("\n").split("\n")
     if not lines or any(not line.strip() for line in lines):
         return None   # an empty line could be an empty list or an empty string: not decidable
@@ -81,6 +91,18 @@ def _schema_from(text: str, bare_arrays: bool = False):
         tokens = rows[i]
         width = len(tokens)
         all_int = all(_is_int(t) for t in tokens)
+
+        if extended and not all_int:
+            run = 1   # text lines in a row (none of them only numbers): one list with a line per entry when an earlier count says how many
+            while i + run < len(rows) and not all(_is_int(t) for t in rows[i + run]):
+                run += 1
+            owner, minus = _owner(declared, run), ""
+            if not owner and run >= 2:
+                owner, minus = _owner(declared, run + 1), "-1"   # n, then n-1 text rows (a tree's "parent child L" edges)
+            if owner:
+                entries.append(f"{names.take('texts')}:str[{owner}{minus}]/lines")
+                i += run
+                continue
 
         if width == 1:
             if not all_int:
@@ -109,6 +131,22 @@ def _schema_from(text: str, bare_arrays: bool = False):
             if owner:
                 name = names.take("grid")
                 entries.append(f"{name}:int[{owner}][{width}]")
+                columns[name] = width
+                i += run
+                continue
+            if trailing and run >= 3:
+                counts = [(name, value) for name, value in declared.items() if 2 <= value < run]
+                if counts:
+                    owner, rows_in_grid = counts[-1]   # the most recent count that leaves at least one line over
+                    name = names.take("grid")
+                    entries.append(f"{name}:int[{owner}][{width}]")
+                    columns[name] = width
+                    i += rows_in_grid
+                    continue
+            owner = _owner(declared, run + 1) if extended and run >= 2 else None
+            if owner:
+                name = names.take("grid")
+                entries.append(f"{name}:int[{owner}-1][{width}]")
                 columns[name] = width
                 i += run
                 continue
@@ -168,7 +206,9 @@ def _verify(schema_text: str, columns: dict, bare: set, inputs: list[str]) -> bo
                         return False
                 if var.kind == "matrix" and any(len(row) != columns[var.name] for row in value):
                     return False
-                if var.kind == "lines" and var.length and not var.length.isdigit() and len(value) != env[var.length]:
+                if var.kind == "lines" and var.length and not var.length.isdigit() and len(value) != scaffold._count(var.length, env):
+                    return False
+                if var.kind == "matrix" and len(value) != scaffold._count(var.length, env):
                     return False
                 if not _fits(value):
                     return False
@@ -177,21 +217,28 @@ def _verify(schema_text: str, columns: dict, bare: set, inputs: list[str]) -> bo
         return False
 
 
-def infer_input_schema(inputs: list[str]):
+def infer_input_schema(inputs: list[str], extended: bool = False, trailing: bool = False):
     """(schema text, grid columns, bare array names) that reads every given input, or None.
 
     The natural reading (separate values, lists that hang on a count) is tried on every candidate input first; only when
-    none of them verifies is a line of numbers with no count read as a list of its own."""
+    none of them verifies is a line of numbers with no count read as a list of its own. `extended` adds the readings of
+    `_schema_from` that are off by default (n-1 rows, text lines on a count); the question service never asks for them, so
+    what it serves does not change, and the backend's own hand-written questions do.
+
+    `trailing` (see `_schema_from`) is tried before all of those, and only reads a question differently when it verifies on every
+    input; when it does not, the readings above are tried exactly as they are without it."""
     texts = list(dict.fromkeys(inputs))
     texts.sort(key=lambda t: (-t.strip("\n").count("\n"), -len(t)))
-    for bare_arrays in (False, True):
-        for text in texts[:_MAX_TRIES]:
-            try:
-                built = _schema_from(text, bare_arrays)
-            except _Unsupported:
-                continue
-            if built and _verify(built[0], built[1], built[2], inputs):
-                return built
+    for with_trailing in ((True, False) if trailing else (False,)):
+        for phase_extended in ((False, True) if extended else (False,)):   # the extra readings only when none of the ordinary ones fits
+            for bare_arrays in (False, True):
+                for text in texts[:_MAX_TRIES]:
+                    try:
+                        built = _schema_from(text, bare_arrays, phase_extended, with_trailing)
+                    except _Unsupported:
+                        continue
+                    if built and _verify(built[0], built[1], built[2], inputs):
+                        return built
     return None
 
 
@@ -253,16 +300,23 @@ _RETURN_TEXT = {
 }
 
 
-def type_question(tests: list[tuple[str, str]], sample_input: str, sample_output: str) -> Optional[dict]:
+_LAST_LINE = re.compile(r"\b(?:last|final)\s+line\b", re.IGNORECASE)
+
+
+def type_question(tests: list[tuple[str, str]], sample_input: str, sample_output: str, extended: bool = False, input_format: str = "") -> Optional[dict]:
     """The fields to add to an older-bank question so it carries a locked-down, correct starter, or None.
 
     `tests` are (stdin text, stdout text) pairs. Nothing is returned unless the structure read from the inputs parses every
-    stored input and the outputs fit one type."""
+    stored input and the outputs fit one type. `extended` is described at infer_input_schema.
+
+    `input_format` is the question's own description of its input. It is read for one thing only: when it says "last line", the
+    values on the last line are read after the rows above them (`trailing`, described at _schema_from), a choice the tests alone
+    cannot make. It never changes a reading that does not fit every test."""
     try:
         if not tests:
             return None
         inputs = [t[0] for t in tests] + [sample_input]
-        built = infer_input_schema(inputs)
+        built = infer_input_schema(inputs, extended, bool(_LAST_LINE.search(input_format or "")))
         if built is None:
             return None
         schema_text, columns, bare = built

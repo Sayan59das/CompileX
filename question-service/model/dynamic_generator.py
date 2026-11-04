@@ -851,7 +851,7 @@ _PS_BFS_PATH = [
         f"Output -1 if they are disconnected."
     ),
     lambda n: (
-        f"You are given a {n}-node unweighted undirected graph. "
+        f"You are given a {n}-node (0-indexed) unweighted undirected graph. "
         f"Determine the fewest edges on any path from `src` to `dst`. "
         f"If no path exists, return -1."
     ),
@@ -861,7 +861,7 @@ _PS_BFS_PATH = [
         f"Return -1 if unreachable."
     ),
     lambda n: (
-        f"Given {n} nodes and a set of undirected edges, "
+        f"Given {n} nodes (0-indexed) and a set of undirected edges, "
         f"compute the shortest hop count from `src` to `dst`. "
         f"Output -1 if no route exists."
     ),
@@ -1596,9 +1596,9 @@ def _graph_bfs_shortest_path(rng: random.Random) -> Dict:
     input_fmts = [
         "Line 1: n (nodes) e (edges). Next e lines: u v. Last line: src dst.",
         "First line: N E. Next E lines: edge pairs. Last line: source destination.",
-        "Line 1: number of nodes and edges. Then E edge lines. Then src dst.",
+        "Line 1: number of nodes and edges. Then E edge lines. Last line: src dst.",
         "N E on line 1. E lines of u v. Final line: src dst.",
-        "Line 1: N E. Lines 2..E+1: edges. Line E+2: src dst.",
+        "Line 1: N E. Lines 2..E+1: edges. Last line (line E+2): src dst.",
     ]
     output_fmts = [
         "Shortest path length or -1.",
@@ -2689,7 +2689,7 @@ def _queue_bfs_level_order(rng: random.Random) -> Dict:
         f"Using BFS, compute the shortest hop count from node {src} to every other node in a {n}-node undirected graph. Use -1 for unreachable nodes.",
         f"Find the BFS distance array from source {src} in an undirected graph with {n} nodes. Unreachable nodes get distance -1.",
         f"Given a {n}-node undirected graph, output the minimum number of edges from node {src} to each other node (-1 if unreachable).",
-        f"Perform BFS from node {src} on a {n}-node graph and return the distance to every node. Use -1 for nodes that cannot be reached.",
+        f"Perform BFS from node {src} on a {n}-node undirected graph and return the distance to every node. Use -1 for nodes that cannot be reached.",
     ]
     return {
         "title": "BFS Level-Order Distances",

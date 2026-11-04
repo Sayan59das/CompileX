@@ -7,7 +7,7 @@ A generated question declares its input structure in a tiny notation, one entry 
     s:str                    one string (the whole line)
     arr:int[n]               n integers on one line        (str[n]: n words on one line)
     queries:int[q]/lines     q lines, one integer each     (str[k]/lines: k lines of text)
-    grid:int[r][c]           r lines of c integers each
+    grid:int[r][c]           r lines of c integers each    (the count of lines may be written n-1: n, then n-1 rows)
 
 and its output as one of:  int | str | int[] | int[]/lines | str[]/lines
 
@@ -42,7 +42,7 @@ RESERVED = set(keyword.kwlist) | {
     "short", "unsigned", "signed", "goto", "sizeof", "struct", "union", "enum", "typedef", "extern", "register",
     "auto", "volatile", "inline", "restrict",
 }
-_TOKEN = re.compile(r"^([a-z][a-z0-9_]{0,15}):(int|str)(?:\[(\w+)\](?:\[(\w+)\])?(/lines)?)?$")
+_TOKEN = re.compile(r"^([a-z][a-z0-9_]{0,15}):(int|str)(?:\[(\w+(?:-1)?)\](?:\[(\w+)\])?(/lines)?)?$")
 _OUTPUT = re.compile(r"^(int|str)(\[\](/lines)?)?$")
 LANGUAGES = ("python", "cpp", "java", "javascript", "c")
 MARKER_TEXT = "===== Reads the input and prints the answer. You do not need to edit below. ====="
@@ -85,13 +85,16 @@ def parse_input_schema(text: str) -> list[list[Var]]:
                 var = Var(name, base, "lines", length)
             else:
                 var = Var(name, base, "array", length)
-            if var.length is not None and not (
-                var.length.isdigit() or (var.length in known and known[var.length].kind == "scalar" and known[var.length].base == "int")
-            ):
-                raise ValueError(
-                    f"'{name}' needs its count to be an earlier int variable or a number: declare `{var.length}:int` on an "
-                    f"earlier line before `{token}`"
-                )
+            if var.length is not None:
+                # a count is a number, an earlier int variable, or an earlier int variable minus one ("n-1": n, then n-1 rows)
+                counted = var.length[:-2] if var.length.endswith("-1") else var.length
+                if var.length.endswith("-1") and (counted.isdigit() or var.kind == "array"):
+                    raise ValueError(f"'{name}': '-1' is only for a run of rows or lines ('{var.length}'), and never after a number")
+                if not (counted.isdigit() or (counted in known and known[counted].kind == "scalar" and known[counted].base == "int")):
+                    raise ValueError(
+                        f"'{name}' needs its count to be an earlier int variable or a number: declare `{counted}:int` on an "
+                        f"earlier line before `{token}`"
+                    )
             known[name] = var
             line.append(var)
         if len(line) > 1 and any(v.kind != "scalar" for v in line):
@@ -116,6 +119,11 @@ def variables(schema: list[list[Var]]) -> list[Var]:
 
 
 def _count(length: str, env: dict) -> int:
+    if length.endswith("-1"):
+        value = env[length[:-2]] - 1
+        if value < 0:
+            raise ValueError(f"'{length}' is negative")
+        return value
     return int(length) if length.isdigit() else env[length]
 
 

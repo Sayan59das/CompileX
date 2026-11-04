@@ -19,6 +19,7 @@ import uvicorn
 from model.dynamic_generator import generate_dynamic, NoFreshQuestion
 from model.titles import normalize_title
 from model.legacy_typing import type_question
+from model.stdio import to_stdin as _to_stdin, to_stdout as _to_stdout
 from model.scaffold import served_starter
 from pool.api import build_router
 from pool.history import MemorySeenStore, RedisSeenStore
@@ -197,64 +198,6 @@ def _bank_order(topic: str, difficulty: str) -> List[str]:
     return order
 
 
-# Convert test cases to the plain stdin / stdout text the game sends to a program
-def _to_stdin(val) -> str:
-    """Convert any value to plain-text stdin string."""
-    if isinstance(val, str):
-        return val
-    if isinstance(val, bool):
-        return str(val).lower()
-    if isinstance(val, (int, float)):
-        return str(val)
-    if isinstance(val, (list, tuple)):
-        # flat list/tuple of scalars → space-separated
-        if all(isinstance(x, (int, float, str, bool)) for x in val):
-            return " ".join(str(x) for x in val)
-        # list of pairs (edges) → one "u v" per line
-        if all(isinstance(x, (list, tuple)) and len(x) >= 2 for x in val):
-            return "\n".join(" ".join(str(e) for e in pair) for pair in val)
-        # nested list → one row per line
-        return "\n".join(_to_stdin(row) for row in val)
-    if isinstance(val, dict):
-        # Special handling for graph inputs: {"nodes": n, "edges": [...], "src": s, "dst": d}
-        # and weighted graphs: {"nodes": n, "edges": [(u,v,w),...], "src": s}
-        if "edges" in val and "nodes" in val:
-            edges = val["edges"]
-            n_nodes = val["nodes"]
-            n_edges = len(edges)
-            # Format edges as "u v" or "u v w" per line
-            edge_lines = "\n".join(" ".join(str(e) for e in edge) for edge in edges)
-            # Check for src/dst (BFS) or just src (Dijkstra)
-            if "src" in val and "dst" in val:
-                return f"{n_nodes} {n_edges}\n{edge_lines}\n{val['src']} {val['dst']}"
-            elif "src" in val:
-                header = f"{n_nodes} {n_edges} {val['src']}"
-                return f"{header}\n{edge_lines}" if edge_lines else header
-            else:
-                return f"{n_nodes} {n_edges}\n{edge_lines}" if edge_lines else f"{n_nodes} {n_edges}"
-        # Generic dict → one value per line
-        lines = []
-        for v in val.values():
-            lines.append(_to_stdin(v))
-        return "\n".join(lines)
-    return str(val)
-
-
-def _to_stdout(val) -> str:
-    """Convert output value to expected stdout string."""
-    if isinstance(val, str):
-        return val
-    if isinstance(val, bool):
-        return str(val).lower()
-    if isinstance(val, (int, float)):
-        return str(val)
-    if isinstance(val, list):
-        if all(isinstance(x, (int, float, str, bool)) for x in val):
-            return " ".join(str(x) for x in val)
-        return "\n".join(_to_stdout(row) for row in val)
-    return str(val)
-
-
 def _typed_fields(result: dict) -> Optional[dict]:
     """What a question needs so the editor can lock everything except the function body.
 
@@ -265,7 +208,8 @@ def _typed_fields(result: dict) -> Optional[dict]:
         return {}
     try:
         tests = [(_to_stdin(tc["input"]), _to_stdout(tc["output"])) for tc in result.get("test_cases", [])]
-        return type_question(tests, _to_stdin(result["sample_input"]), _to_stdout(result["sample_output"]))
+        return type_question(tests, _to_stdin(result["sample_input"]), _to_stdout(result["sample_output"]),
+                             input_format=str(result.get("input_format") or ""))
     except (KeyError, TypeError):
         return None
 
