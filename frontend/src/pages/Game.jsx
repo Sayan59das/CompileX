@@ -8,6 +8,11 @@ import Leaderboard from '../components/Leaderboard'
 import Timer from '../components/Timer'
 import { attachProtectedRegion } from '../utils/protectedRegion'
 import MathText from '../components/MathText'
+import { AlertTriangle, BarChart3, Bot, CheckCircle2, Hourglass, Lightbulb, PenLine, RefreshCw, Target, Trophy, XCircle, Zap } from 'lucide-react'
+
+// Renders an icon component, or plain text, at the size of the surrounding text.
+const Ico = ({ of, className = 'inline-block h-[1em] w-[1em] align-[-0.125em]' }) =>
+  of == null ? null : typeof of === 'string' ? of : React.createElement(of, { className, 'aria-hidden': true })
 
 const LANGUAGES = [
   { value: 'python', label: 'Python', monaco: 'python', color: '#3776ab' },
@@ -84,12 +89,6 @@ int main() {
 `,
   java: `import java.util.*;
 import java.io.*;
-import { AlertTriangle, BarChart3, Bot, CheckCircle2, Hourglass, Lightbulb, PenLine, RefreshCw, Target, Trophy, XCircle, Zap } from 'lucide-react'
-
-// Renders an icon component, or plain text, at the size of the surrounding text.
-const Ico = ({ of, className = 'inline-block h-[1em] w-[1em] align-[-0.125em]' }) =>
-  of == null ? null : typeof of === 'string' ? of : React.createElement(of, { className, 'aria-hidden': true })
-
 
 public class Main {
     /**

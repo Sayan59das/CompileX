@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
 import Editor from '@monaco-editor/react'
 import { attachProtectedRegion } from '../utils/protectedRegion'
-import { Bot, Brain, Crown, Flame, Gem, Laptop, Lightbulb, Puzzle, RefreshCw, Settings2, Sprout, Target, TrendingUp, Trophy, Type, Zap } from 'lucide-react'
+import { Bot, Brain, Crown, Flame, Gem, Laptop, Leaf, Lightbulb, Puzzle, RefreshCw, Settings2, Sprout, Target, TrendingUp, Trophy, Type, Zap } from 'lucide-react'
 
 // Renders an icon component, or plain text, at the size of the surrounding text.
 const Ico = ({ of, className = 'inline-block h-[1em] w-[1em] align-[-0.125em]' }) =>
@@ -32,7 +32,7 @@ const DIFF_STYLE = {
 
 const TIER_CONFIG = {
   Beginner:     { icon: Sprout, color: '#6b7280', glow: '#6b728040', grad: 'from-gray-700 to-gray-800',       desc: 'Just getting started — great foundation ahead!' },
-  Intermediate: { color: '#10b981', glow: '#10b98140', grad: 'from-emerald-600 to-teal-700',    desc: 'Solid fundamentals — ready for real challenges!' },
+  Intermediate: { icon: Leaf, color: '#10b981', glow: '#10b98140', grad: 'from-emerald-600 to-teal-700',    desc: 'Solid fundamentals — ready for real challenges!' },
   Advanced:     { icon: Flame, color: '#3B8CFF', glow: '#3b82f640', grad: 'from-blue-600 to-indigo-700',     desc: 'Strong problem-solver — tackling complex algorithms!' },
   Expert:       { icon: Gem, color: '#3B8CFF', glow: '#3b82f640', grad: 'from-blue-600 to-purple-700',   desc: 'Elite coder — mastering advanced data structures!' },
   Master:       { icon: Crown, color: '#f59e0b', glow: '#f59e0b40', grad: 'from-amber-500 to-orange-600',    desc: 'Top-tier competitive programmer — legendary!' },
@@ -359,7 +359,7 @@ function IntroScreen({ onStart, onSkip }) {
           {[
             { step: '01', icon: Bot, title: 'AI Generates', desc: 'Unique questions crafted just for you — never repeated' },
             { step: '02', icon: Laptop, title: 'You Code', desc: 'Write real solutions in Python, JS, C++, or Java' },
-            { step: '03', title: 'We Execute', desc: 'Your code runs against test cases — no self-reporting' },
+            { step: '03', icon: Zap, title: 'We Execute', desc: 'Your code runs against test cases — no self-reporting' },
           ].map(item => (
             <div key={item.step} className="bg-gray-900 border border-gray-800 rounded-2xl p-5 text-center">
               <div className="text-3xl mb-3"><Ico of={item.icon} /></div>
