@@ -907,17 +907,33 @@ def _hard_string_count_distinct_subsequences(rng: random.Random) -> Dict:
 # HARD GRAPH TEMPLATES
 # ---------------------------------------------------------------------------
 
+def _bellman_ford_edges(rng: random.Random, nodes: int) -> list:
+    """Random directed edges, some of them negative, that make a well-posed question: no negative cycle (a weight is a non-negative base plus
+    the potential of its tail minus the potential of its head, so every cycle adds up to its non-negative bases) and no reachable node whose true
+    distance is exactly -1 (that would read as 'unreachable')."""
+    for _ in range(100):
+        pot = [rng.randint(0, 8) for _ in range(nodes)]
+        edges, seen = [], set()
+        for _ in range(rng.randint(nodes, nodes * 2)):
+            u = rng.randint(0, nodes - 1)
+            v = rng.randint(0, nodes - 1)
+            if u != v and (u, v) not in seen:
+                edges.append((u, v, rng.randint(0, 12) + pot[u] - pot[v]))
+                seen.add((u, v))
+        dist = [float('inf')] * nodes
+        dist[0] = 0
+        for _ in range(nodes - 1):
+            for u, v, w in edges:
+                if dist[u] != float('inf') and dist[u] + w < dist[v]:
+                    dist[v] = dist[u] + w
+        if all(d == float('inf') or d != -1 for d in dist):
+            return edges
+    return edges
+
+
 def _hard_graph_bellman_ford(rng: random.Random) -> Dict:
     n = rng.randint(4, 7)
-    edges = []
-    seen = set()
-    for _ in range(rng.randint(n, n * 2)):
-        u = rng.randint(0, n - 1)
-        v = rng.randint(0, n - 1)
-        if u != v and (u, v) not in seen:
-            w = rng.randint(-5, 20)
-            edges.append((u, v, w))
-            seen.add((u, v))
+    edges = _bellman_ford_edges(rng, n)
     src = 0
 
     def solve(nodes, edgs, source):
@@ -931,15 +947,7 @@ def _hard_graph_bellman_ford(rng: random.Random) -> Dict:
 
     def make_tc():
         nn = rng.randint(3, n)
-        es = []
-        ss = set()
-        for _ in range(rng.randint(nn, nn * 2)):
-            u = rng.randint(0, nn - 1)
-            v = rng.randint(0, nn - 1)
-            if u != v and (u, v) not in ss:
-                w = rng.randint(-5, 20)
-                es.append((u, v, w))
-                ss.add((u, v))
+        es = _bellman_ford_edges(rng, nn)
         return {"input": {"nodes": nn, "edges": es, "src": 0}, "output": solve(nn, es, 0)}
 
     edge_str = "\n".join(f"{u} {v} {w}" for u, v, w in edges)
@@ -1094,7 +1102,7 @@ def _hard_graph_floyd_warshall(rng: random.Random) -> Dict:
     return {
         "title": "All-Pairs Shortest Paths (Floyd-Warshall)",
         "problem_statement": (
-            f"Given a weighted directed graph with {n} nodes as an adjacency matrix, "
+            f"Given a weighted directed graph with {n} nodes (0-indexed: row i of the matrix is node i) as an adjacency matrix, "
             f"find the shortest path between every pair of nodes using the Floyd-Warshall algorithm. "
             f"Input -1 in the matrix means no direct edge. Output -1 for unreachable pairs."
         ),
