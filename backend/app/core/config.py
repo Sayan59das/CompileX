@@ -68,6 +68,10 @@ class Settings(BaseSettings):
     # How many submissions may be running in sandboxes at once on this machine. Each one is a container of up to MAX_MEMORY_MB, so
     # the default keeps the worst case near 2 GB. The rest wait their turn instead of all starting together.
     MAX_CONCURRENT_EXECUTIONS: int = 8
+    # In front of that line (app/services/execution_gate.py, shared by every backend process): how many submissions one player may have
+    # running or waiting, and how many may be running or waiting in all before the next one is refused with 429 instead of queued.
+    MAX_EXECUTIONS_PER_USER: int = 2
+    MAX_EXECUTION_BACKLOG: int = 200
     # Worker threads that draw graph and tree diagrams (CPU work, kept off the event loop and off the code-execution threads).
     DIAGRAM_WORKERS: int = 2
 

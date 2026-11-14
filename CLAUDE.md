@@ -38,7 +38,7 @@ Read this first. These are things that are not visible from the code and that ha
   `docker run --rm --network none --cap-drop ALL --security-opt no-new-privileges --user 1000:1000 -e PYTHONDONTWRITEBYTECODE=1 -e HOME=/tmp
   -e MPLCONFIGDIR=/tmp/mpl -v "<repo>:/w:ro" -w /w/backend <image> python -m pytest tests/<file>.py -q -p no:cacheprovider`
   (set `MSYS_NO_PATHCONV=1` in Git Bash). The C-compile tests in `test_pool_starters.py` need `gcc` or the Docker image `gcc:14`.
-- **Shared-state tests** (`test_shared_state.py`, `test_lobby_manager.py`, `test_rate_limit.py`) run every scenario against an in-process stand-in and, when
+- **Shared-state tests** (`test_shared_state.py`, `test_lobby_manager.py`, `test_rate_limit.py`, `test_execution_gate.py`) run every scenario against an in-process stand-in and, when
   `COMPILEX_TEST_REDIS_URL` is set, against a real Redis (its URL must end in `/15`: the tests empty that database). Locally: start `redis:7-alpine` on an
   `--internal` Docker network (run it as `--user 999:999`, not with all capabilities dropped, or its entrypoint exits), put the test container on the same
   network and set the URL. `tests/two_process_check.py` is a script (it starts two servers): `REDIS_URL=redis://host:6379/14 python tests/two_process_check.py`.
@@ -51,5 +51,6 @@ Read this first. These are things that are not visible from the code and that ha
 - Question serving: `question-service/main_dynamic.py` (order: reviewed bank, templates, collected banks), `pool/` (database pool and per-player
   history), `model/quality.py` (what is left out and why), `model/legacy_typing.py` and `scaffold.py` (typed starters, five languages).
 - Backend question path: `backend/app/api/v1/routes.py` (`/questions/generate`), `services/ai_generator.py`, `question_history.py`,
-  `hidden_tests.py` (hidden tests stay on the server), `code_executor.py`, `websocket_handler.py`, `lobby_manager.py` (in memory).
+  `hidden_tests.py` (hidden tests stay on the server), `code_executor.py`, `execution_gate.py` (per-player and total limit on code runs; every call to the executor in `routes.py` must sit inside
+  `async with execution_slot(...)`, and a test enforces it), `websocket_handler.py`, `lobby_manager.py` (kept in Redis when `REDIS_URL` is set, see `shared_state.py`).
 - Scaling work is planned in `docs/scaling-plan.md`; tick tasks there as they land.

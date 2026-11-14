@@ -62,7 +62,7 @@ jobs:
           COMPILEX_TEST_REDIS_URL: redis://localhost:6379/15
         run: |
           pip install pytest
-          pytest tests/test_shared_state.py tests/test_lobby_manager.py tests/test_rate_limit.py tests/test_socket_handlers.py tests/test_phase1_wiring.py -q -rs
+          pytest tests/test_shared_state.py tests/test_lobby_manager.py tests/test_rate_limit.py tests/test_execution_gate.py tests/test_socket_handlers.py tests/test_phase1_wiring.py -q -rs
       - name: Two backend processes, one game
         # Starts two real servers on one Redis, plays a lobby across them, kills one mid-game and carries on through the other.
         working-directory: backend

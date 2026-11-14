@@ -1014,6 +1014,8 @@ from datetime import datetime, timedelta
 from app.services.rate_limit import (
     DAILY_LIMIT, assessment_lock, check_rate_limit as _check_rate_limit, generation_lock, usage as _rate_usage,
 )
+# Who may run code right now: a per-player and a total limit on submissions running or waiting, shared by every backend process.
+from app.services.execution_gate import execution_slot
 
 
 async def _lobby_audience(db: AsyncSession, current_user: User, lobby_id: Optional[int]) -> list[int]:
@@ -1213,13 +1215,14 @@ async def execute_custom_run(
             except Exception as e:
                 print(f"[Execute] Could not parse function signature: {e}")
 
-    execution_result = await code_executor.execute_code(
-        run_code,
-        req.language.value,
-        test_cases,
-        time_limit_ms=3000,
-        function_signature=function_signature,
-    )
+    async with execution_slot(current_user.id):
+        execution_result = await code_executor.execute_code(
+            run_code,
+            req.language.value,
+            test_cases,
+            time_limit_ms=3000,
+            function_signature=function_signature,
+        )
 
     results = []
     for i, res in enumerate(execution_result.results):
@@ -1338,13 +1341,14 @@ async def run_tests(
     except Exception as e:
         print(f"[RunTests] Could not parse function signature: {e}")
 
-    execution_result = await code_executor.execute_code(
-        _locked_code(submission.code, submission.language.value, question),
-        submission.language.value,
-        test_cases,
-        question.max_execution_time_ms,
-        function_signature,
-    )
+    async with execution_slot(current_user.id):
+        execution_result = await code_executor.execute_code(
+            _locked_code(submission.code, submission.language.value, question),
+            submission.language.value,
+            test_cases,
+            question.max_execution_time_ms,
+            function_signature,
+        )
 
     test_case_details = []
     for i, (tc, res) in enumerate(zip(test_cases, execution_result.results)):
@@ -1422,13 +1426,14 @@ async def submit_code(
     except Exception as e:
         print(f"[Submit] Could not parse function signature: {e}")
 
-    execution_result = await code_executor.execute_code(
-        _locked_code(submission.code, submission.language.value, question),
-        submission.language.value,
-        test_cases,
-        question.max_execution_time_ms,
-        function_signature,
-    )
+    async with execution_slot(current_user.id):
+        execution_result = await code_executor.execute_code(
+            _locked_code(submission.code, submission.language.value, question),
+            submission.language.value,
+            test_cases,
+            question.max_execution_time_ms,
+            function_signature,
+        )
 
     # Build per-test-case detail for frontend
     test_case_details = []
@@ -2224,8 +2229,8 @@ def _issued_view(item: AssessmentItem, items: list[AssessmentItem], now: float) 
     }
 
 
-async def _run_assessment_tests(question: dict, code: str, language: str, tests: list[dict]) -> list[dict]:
-    """Run the player's code (held to the stored harness) on the given tests. Raises starter_lock.LockedHarnessError."""
+async def _run_assessment_tests(user_id: int, question: dict, code: str, language: str, tests: list[dict]) -> list[dict]:
+    """Run the player's code (held to the stored harness) on the given tests. Raises starter_lock.LockedHarnessError, or 429 when the judges are busy."""
     locked = starter_lock.enforce(code, language, question.get("starter_code"))
     function_signature = None
     try:
@@ -2239,13 +2244,14 @@ async def _run_assessment_tests(question: dict, code: str, language: str, tests:
             }
     except ValueError:
         pass
-    execution = await code_executor.execute_code(
-        locked,
-        language,
-        [TestCase(input_data=grading.test_input(t), expected_output=grading.test_output(t)) for t in tests],
-        time_limit_ms=3000,
-        function_signature=function_signature,
-    )
+    async with execution_slot(user_id):
+        execution = await code_executor.execute_code(
+            locked,
+            language,
+            [TestCase(input_data=grading.test_input(t), expected_output=grading.test_output(t)) for t in tests],
+            time_limit_ms=3000,
+            function_signature=function_signature,
+        )
     details = []
     for i, test in enumerate(tests):
         res = execution.results[i] if i < len(execution.results) else None
@@ -2368,7 +2374,7 @@ async def run_assessment_samples(
     question = json.loads(item.question_json)
     tests = grading.parse_tests(question.get("test_cases"))[: grading.SAMPLE_TESTS]
     try:
-        details = await _run_assessment_tests(question, body.code, body.language.value, tests)
+        details = await _run_assessment_tests(current_user.id, question, body.code, body.language.value, tests)
     except starter_lock.LockedHarnessError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return {
@@ -2405,7 +2411,7 @@ async def submit_assessment_question(
         details: list[dict] = []
         if not grading.expired(item.issued_at, item.time_limit_seconds, now):   # a late answer scores nothing; not run
             try:
-                details = await _run_assessment_tests(question, body.code, body.language.value, tests)
+                details = await _run_assessment_tests(user_id, question, body.code, body.language.value, tests)
             except starter_lock.LockedHarnessError as e:
                 if not body.timed_out:
                     raise HTTPException(status_code=400, detail=str(e))

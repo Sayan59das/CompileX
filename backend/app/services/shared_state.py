@@ -105,6 +105,18 @@ class MemoryRedis:
         zset.update({str(m): float(s) for m, s in mapping.items()})
         return added
 
+    async def zrem(self, key, *members):
+        if not self._live(key):
+            return 0
+        zset = self._values[key]
+        gone = [m for m in map(str, members) if m in zset]
+        for m in gone:
+            del zset[m]
+        if not zset:
+            self._values.pop(key, None)
+            self._expiry.pop(key, None)
+        return len(gone)
+
     async def zremrangebyscore(self, key, low, high):
         if not self._live(key):
             return 0

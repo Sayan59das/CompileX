@@ -3,7 +3,8 @@
 **Target.** 1,000 concurrent players with room to 5,000. A question loads in under 200 ms at p95. A submission's result arrives in under
 5 s at peak. Losing one server mid-game does not end the game.
 
-**Status (update as tasks land).** Phases 0 and 1 done in the working tree, not yet committed. Phases 2 to 4 not started.
+**Status (update as tasks land).** Phases 0 and 1 done and pushed (origin/main 17cea44). Phase 2: the admission gate (per-player and total limits on code runs) is
+done in the working tree, not yet committed; the judge tier itself waits on the owner's hosting decision. Phases 3 and 4 not started.
 
 **How to work through this.** One phase per session, one task at a time. For each task: read its files, write the tests first, make them pass,
 run the commands in `CLAUDE.md`, commit (see its rules), tick the box with the commit hash. Anything marked *decision* is the owner's, so ask.
@@ -20,7 +21,7 @@ Do not run a load test or other benchmark without asking.
 6. Database pool of 5 + 5 connections.
 7. Content: about 700 distinct questions, so every player sees the same ones.
 
-## Phase 0: quick fixes (done in the working tree)
+## Phase 0: quick fixes (done, pushed in 5cc5406)
 - [x] Index `issued_questions.issued_at`, added to new databases (model) and existing ones (`_ensure_indexes` in `app/db/database.py`).
 - [x] Cap concurrent sandboxes: `MAX_CONCURRENT_EXECUTIONS` (default 8), a semaphore per event loop in `code_executor.py`.
 - [x] Draw diagrams off the event loop on `DIAGRAM_WORKERS` (default 2) threads of their own, and remember them (LRU of 256): `_draw_diagram` in `ai_generator.py`.
@@ -32,7 +33,7 @@ Do not run a load test or other benchmark without asking.
 - Moved to Phase 1: passing `player_ids` to the question service. Without Redis it only duplicates the backend's own history and would mark
   questions "seen" that a host generated but never showed.
 
-## Phase 1: shared state, several API processes (done in the working tree)
+## Phase 1: shared state, several API processes (done, pushed in 5cc5406)
 Set `REDIS_URL` and any number of backend processes share lobbies, rate limits, generation and assessment locks, and socket rooms. Without it nothing changes:
 the same code runs against an in-process stand-in (`MemoryRedis`).
 - [x] `REDIS_URL` setting; `app/services/shared_state.py` (client getter, `MemoryRedis` with the commands the app uses, `locked()`); tests run every scenario
@@ -64,7 +65,15 @@ the same code runs against an in-process stand-in (`MemoryRedis`).
 - [ ] Evaluate Judge0 and Piston against the five languages and the locked-starter harness (`starter_lock.py`); choose, write down why.
 - [ ] A job queue (Celery is already in `requirements.txt`): submission request returns a job id; the result arrives on the socket and by polling.
 - [ ] Judge worker: a fixed number of sandboxes per CPU core, pre-warmed, no network, memory and process limits, read-only filesystem.
-- [ ] Per-user limit of one or two jobs in flight, a queue-depth cap that answers 429 with the position, and a wait-time message in the UI (ask before touching the frontend).
+- [x] Admission gate (`app/services/execution_gate.py`, in the working tree): one player may have `MAX_EXECUTIONS_PER_USER` (2) runs going or waiting, and all
+      players together `MAX_EXECUTION_BACKLOG` (200); one more is refused with 429, a message and a Retry-After header instead of waiting minutes for a timeout.
+      Kept in shared state (sorted sets), so it holds across processes; entries of a dead process drop out after 5 minutes. In front of all four places that run a
+      player's code, and a test (`test_execution_gate.py`) fails if a new call to the executor is not inside the gate. Seven deliberate breakages were each caught.
+      It works with today's Docker executor and stays in front of the judge tier when that lands.
+      Limits: the total is a soft cap (simultaneous admissions can overshoot it by a few); the message says how many are running or waiting, not a position in line;
+      a Skill Assessment answer sent by the timer that is refused with 429 is not graded and is closed as unanswered later.
+- [ ] A wait-time message in the UI. The pages already show the server's text for a refused submit (Practice, Skill Assessment, the Game page's Submit); the Game page's
+      Run with sample inputs shows nothing on any error, as before. Ask before touching the frontend.
 - [ ] Remove `/var/run/docker.sock` from the API container in `docker-compose.yml`.
 - [ ] Acceptance: 200 simultaneous submissions queue, none lost, results correct, API latency unaffected (the load test in Phase 4 measures this).
 
