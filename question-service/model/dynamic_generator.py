@@ -9,6 +9,7 @@ ENHANCED WITH TITLE VARIATIONS:
 - Adds variety through synonyms and rephrasing
 """
 
+import functools
 import random
 import uuid
 import hashlib
@@ -20,6 +21,12 @@ from typing import Any, Dict, List, Tuple
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+from model.quality import align_tests_with_sample
+from model.stdio import to_stdin
+
+SAMPLE_NOTE = " (The numbers in this statement are those of the sample. Your function is also run on other inputs, with other sizes and values.)"
+
 
 def _seed() -> int:
     return int(uuid.uuid4().int % (2**31))
@@ -3708,21 +3715,26 @@ def _backtracking_subsets(rng: random.Random) -> Dict:
     }
 
 
+@functools.lru_cache(maxsize=None)
+def _n_queens_solutions(n: int) -> int:
+    """The number of ways to place n non-attacking queens. Remembered: the template asks for the same few sizes on every question it
+    builds (each served question builds it several times to top up its tests), and solving the n = 9 and 10 boards takes seconds."""
+    count = [0]
+    cols = set(); diag1 = set(); diag2 = set()
+    def bt(row):
+        if row == n: count[0] += 1; return
+        for col in range(n):
+            if col in cols or (row - col) in diag1 or (row + col) in diag2: continue
+            cols.add(col); diag1.add(row - col); diag2.add(row + col)
+            bt(row + 1)
+            cols.remove(col); diag1.remove(row - col); diag2.remove(row + col)
+    bt(0)
+    return count[0]
+
+
 def _backtracking_n_queens_count(rng: random.Random) -> Dict:
     n = rng.randint(4, 10)
-
-    def solve(n):
-        count = [0]
-        cols = set(); diag1 = set(); diag2 = set()
-        def bt(row):
-            if row == n: count[0] += 1; return
-            for col in range(n):
-                if col in cols or (row - col) in diag1 or (row + col) in diag2: continue
-                cols.add(col); diag1.add(row - col); diag2.add(row + col)
-                bt(row + 1)
-                cols.remove(col); diag1.remove(row - col); diag2.remove(row + col)
-        bt(0)
-        return count[0]
+    solve = _n_queens_solutions
 
     seen = set()
     tcs = []
@@ -5243,6 +5255,14 @@ def _make_generic_title(base_title: str, rng: random.Random) -> str:
 # ========================  PUBLIC API  =====================================
 # ---------------------------------------------------------------------------
 
+def has_topic(topic: str) -> bool:
+    """Whether there are templates for this topic itself. For any other topic generate_dynamic answers with a random topic, which
+    is only acceptable when nothing else has a question."""
+    key = (topic or "").strip().lower()
+    key = _ALIASES.get(key, key)
+    return key in TOPIC_TEMPLATES or key.replace(" ", "-") in TOPIC_TEMPLATES   # exactly: "pointers" is not "two pointers"
+
+
 def generate_dynamic(topic: str, difficulty: str, exclude_titles: List[str] = None) -> Dict[str, Any]:
     """
     Generate a unique coding question for the given topic and difficulty.
@@ -5310,12 +5330,10 @@ def generate_dynamic(topic: str, difficulty: str, exclude_titles: List[str] = No
     # Use a fresh seed so the count is independent of the question RNG
     desired_tc = random.Random(_seed()).randint(lo_tc, hi_tc)
 
-    # Difficulty flavour appended to problem statement
-    flavour = {
-        "easy":   " [Easy] Simple implementation — single loop or basic conditionals. O(n) or O(n²) is acceptable.",
-        "medium": " [Medium] Requires an algorithmic approach — use DP, binary search, two pointers, BFS/DFS, or greedy. Aim for O(n log n) or O(n).",
-        "hard":   " [Hard] Advanced algorithm required — segment trees, bitmask DP, complex graph algorithms, or multi-dimensional DP. Optimal time complexity expected.",
-    }
+    # The same sentence used to be appended to every statement of a difficulty ("[Hard] Advanced algorithm required — segment trees,
+    # bitmask DP, complex graph algorithms ..."), whatever the question was about: it told a player solving a string question to use
+    # a segment tree. A template's statement does state the sample's own numbers ("an array of 10 integers", "k=3", "from node 8"),
+    # and the hidden tests use others, so that is what is said instead (SAMPLE_NOTE), and only when the statement has a number in it.
 
     # ── Pick a template this caller has not seen ────────────────────────────
     # A template is one underlying problem; its title is only a costume. The caller's
@@ -5385,11 +5403,24 @@ def generate_dynamic(topic: str, difficulty: str, exclude_titles: List[str] = No
                     seen_inputs.add(key)
                     if len(test_cases) >= desired_tc:
                         break
-        # Absolute last resort — allow a repeat rather than crash
-        while len(test_cases) < desired_tc:
-            test_cases.append(rng.choice(test_cases))
+        # A template with few possible inputs (the factorial of 0..12) simply has fewer tests: a repeated test checks nothing
 
-    test_cases = test_cases[:desired_tc]
+    seen_inputs, distinct = set(), []
+    for tc in test_cases:
+        if str(tc["input"]) not in seen_inputs:
+            seen_inputs.add(str(tc["input"]))
+            distinct.append(tc)
+    test_cases = distinct[:desired_tc]
+
+    # Hidden tests in the layout of the sample the statement shows (model/quality.py): where a template wrote its sample as "N, then
+    # N numbers" and kept its tests as bare lists, the two disagreed and the question could never be served.
+    aligned = align_tests_with_sample(to_stdin(chosen_body["sample_input"]), [to_stdin(tc["input"]) for tc in test_cases])
+    if aligned:
+        test_cases = [{"input": text, "output": tc["output"]} for text, tc in zip(aligned, test_cases)]
+
+    statement = chosen_body["problem_statement"]
+    if any(ch.isdigit() for ch in statement):
+        statement += SAMPLE_NOTE
 
     # ── Record and return ───────────────────────────────────────────────────
     _record_title(varied_title)
@@ -5398,7 +5429,7 @@ def generate_dynamic(topic: str, difficulty: str, exclude_titles: List[str] = No
     return {
         "title": varied_title,
         "base_title": chosen_body["title"],
-        "problem_statement": chosen_body["problem_statement"] + flavour[difficulty],
+        "problem_statement": statement,
         "input_format": chosen_body["input_format"],
         "output_format": chosen_body["output_format"],
         "sample_input": chosen_body["sample_input"],

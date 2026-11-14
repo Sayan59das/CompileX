@@ -59,6 +59,8 @@ def _load_questions():
             continue
         clean.append(q)
 
+    from model.quality import keep_playable
+    clean = keep_playable(clean, "training_clean.json")
     _questions = clean
     _by_topic = {}
     for q in clean:

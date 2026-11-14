@@ -401,15 +401,15 @@ def service_with_only(fn, topic, seed):
 
 
 def difficulty_texts():
-    """The text generate_dynamic appends to every statement at each difficulty, read from the service itself (through a cheap template)."""
+    """The text generate_dynamic appends to a statement that has numbers in it, at each difficulty, checked against the service itself
+    (through a cheap template). It used to be a different sentence per difficulty; it is now one note that the numbers are the sample's."""
     cheap = registered_templates()["_easy_array_sum"][0]
     texts = {}
     for difficulty in DIFFICULTIES:
         with service_with_only(cheap, "arrays", 0):
             statement = G.generate_dynamic("arrays", difficulty)["problem_statement"]
-        marker = f" [{difficulty.title()}]"
-        assert marker in statement, f"generate_dynamic no longer ends its statements with {marker!r}: update difficulty_texts"
-        texts[difficulty] = statement[statement.rindex(marker):]
+        assert statement.endswith(G.SAMPLE_NOTE), "generate_dynamic no longer ends its statements with SAMPLE_NOTE: update difficulty_texts"
+        texts[difficulty] = G.SAMPLE_NOTE
     return texts
 
 
@@ -437,7 +437,8 @@ def audit_served(templates=None, oracles=None, seeds=SERVED_SEEDS):
                                 continue
                     else:
                         result = fn(random.Random(seed))
-                        result = {**result, "problem_statement": result["problem_statement"] + appended[difficulty]}
+                        if any(ch.isdigit() for ch in result["problem_statement"]):
+                            result = {**result, "problem_statement": result["problem_statement"] + appended[difficulty]}
                     question, sample_in, sample_out, _ = as_served(result, topic)
                     model, _ = plan_quietly(question)
                     if model is None:

@@ -16,6 +16,7 @@ import os
 import random
 from typing import Optional, List, Dict
 
+from model.quality import keep_playable
 from model.titles import normalize_title
 
 # ── Path resolution ───────────────────────────────────────────────────────────
@@ -83,7 +84,7 @@ def _load() -> List[dict]:
         ):
             good.append(q)
 
-    _dataset = good
+    _dataset = keep_playable(good, "questions.json")   # see model/quality.py
 
     # Build topic index — normalise topic names
     _dataset_by_topic = {}

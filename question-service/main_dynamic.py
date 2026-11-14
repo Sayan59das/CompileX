@@ -16,9 +16,10 @@ import random
 import uvicorn
 
 # Import generators — question_db first, then smart AI, dataset, dynamic templates as fallback
-from model.dynamic_generator import generate_dynamic, NoFreshQuestion
+from model.dynamic_generator import generate_dynamic, has_topic, NoFreshQuestion
 from model.titles import normalize_title
 from model.legacy_typing import type_question
+from model.quality import served_formats
 from model.stdio import to_stdin as _to_stdin, to_stdout as _to_stdout
 from model.scaffold import served_starter
 from pool.api import build_router
@@ -238,6 +239,8 @@ def generate_question(req: GenerateRequest):
     accepted = False
     exhausted = False
     typed = None
+    templates_used_up = False
+    served_from = "unknown"
     untyped_skipped = 0
     client_exclude = set(normalize_title(t) for t in (req.exclude_titles or []))
     exclude_list = list(client_exclude)
@@ -259,12 +262,24 @@ def generate_question(req: GenerateRequest):
             gen_start = time.time()
             candidate = None
 
-            # Question banks, in a random order weighted by how many questions each
-            # holds for this topic and difficulty, so a small bank is not served
-            # to everyone before the large ones are touched.
-            for bank in _bank_order(topic, difficulty):
+            # Best first. 1: reviewed questions (read by a person, two solutions agree on every test). 2: templates (the tests
+            # and their answers are computed by the template's own solver, and a player gets each problem at most once).
+            # 3: the collected contest banks, which nobody has read: they are typed from their tests and filtered by
+            # model/quality.py, but a statement there can still be unclear, so they come last. Among those banks the order is
+            # random, weighted by how many questions each holds, so a small bank is not used up for everyone first.
+            # For a topic the templates do not know they would answer with a random topic, so there they stay the last resort.
+            order = _bank_order(topic, difficulty)
+            collected = [b for b in order if b != "reviewed"]
+            templates = [] if templates_used_up else ["templates"]
+            rest = templates + collected if has_topic(topic) else collected + templates
+            for bank in [b for b in order if b == "reviewed"] + rest:
                 if bank == "reviewed":
                     candidate = reviewed_get_question(topic=topic, difficulty=difficulty, exclude_titles=exclude_list)
+                elif bank == "templates":
+                    try:
+                        candidate = generate_dynamic(topic, difficulty, exclude_titles=exclude_list)
+                    except NoFreshQuestion:
+                        templates_used_up = True   # this player has had every template of this topic and difficulty
                 elif bank == "question_db":
                     candidate = db_get_question(topic=topic, difficulty=difficulty, exclude_titles=exclude_list)
                     if candidate:
@@ -285,19 +300,12 @@ def generate_question(req: GenerateRequest):
                     )
                 if candidate:
                     print(f"[API] {bank}: '{candidate['title']}' [{difficulty}]")
+                    served_from = bank
                     break
 
-            # Template generator: each template is one real problem, and a player gets each at most once
             if candidate is None:
-                try:
-                    candidate = generate_dynamic(
-                        topic, difficulty,
-                        exclude_titles=exclude_list,
-                    )
-                except NoFreshQuestion:
-                    exhausted = True
-                    break
-                print(f"[API] Dynamic template: '{candidate['title']}'")
+                exhausted = True
+                break
 
             gen_time = time.time() - gen_start
             result = candidate
@@ -365,7 +373,7 @@ def generate_question(req: GenerateRequest):
             "test_cases": formatted_tcs,
             "topic": result.get("topic", topic),
             "difficulty": difficulty,
-            "source": "dynamic"
+            "source": f"dynamic-{served_from}",   # which source it came from: reviewed, templates, question_db, smart or dataset
         }
         # Reviewed questions carry a real signature and starter code (a C entry is added when they predate C); an
         # older-bank question gets the ones worked out from its own tests by _typed_fields.
@@ -377,6 +385,10 @@ def generate_question(req: GenerateRequest):
             response["starter_code"] = served_starter(response)
         elif typed:
             response.update(typed)
+            # typing describes how the values arrive; a contest statement's own Input and Output sections say what they mean
+            response["input_format"], response["output_format"] = served_formats(
+                result["problem_statement"], typed["input_format"], typed["output_format"],
+                str(result.get("input_format") or ""), str(result.get("output_format") or ""))
 
         total_time = time.time() - request_start
         print(f"[API] Total request time: {total_time:.3f}s")

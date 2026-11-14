@@ -18,6 +18,7 @@ import hashlib
 from collections import defaultdict
 from typing import Optional
 
+from model.quality import keep_playable
 from model.titles import normalize_title
 
 _HERE = os.path.dirname(__file__)
@@ -69,6 +70,7 @@ def _load():
         _loaded = True
         return
 
+    questions = keep_playable(questions, 'question_db')   # see model/quality.py
     store = defaultdict(list)
     for q in questions:
         t = q.get('topic', '').strip().lower()

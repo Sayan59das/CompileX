@@ -82,6 +82,12 @@ def _load(path: Optional[str] = None) -> None:
                     print(f"[Reviewed] line {number}: not valid JSON ({exc}); skipped")
                     skipped += 1
                     continue
+                cases = q.get("test_cases")
+                if isinstance(cases, list) and all(isinstance(c, dict) and "input" in c for c in cases):
+                    first_of = {}   # a test stored twice checks nothing the second time: keep the first of each input
+                    for case in cases:
+                        first_of.setdefault(str(case["input"]), case)
+                    q["test_cases"] = list(first_of.values())
                 problem = _problem_with(q)
                 title_key = normalize_title(q.get("title", ""))
                 if problem is None and title_key in seen_titles:

@@ -25,7 +25,7 @@ def test_normalize_title_is_what_the_backend_stores():
 
 def _question(title, **extra):
     return {"title": title, "problem_statement": "Do the thing with the input given.", "input_format": "n", "output_format": "x",
-            "sample_input": "1", "sample_output": "1", "test_cases": [{"input": "1", "output": "1"}] * 3,
+            "sample_input": "1", "sample_output": "1", "test_cases": [{"input": str(i), "output": str(i)} for i in (1, 2, 3)],
             "topic": "arrays", "difficulty": "hard", **extra}
 
 
