@@ -9,6 +9,17 @@ jobs:
   backend:
     name: Backend
     runs-on: ubuntu-latest
+    services:
+      # a real Redis for the shared-state tests (lobbies, limits, locks) and for the two-process check; databases 14 and 15 are the tests' own
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -38,6 +49,32 @@ jobs:
         run: |
           pip install pytest
           pytest tests/test_pool_starters.py -q
+      - name: Scaling fixes
+        # The execution cap, the off-loop remembered diagrams, the issued-questions index and the compose file's question service.
+        working-directory: backend
+        run: |
+          pip install pytest
+          pytest tests/test_scaling_phase0.py -q
+      - name: Shared state (lobbies, limits, locks)
+        # Every scenario runs against the in-process stand-in and against the real Redis above, so the two cannot drift apart.
+        working-directory: backend
+        env:
+          COMPILEX_TEST_REDIS_URL: redis://localhost:6379/15
+        run: |
+          pip install pytest
+          pytest tests/test_shared_state.py tests/test_lobby_manager.py tests/test_rate_limit.py tests/test_socket_handlers.py tests/test_phase1_wiring.py -q -rs
+      - name: Two backend processes, one game
+        # Starts two real servers on one Redis, plays a lobby across them, kills one mid-game and carries on through the other.
+        working-directory: backend
+        env:
+          REDIS_URL: redis://localhost:6379/14
+        run: python tests/two_process_check.py
+      - name: Undefined names
+        # A name used but never defined or imported only fails when that line runs (or, for a module-level one, when the app starts).
+        working-directory: backend
+        run: |
+          pip install pyflakes
+          if python -m pyflakes app | grep -i "undefined name"; then exit 1; fi
 
   question-service:
     name: Question service

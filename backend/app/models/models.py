@@ -219,7 +219,8 @@ class AssessmentItem(Base):
 class IssuedQuestion(Base):
     """A generated question the server keeps in full while the browser holds the public copy (see services/hidden_tests.py)."""
     __tablename__ = "issued_questions"
-    __table_args__ = (Index("ix_issued_user", "user_id"),)
+    # issued_at is indexed because every generation first deletes the expired rows (WHERE issued_at < ...), which scanned the whole table
+    __table_args__ = (Index("ix_issued_user", "user_id"), Index("ix_issued_at", "issued_at"))
 
     ref = Column(String(64), primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)

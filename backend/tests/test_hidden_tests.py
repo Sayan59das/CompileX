@@ -108,7 +108,10 @@ def fakes(monkeypatch):
     monkeypatch.setattr(routes.ai_generator, "generate_question", f.generate_question)
     monkeypatch.setattr(routes.code_executor, "execute_code", f.execute_code)
     monkeypatch.setattr(logic_analyzer, "analyze_logic", f.analyze_logic)
-    monkeypatch.setattr(routes, "_check_rate_limit", lambda *a, **k: (True, ""))
+    async def allowed(*a, **k):
+        return True, ""
+
+    monkeypatch.setattr(routes, "_check_rate_limit", allowed)
     monkeypatch.setattr(routes, "_check_achievements", no_achievements)
     return f
 

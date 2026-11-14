@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
+    # redis://host:6379/0. When set, lobbies, rate limits, generation locks and socket rooms are shared between every backend process, so
+    # more than one can run. Empty (the default) keeps all of that in this one process, exactly as before.
+    REDIS_URL: str = ""
 
     # change this before going to production
     SECRET_KEY: str = ""
@@ -62,6 +65,11 @@ class Settings(BaseSettings):
     DOCKER_HOST: str = "unix:///var/run/docker.sock"
     CODE_EXECUTION_TIMEOUT: int = 10
     MAX_MEMORY_MB: int = 256
+    # How many submissions may be running in sandboxes at once on this machine. Each one is a container of up to MAX_MEMORY_MB, so
+    # the default keeps the worst case near 2 GB. The rest wait their turn instead of all starting together.
+    MAX_CONCURRENT_EXECUTIONS: int = 8
+    # Worker threads that draw graph and tree diagrams (CPU work, kept off the event loop and off the code-execution threads).
+    DIAGRAM_WORKERS: int = 2
 
     # CORS — comma-separated list of allowed frontend origins.
     # In production set this to your Vercel URL, e.g.:

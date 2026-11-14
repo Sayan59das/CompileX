@@ -12,8 +12,8 @@ def register_socket_events(sio: socketio.AsyncServer):
     @sio.on("disconnect")
     async def on_disconnect(sid):
         # Capture player_id BEFORE leave_lobby pops it from _player_sessions
-        player_id = lobby_manager._player_sessions.get(sid)
-        lobby = lobby_manager.leave_lobby(sid)
+        player_id = await lobby_manager.player_for_sid(sid)
+        lobby = await lobby_manager.leave_lobby(sid)
         if lobby:
             await sio.leave_room(sid, str(lobby.id))
             await sio.emit(
@@ -30,7 +30,7 @@ def register_socket_events(sio: socketio.AsyncServer):
         user_id = data.get("user_id", 0)
         username = data.get("username", "Anonymous")
 
-        lobby = lobby_manager.get_lobby(lobby_id)
+        lobby = await lobby_manager.get_lobby(lobby_id)
         if not lobby:
             await sio.emit("error", {"message": "Lobby not found"}, to=sid)
             return
@@ -39,10 +39,14 @@ def register_socket_events(sio: socketio.AsyncServer):
             await sio.emit("error", {"message": "Lobby is full"}, to=sid)
             return
 
-        lobby_manager.join_lobby(lobby_id, player_id, user_id, username, sid)
+        # the snapshot join_lobby returns already includes this player (the lobby read above does not)
+        joined = await lobby_manager.join_lobby(lobby_id, player_id, user_id, username, sid)
+        if not joined:
+            await sio.emit("error", {"message": "Lobby is full"}, to=sid)
+            return
         await sio.enter_room(sid, str(lobby_id))
 
-        await sio.emit("lobby_state", lobby.to_dict(), to=sid)
+        await sio.emit("lobby_state", joined.to_dict(), to=sid)
 
         await sio.emit(
             "player_joined",
@@ -54,7 +58,7 @@ def register_socket_events(sio: socketio.AsyncServer):
     @sio.on("leave_lobby")
     async def on_leave_lobby(sid, data):
         player_id = data.get("player_id")
-        lobby = lobby_manager.leave_lobby(sid)
+        lobby = await lobby_manager.leave_lobby(sid)
         if lobby:
             await sio.leave_room(sid, str(lobby.id))
             await sio.emit(
@@ -71,7 +75,7 @@ def register_socket_events(sio: socketio.AsyncServer):
                 pass
 
         # If lobby not in memory (e.g. server restarted), recreate from DB
-        if not lobby_manager.get_lobby(lobby_id):
+        if not await lobby_manager.get_lobby(lobby_id):
             try:
                 from app.db.database import session_factory
                 from app.models.models import Lobby as LobbyModel
@@ -80,7 +84,7 @@ def register_socket_events(sio: socketio.AsyncServer):
                     result = await db.execute(select(LobbyModel).where(LobbyModel.id == lobby_id))
                     db_lobby = result.scalar_one_or_none()
                     if db_lobby:
-                        lobby_manager.create_lobby(
+                        await lobby_manager.create_lobby(
                             lobby_id=db_lobby.id,
                             code=db_lobby.code,
                             name=db_lobby.name,
@@ -96,16 +100,16 @@ def register_socket_events(sio: socketio.AsyncServer):
                             time_per_question=db_lobby.time_per_question,
                         )
                         # Re-add current player
-                        lobby_manager.join_lobby(db_lobby.id, sid, 0, "host", sid)
+                        await lobby_manager.join_lobby(db_lobby.id, sid, 0, "host", sid)
                         await sio.enter_room(sid, str(db_lobby.id))
             except Exception as e:
                 print(f"[ws] Failed to recover lobby from DB: {e}")
                 await sio.emit("error", {"message": f"Failed to recover lobby: {e}"}, to=sid)
                 return
 
-        lobby = lobby_manager.start_game(lobby_id)
+        lobby = await lobby_manager.start_game(lobby_id)
         if not lobby:
-            lb = lobby_manager.get_lobby(lobby_id)
+            lb = await lobby_manager.get_lobby(lobby_id)
             if not lb:
                 reason = "Lobby not found (recovery failed)."
             elif lb.status.name != "WAITING" if hasattr(lb.status, "name") else str(lb.status) != "WAITING":
@@ -140,12 +144,12 @@ def register_socket_events(sio: socketio.AsyncServer):
         question = data.get("question")
         question_index = data.get("question_index", 0)
 
-        lobby = lobby_manager.get_lobby(lobby_id)
+        lobby = await lobby_manager.get_lobby(lobby_id)
         if not lobby or lobby.status != GameStatus.STARTED:
             return
 
         # Store question in lobby so late-joiners / reconnects can get it
-        lobby_manager.store_question(lobby_id, question, question_index)
+        await lobby_manager.store_question(lobby_id, question, question_index)
 
         # Push to every player in the room (including the host)
         await sio.emit(
@@ -180,7 +184,7 @@ def register_socket_events(sio: socketio.AsyncServer):
         round_number = data.get("round_number", 1)
         questions = data.get("questions", [])
 
-        lobby = lobby_manager.start_round(lobby_id, round_number, questions)
+        lobby = await lobby_manager.start_round(lobby_id, round_number, questions)
         if not lobby:
             await sio.emit("error", {"message": "Cannot start round"}, to=sid)
             return
@@ -200,8 +204,8 @@ def register_socket_events(sio: socketio.AsyncServer):
     @sio.on("next_question")
     async def on_next_question(sid, data):
         lobby_id = data.get("lobby_id")
-        question = lobby_manager.advance_question(lobby_id)
-        lobby = lobby_manager.get_lobby(lobby_id)
+        question = await lobby_manager.advance_question(lobby_id)
+        lobby = await lobby_manager.get_lobby(lobby_id)
 
         if question and lobby:
             round_state = lobby.rounds.get(lobby.current_round)
@@ -220,7 +224,7 @@ def register_socket_events(sio: socketio.AsyncServer):
                 "round_ended",
                 {
                     "round_number": lobby.current_round if lobby else 0,
-                    "leaderboard": lobby_manager.get_leaderboard(lobby_id),
+                    "leaderboard": await lobby_manager.get_leaderboard(lobby_id),
                 },
                 room=str(lobby_id),
             )
@@ -230,9 +234,9 @@ def register_socket_events(sio: socketio.AsyncServer):
         lobby_id = data.get("lobby_id")
         round_number = data.get("round_number", 1)
 
-        lobby = lobby_manager.end_round(lobby_id, round_number)
+        lobby = await lobby_manager.end_round(lobby_id, round_number)
         if lobby:
-            leaderboard = lobby_manager.get_leaderboard(lobby_id)
+            leaderboard = await lobby_manager.get_leaderboard(lobby_id)
             await sio.emit(
                 "round_ended",
                 {"round_number": round_number, "leaderboard": leaderboard},
@@ -250,11 +254,11 @@ def register_socket_events(sio: socketio.AsyncServer):
         player_id = data.get("player_id")
         question_index = data.get("question_index", 0)
 
-        lobby = lobby_manager.get_lobby(lobby_id)
+        lobby = await lobby_manager.get_lobby(lobby_id)
         if not lobby or lobby.status != GameStatus.STARTED:
             return
 
-        result = lobby_manager.mark_question_submitted(lobby_id, player_id, question_index)
+        result = await lobby_manager.mark_question_submitted(lobby_id, player_id, question_index)
 
         # Broadcast updated waiting count to all players
         await sio.emit(
@@ -268,7 +272,7 @@ def register_socket_events(sio: socketio.AsyncServer):
         )
 
         if result["all_submitted"]:
-            lobby_manager.reset_question_submissions(lobby_id, question_index)
+            await lobby_manager.reset_question_submissions(lobby_id, question_index)
             # Tell the room everyone has submitted — host will generate next question
             await sio.emit(
                 "all_submitted",
@@ -286,14 +290,14 @@ def register_socket_events(sio: socketio.AsyncServer):
         lobby_id = data.get("lobby_id")
         player_id = data.get("player_id")
 
-        lobby = lobby_manager.get_lobby(lobby_id)
+        lobby = await lobby_manager.get_lobby(lobby_id)
         if not lobby or lobby.status != GameStatus.STARTED:
             return
 
-        result = lobby_manager.mark_player_finished(lobby_id, player_id)
+        result = await lobby_manager.mark_player_finished(lobby_id, player_id)
 
         # Broadcast updated leaderboard so the waiting popup stays live
-        leaderboard = lobby_manager.get_leaderboard(lobby_id)
+        leaderboard = await lobby_manager.get_leaderboard(lobby_id)
         await sio.emit(
             "leaderboard_update",
             {"leaderboard": leaderboard},
@@ -313,9 +317,9 @@ def register_socket_events(sio: socketio.AsyncServer):
 
         # When every player is done, end the game automatically
         if result["all_done"]:
-            ended_lobby = lobby_manager.end_game(lobby_id)
+            ended_lobby = await lobby_manager.end_game(lobby_id)
             if ended_lobby:
-                final_leaderboard = lobby_manager.get_leaderboard(lobby_id)
+                final_leaderboard = await lobby_manager.get_leaderboard(lobby_id)
                 await sio.emit(
                     "game_ended",
                     {"leaderboard": final_leaderboard},
@@ -325,12 +329,12 @@ def register_socket_events(sio: socketio.AsyncServer):
     @sio.on("end_game")
     async def on_end_game(sid, data):
         lobby_id = data.get("lobby_id")
-        lobby = lobby_manager.end_game(lobby_id)
+        lobby = await lobby_manager.end_game(lobby_id)
         if not lobby:
             await sio.emit("error", {"message": "Cannot end game"}, to=sid)
             return
 
-        leaderboard = lobby_manager.get_leaderboard(lobby_id)
+        leaderboard = await lobby_manager.get_leaderboard(lobby_id)
         await sio.emit(
             "game_ended", {"leaderboard": leaderboard}, room=str(lobby_id)
         )
@@ -352,13 +356,13 @@ def register_socket_events(sio: socketio.AsyncServer):
         player_id = data.get("player_id")
         score = data.get("score", 0)
 
-        lobby = lobby_manager.get_lobby(lobby_id)
+        lobby = await lobby_manager.get_lobby(lobby_id)
         if not lobby or lobby.status != GameStatus.STARTED:
             await sio.emit("error", {"message": "Game not active"}, to=sid)
             return
 
-        lobby_manager.update_score(lobby_id, player_id, score)
-        leaderboard = lobby_manager.get_leaderboard(lobby_id)
+        await lobby_manager.update_score(lobby_id, player_id, score)
+        leaderboard = await lobby_manager.get_leaderboard(lobby_id)
         await sio.emit(
             "leaderboard_update",
             {"leaderboard": leaderboard},
@@ -368,7 +372,7 @@ def register_socket_events(sio: socketio.AsyncServer):
     @sio.on("get_leaderboard")
     async def on_get_leaderboard(sid, data):
         lobby_id = data.get("lobby_id")
-        leaderboard = lobby_manager.get_leaderboard(lobby_id)
+        leaderboard = await lobby_manager.get_leaderboard(lobby_id)
         await sio.emit("leaderboard", {"leaderboard": leaderboard}, to=sid)
 
     @sio.on("typing_progress")

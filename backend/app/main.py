@@ -36,10 +36,16 @@ _validate_settings()
 
 # ── Socket.IO ─────────────────────────────────────────────────────────────────
 allowed_origins = settings.get_allowed_origins()
-sio = socketio.AsyncServer(
+_sio_options = dict(
     async_mode="asgi",
     cors_allowed_origins=allowed_origins if allowed_origins != ["*"] else "*",
 )
+if settings.REDIS_URL.strip():
+    # Several backend processes: a message sent to a room by one reaches the players connected to the others through Redis.
+    # The browser connects by WebSocket first (frontend/src/services/socket.js); a client that falls back to long-polling needs the load
+    # balancer to keep its requests on one process (sticky sessions).
+    _sio_options["client_manager"] = socketio.AsyncRedisManager(settings.REDIS_URL.strip())
+sio = socketio.AsyncServer(**_sio_options)
 
 # ── FastAPI app ───────────────────────────────────────────────────────────────
 app_http = FastAPI(title=settings.APP_NAME, debug=settings.DEBUG)
@@ -67,7 +73,14 @@ app_http.include_router(api_router, prefix="/api/v1")
 
 @app_http.on_event("startup")
 async def on_startup():
-    await init_db()
+    if settings.REDIS_URL.strip():
+        # Several processes starting together on a new database would all create its tables at once and collide: one at a time.
+        from app.services.shared_state import locked
+
+        async with locked("lock:init-db", timeout=120, wait=120):
+            await init_db()
+    else:
+        await init_db()
     from app.services.websocket_handler import register_socket_events
     register_socket_events(sio)
     origins = settings.get_allowed_origins()

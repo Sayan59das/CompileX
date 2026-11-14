@@ -676,7 +676,7 @@ async def get_user_stats(
     wins = 0
     lobby_ids = set(p.lobby_id for p in players)
     for lid in lobby_ids:
-        lb = lobby_manager.get_leaderboard(lid)
+        lb = await lobby_manager.get_leaderboard(lid)
         if lb and lb[0].get("user_id") == current_user.id:
             wins += 1
     win_rate = (wins / total_matches * 100) if total_matches > 0 else 0.0
@@ -809,7 +809,7 @@ async def get_match_history(
         total_players = res_count.scalar() or 1
 
         # Rank
-        lb = lobby_manager.get_leaderboard(lob.id)
+        lb = await lobby_manager.get_leaderboard(lob.id)
         player_rank = total_players
         for entry in lb:
             if entry.get("user_id") == current_user.id:
@@ -848,7 +848,7 @@ async def create_lobby(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    code = lobby_manager.generate_code()
+    code = await lobby_manager.generate_code()
     mc = lobby.match_config or MatchConfig()
 
     # For 1v1, enforce max_players=2
@@ -874,7 +874,7 @@ async def create_lobby(
     await db.commit()
     await db.refresh(db_lobby)
 
-    lobby_manager.create_lobby(
+    await lobby_manager.create_lobby(
         lobby_id=db_lobby.id,
         code=db_lobby.code,
         name=db_lobby.name,
@@ -899,7 +899,7 @@ async def list_public_lobbies(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    public = lobby_manager.get_public_lobbies()
+    public = await lobby_manager.get_public_lobbies()
     results = []
     for lob in public:
         # Get host username
@@ -929,7 +929,7 @@ async def get_lobby(code: str, db: AsyncSession = Depends(get_db)):
     if not lobby:
         raise HTTPException(status_code=404, detail="Lobby not found")
 
-    mem_lobby = lobby_manager.get_lobby_by_code(code.upper())
+    mem_lobby = await lobby_manager.get_lobby_by_code(code.upper())
     player_count = len(mem_lobby.players) if mem_lobby else 0
     return _lobby_to_response(lobby, player_count)
 
@@ -978,7 +978,7 @@ async def global_leaderboard(
 
 @router.get("/lobbies/{lobby_id}/leaderboard")
 async def get_lobby_leaderboard(lobby_id: int):
-    return {"leaderboard": lobby_manager.get_leaderboard(lobby_id)}
+    return {"leaderboard": await lobby_manager.get_leaderboard(lobby_id)}
 
 
 def _lobby_to_response(lobby: Lobby, player_count: int) -> LobbyResponse:
@@ -1008,43 +1008,12 @@ def _lobby_to_response(lobby: Lobby, player_count: int) -> LobbyResponse:
 # Question routes
 # ---------------------------------------------------------------------------
 
-from collections import defaultdict
 from datetime import datetime, timedelta
-import asyncio
 
-_request_counts_minute = defaultdict(list)
-_request_counts_daily = defaultdict(list)
-_generation_locks = defaultdict(asyncio.Lock)
-
-DAILY_LIMIT = 100  # Max questions per day per user
-
-
-def _check_rate_limit(user_id: int, limit_per_minute: int = 10) -> tuple[bool, str]:
-    """Check if user is within rate limits. Returns (allowed, message)."""
-    now = datetime.utcnow()
-    minute_cutoff = now - timedelta(minutes=1)
-    day_cutoff = now - timedelta(days=1)
-
-    # Clean old minute entries
-    _request_counts_minute[user_id] = [
-        t for t in _request_counts_minute[user_id] if t > minute_cutoff
-    ]
-
-    # Check daily limit
-    _request_counts_daily[user_id] = [
-        t for t in _request_counts_daily[user_id] if t > day_cutoff
-    ]
-
-    if len(_request_counts_daily[user_id]) >= DAILY_LIMIT:
-        return False, f"Daily limit reached ({DAILY_LIMIT}/day). Try again tomorrow."
-
-    if len(_request_counts_minute[user_id]) >= limit_per_minute:
-        wait_seconds = 60 - (now - _request_counts_minute[user_id][0]).total_seconds()
-        return False, f"Rate limit exceeded. Try again in {int(wait_seconds)} seconds."
-
-    _request_counts_minute[user_id].append(now)
-    _request_counts_daily[user_id].append(now)
-    return True, ""
+# The limits and the one-at-a-time generation lock live in the shared state (services/rate_limit.py), so they hold across every backend process.
+from app.services.rate_limit import (
+    DAILY_LIMIT, assessment_lock, check_rate_limit as _check_rate_limit, generation_lock, usage as _rate_usage,
+)
 
 
 async def _lobby_audience(db: AsyncSession, current_user: User, lobby_id: Optional[int]) -> list[int]:
@@ -1074,7 +1043,7 @@ async def generate_question(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    allowed, msg = _check_rate_limit(current_user.id, settings.AI_RATE_LIMIT_PER_MINUTE)
+    allowed, msg = await _check_rate_limit(current_user.id, settings.AI_RATE_LIMIT_PER_MINUTE)
     if not allowed:
         raise HTTPException(status_code=429, detail=msg)
 
@@ -1083,13 +1052,14 @@ async def generate_question(
     exclude = list(set(seen) | {t.lower().strip() for t in (request.exclude_titles or []) if t})
 
     # Prevent duplicate concurrent requests from same user
-    async with _generation_locks[current_user.id]:
+    async with generation_lock(current_user.id):
         data = await ai_generator.generate_question(
             request.difficulty,
             request.topic,
             request.num_test_cases,
             request.description,
             exclude_titles=exclude,
+            player_ids=audience,
         )
 
     # In a lobby the host generates but everyone sees it, so it is recorded when broadcast.
@@ -1107,11 +1077,11 @@ async def generate_from_prompt(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    allowed, msg = _check_rate_limit(current_user.id, settings.AI_RATE_LIMIT_PER_MINUTE)
+    allowed, msg = await _check_rate_limit(current_user.id, settings.AI_RATE_LIMIT_PER_MINUTE)
     if not allowed:
         raise HTTPException(status_code=429, detail=msg)
 
-    async with _generation_locks[current_user.id]:
+    async with generation_lock(current_user.id):
         data = await ai_generator.generate_from_prompt(
             request.prompt, request.difficulty
         )
@@ -1136,18 +1106,7 @@ async def get_available_topics():
 async def get_limits(current_user: User = Depends(get_current_user)):
     """Get remaining question generation limits for current user."""
     now = datetime.utcnow()
-    day_cutoff = now - timedelta(days=1)
-
-    daily_count = len(
-        [t for t in _request_counts_daily[current_user.id] if t > day_cutoff]
-    )
-    minute_count = len(
-        [
-            t
-            for t in _request_counts_minute[current_user.id]
-            if t > now - timedelta(minutes=1)
-        ]
-    )
+    daily_count, minute_count = await _rate_usage(current_user.id)
 
     return {
         "daily_used": daily_count,
@@ -1726,7 +1685,7 @@ async def create_tournament(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    code = lobby_manager.generate_code()
+    code = await lobby_manager.generate_code()
     topics_json = json.dumps(body.topics) if body.topics else None
 
     tourney = Tournament(
@@ -1858,7 +1817,7 @@ async def start_tournament(
         p1 = shuffled[i]
         p2 = shuffled[i + 1]
 
-        lobby_code = lobby_manager.generate_code()
+        lobby_code = await lobby_manager.generate_code()
         match_lobby = Lobby(
             name=f"{tourney.name} — Match {i // 2 + 1}",
             code=lobby_code,
@@ -1883,7 +1842,7 @@ async def start_tournament(
             db.add(player)
 
         # Register lobby in memory manager
-        lobby_manager.create_lobby(
+        await lobby_manager.create_lobby(
             lobby_id=match_lobby.id,
             code=lobby_code,
             name=match_lobby.name,
@@ -2218,10 +2177,6 @@ ASSESSMENT_PLAN = [
     {"difficulty": DifficultyLevel.HARD,   "topic": "dynamic programming",  "skill": "advanced"},
 ]
 
-# One assessment request at a time per player, so a double click cannot grade a question twice.
-_assessment_locks = defaultdict(asyncio.Lock)
-
-
 async def _assessment_items(db: AsyncSession, user_id: int) -> list[AssessmentItem]:
     rows = await db.execute(
         select(AssessmentItem)
@@ -2324,7 +2279,7 @@ async def generate_assessment_question(
     user_id = current_user.id
     exclude_titles = body.get("exclude_titles") or []
 
-    async with _assessment_locks[user_id]:
+    async with assessment_lock(user_id):
         now = time.time()
         items = await _assessment_items(db, user_id)
         stale = [i for i in items if i.graded_at is None and grading.expired(i.issued_at, i.time_limit_seconds, now)]
@@ -2348,7 +2303,7 @@ async def generate_assessment_question(
             difficulty = DifficultyLevel(grading.next_difficulty(prev.difficulty, prev.passed_tests, prev.total_tests))
         topic = plan["topic"]
 
-        allowed, msg = _check_rate_limit(user_id, settings.AI_RATE_LIMIT_PER_MINUTE)
+        allowed, msg = await _check_rate_limit(user_id, settings.AI_RATE_LIMIT_PER_MINUTE)
         if not allowed:
             raise HTTPException(status_code=429, detail=msg)
 
@@ -2356,12 +2311,13 @@ async def generate_assessment_question(
         exclude = set(seen) | {t.lower().strip() for t in exclude_titles if isinstance(t, str) and t}
         exclude |= {i.title.lower().strip() for i in items if i.title}
 
-        async with _generation_locks[user_id]:
+        async with generation_lock(user_id):
             data = await ai_generator.generate_question(
                 difficulty=difficulty,
                 topic=topic,
                 num_test_cases=5,
                 exclude_titles=list(exclude),
+                player_ids=[user_id],
             )
         if not grading.parse_tests(data.get("test_cases")):
             raise HTTPException(status_code=503, detail="The question came without tests. Please try again.")
@@ -2438,7 +2394,7 @@ async def submit_assessment_question(
         raise HTTPException(status_code=409, detail="The skill assessment is already completed")
     user_id = current_user.id
 
-    async with _assessment_locks[user_id]:
+    async with assessment_lock(user_id):
         now = time.time()
         item = await _owned_item(db, user_id, body.item_id)
         if item.graded_at is not None:
@@ -2500,7 +2456,7 @@ async def submit_skill_assessment(
         }
     user_id = current_user.id
 
-    async with _assessment_locks[user_id]:
+    async with assessment_lock(user_id):
         now = time.time()
         items = await _assessment_items(db, user_id)
         for item in items:

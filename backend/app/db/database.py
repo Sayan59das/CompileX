@@ -75,6 +75,23 @@ async def init_db():
         await conn.run_sync(Base.metadata.create_all)
         # Add new columns to existing tables if they don't exist (safe migration)
         await conn.run_sync(_migrate_add_columns)
+        await conn.run_sync(_ensure_indexes)
+
+
+# Indexes added after a table already existed in someone's database. create_all only creates the indexes of tables it creates, so
+# an existing database never gets them from the model alone. CREATE INDEX IF NOT EXISTS is the same statement on SQLite and PostgreSQL.
+_LATE_INDEXES = [
+    ("ix_issued_at", "issued_questions", "issued_at"),
+]
+
+
+def _ensure_indexes(conn):
+    from sqlalchemy import text, inspect
+
+    tables = set(inspect(conn).get_table_names())
+    for name, table, column in _LATE_INDEXES:
+        if table in tables:
+            conn.execute(text(f"CREATE INDEX IF NOT EXISTS {name} ON {table} ({column})"))
 
 
 def _migrate_add_columns(conn):

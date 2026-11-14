@@ -1,8 +1,11 @@
 import json
+import hashlib
 import random
 import re
 import asyncio
 import httpx
+from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 from app.core.config import get_settings
 from app.models.models import DifficultyLevel
@@ -952,6 +955,7 @@ class AIQuestionGenerator:
         num_test_cases: int = None,
         description: Optional[str] = None,
         exclude_titles: list = None,
+        player_ids: list = None,
     ) -> dict:
         # Randomize test case count by difficulty if not specified
         if num_test_cases is None:
@@ -971,7 +975,7 @@ class AIQuestionGenerator:
         # A single async call is enough — no need to loop here and multiply latency.
         data = await self._call_ai_service(
             topic, difficulty.value, num_test_cases,
-            exclude_titles=excluded
+            exclude_titles=excluded, player_ids=player_ids,
         )
 
         if data is None:
@@ -987,8 +991,12 @@ class AIQuestionGenerator:
         difficulty: str,
         num_test_cases: int,
         exclude_titles: list = None,
+        player_ids: list = None,
     ) -> dict | None:
-        """Call the AI service asynchronously. Returns None if unavailable."""
+        """Call the AI service asynchronously. Returns None if unavailable.
+
+        player_ids are the players who will see the question; the service keeps its own per-player history of what it served (in Redis when
+        it has one), so it does not repeat a question for them even when the titles in exclude_titles do not say so."""
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(
@@ -998,6 +1006,7 @@ class AIQuestionGenerator:
                         "difficulty": difficulty,
                         "num_test_cases": num_test_cases,
                         "exclude_titles": exclude_titles or [],
+                        "player_ids": [str(p) for p in (player_ids or [])] or None,
                     },
                 )
             if response.is_success:
@@ -3453,6 +3462,37 @@ def _legacy_typed(data: dict, tests: list):
         return None
 
 
+_DIAGRAM_POOL = None
+_DIAGRAM_CACHE: "OrderedDict[str, Optional[str]]" = OrderedDict()
+_DIAGRAM_CACHE_SIZE = 256
+
+
+def _diagram_pool() -> ThreadPoolExecutor:
+    """The threads that draw diagrams: a few of their own, so drawing never runs on the event loop (every socket and request waits while
+    it does) and never uses the threads that run players' code."""
+    global _DIAGRAM_POOL
+    if _DIAGRAM_POOL is None:
+        _DIAGRAM_POOL = ThreadPoolExecutor(max_workers=max(1, settings.DIAGRAM_WORKERS), thread_name_prefix="diagram")
+    return _DIAGRAM_POOL
+
+
+async def _draw_diagram(question: dict) -> Optional[str]:
+    """The diagram (a data-URL PNG, or None when there is none) for what the question says, drawn off the event loop.
+
+    The picture depends only on the question's own text and sample, so it is remembered: a reviewed or collected question is served to
+    many players and is drawn once, not once per player. A failure is raised, never remembered."""
+    key = hashlib.sha1(json.dumps(question, sort_keys=True, default=str).encode("utf-8")).hexdigest()
+    if key in _DIAGRAM_CACHE:
+        _DIAGRAM_CACHE.move_to_end(key)
+        return _DIAGRAM_CACHE[key]
+    from app.services.diagram_generator import diagram_generator
+    diagram = await asyncio.get_running_loop().run_in_executor(_diagram_pool(), diagram_generator.diagram_for_question, question)
+    _DIAGRAM_CACHE[key] = diagram
+    while len(_DIAGRAM_CACHE) > _DIAGRAM_CACHE_SIZE:
+        _DIAGRAM_CACHE.popitem(last=False)
+    return diagram
+
+
 async def _build_result(
     data: dict, difficulty: DifficultyLevel, topic: Optional[str]
 ) -> dict:
@@ -3504,8 +3544,7 @@ async def _build_result(
     # certain there is no diagram rather than a wrong one.
     diagram = None
     try:
-        from app.services.diagram_generator import diagram_generator
-        diagram = diagram_generator.diagram_for_question({
+        diagram = await _draw_diagram({
             "title": title,
             "topic": data.get("topic", topic),
             "problem_statement": raw_desc,

@@ -12,6 +12,8 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_DB=0
+      # shared state (lobbies, limits, socket rooms): set, it lets more than one backend process run
+      - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=${SECRET_KEY}
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=1440
@@ -45,6 +47,15 @@ services:
       context: ./question-service
       dockerfile: Dockerfile
     container_name: compilex-ai
+    # The mounted folder replaces the image's files, and its main.py is the old transformer service (it needs torch, which is not
+    # installed). The service that is deployed is main_dynamic, and the backend calls this container on port 8001.
+    command: ["uvicorn", "main_dynamic:app", "--host", "0.0.0.0", "--port", "8001"]
+    environment:
+      # per-player history of the questions served (see question-service/pool/history.py)
+      - REDIS_URL=redis://redis:6379/1
+    depends_on:
+      redis:
+        condition: service_started
     ports:
       - "8001:8001"
     volumes:

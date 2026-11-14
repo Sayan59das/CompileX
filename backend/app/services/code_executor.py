@@ -2,6 +2,7 @@ import asyncio
 import os
 import tempfile
 import subprocess
+import weakref
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
@@ -9,6 +10,21 @@ from typing import List, Optional
 from app.core.config import get_settings
 
 settings = get_settings()
+
+# One semaphore per event loop (a semaphore is bound to the loop that first has to wait on it, and tests start a new loop per run).
+_slots_by_loop: "weakref.WeakKeyDictionary" = weakref.WeakKeyDictionary()
+
+
+def _execution_slots() -> asyncio.Semaphore:
+    loop = asyncio.get_running_loop()
+    slots = _slots_by_loop.get(loop)
+    if slots is None:
+        slots = _slots_by_loop[loop] = asyncio.Semaphore(max(1, settings.MAX_CONCURRENT_EXECUTIONS))
+    return slots
+
+# Defined first: when Docker cannot be reached below, execute_code still reads this name to choose the subprocess fallback.
+DOCKER_AVAILABLE = False
+docker_client = None
 
 try:
     import docker
@@ -500,10 +516,12 @@ class CodeExecutor:
                 score=0,
             )
 
-        if DOCKER_AVAILABLE and docker_client:
-            return await self._execute_with_docker(code, language, test_cases, function_signature)
-        else:
-            return await self._execute_with_subprocess(code, language, test_cases, function_signature)
+        # At most MAX_CONCURRENT_EXECUTIONS run at once; the others wait here (cheap: a waiting coroutine holds no thread and no container).
+        async with _execution_slots():
+            if DOCKER_AVAILABLE and docker_client:
+                return await self._execute_with_docker(code, language, test_cases, function_signature)
+            else:
+                return await self._execute_with_subprocess(code, language, test_cases, function_signature)
 
     async def _execute_with_docker(
         self,

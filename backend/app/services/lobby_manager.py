@@ -1,11 +1,27 @@
-import uuid
-import json
-from typing import Dict, Optional, List
-from datetime import datetime
-from dataclasses import dataclass, field
-from enum import Enum
+"""Live lobbies: who is in them, the round, the questions, the scores.
 
-from app.models.models import GameStatus, GameMode, DifficultyLevel
+A lobby used to live in a dict of this process, so a second backend process could not see it and a restart ended every game. Now each lobby is
+one JSON value in the shared state (see shared_state.py: Redis when REDIS_URL is set, this process otherwise), and every change is a
+read-modify-write under a per-lobby lock, so two processes updating scores at the same moment cannot lose an update.
+
+Every method that reads or changes a lobby is a coroutine and hands back a SNAPSHOT of the lobby: reading its fields is fine, but changing them
+does nothing; change a lobby only through the methods here.
+"""
+
+import json
+import uuid
+from contextlib import asynccontextmanager
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Dict, List, Optional
+
+from app.models.models import GameStatus, GameMode, DifficultyLevel  # noqa: F401  (DifficultyLevel kept importable from here)
+from app.services.shared_state import get_redis, locked
+
+# A lobby is forgotten this long after its last change, and so is a socket's record of which lobby it joined.
+LOBBY_TTL_SECONDS = 12 * 3600
+LOCK_SECONDS = 10.0
 
 
 class GameEvent(str, Enum):
@@ -38,6 +54,10 @@ class PlayerState:
             "score": self.score,
             "questions_solved": self.questions_solved,
         }
+
+    def to_stored(self):
+        return {"id": self.id, "user_id": self.user_id, "username": self.username, "sid": self.sid, "score": self.score,
+                "questions_solved": self.questions_solved, "finished": self.finished}
 
 
 @dataclass
@@ -84,6 +104,8 @@ class LobbyState:
     rounds: Dict[int, RoundState] = field(default_factory=dict)
     # Shared question list — same for all players
     shared_questions: list = field(default_factory=list)
+    # question index -> the players who have submitted for it
+    question_submissions: Dict[int, List] = field(default_factory=dict)
 
     def to_dict(self):
         return {
@@ -108,21 +130,85 @@ class LobbyState:
             "current_round_state": self.rounds[self.current_round].to_dict() if self.current_round in self.rounds else None,
         }
 
+    # ── what is kept in the shared state ──
+    def to_json(self) -> str:
+        return json.dumps({
+            "id": self.id, "code": self.code, "name": self.name, "status": self.status.value, "game_mode": self.game_mode.value,
+            "is_public": self.is_public, "max_players": self.max_players, "time_limit": self.time_limit, "created_by": self.created_by,
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            # lists of records, not dicts keyed by id: JSON turns every key into text and a player's id can be a number or a socket id
+            "players": [p.to_stored() for p in self.players.values()],
+            "questions": self.questions,
+            "leaderboard": [[player_id, score] for player_id, score in self.leaderboard.items()],
+            "num_rounds": self.num_rounds, "questions_per_round": self.questions_per_round, "difficulty": self.difficulty,
+            "topics": self.topics, "time_per_question": self.time_per_question, "current_round": self.current_round,
+            "rounds": [r.to_dict() for r in self.rounds.values()],
+            "shared_questions": self.shared_questions,
+            "question_submissions": [[index, ids] for index, ids in self.question_submissions.items()],
+        }, separators=(",", ":"), default=str)
+
+    @classmethod
+    def from_json(cls, text: str) -> "LobbyState":
+        raw = json.loads(text)
+        players = {p["id"]: PlayerState(**p) for p in raw["players"]}
+        rounds = {r["round_number"]: RoundState(**r) for r in raw["rounds"]}
+        return cls(
+            id=raw["id"], code=raw["code"], name=raw["name"], status=GameStatus(raw["status"]), game_mode=GameMode(raw["game_mode"]),
+            is_public=raw["is_public"], max_players=raw["max_players"], time_limit=raw["time_limit"], created_by=raw["created_by"],
+            started_at=datetime.fromisoformat(raw["started_at"]) if raw["started_at"] else None,
+            players=players, questions=raw["questions"], leaderboard={player_id: score for player_id, score in raw["leaderboard"]},
+            num_rounds=raw["num_rounds"], questions_per_round=raw["questions_per_round"], difficulty=raw["difficulty"],
+            topics=raw["topics"], time_per_question=raw["time_per_question"], current_round=raw["current_round"], rounds=rounds,
+            shared_questions=raw["shared_questions"],
+            question_submissions={index: ids for index, ids in raw["question_submissions"]},
+        )
+
 
 class LobbyManager:
-    def __init__(self):
-        self._lobbies: Dict[int, LobbyState] = {}
-        self._lobby_codes: Dict[str, int] = {}
-        self._player_sessions: Dict[str, int] = {}  # sid -> player_id
-        self._sid_to_lobby: Dict[str, int] = {}  # sid -> lobby_id
+    def __init__(self, redis=None):
+        self._fixed = redis   # tests give their own; otherwise the process's shared state
 
-    def generate_code(self) -> str:
+    @property
+    def _r(self):
+        return self._fixed if self._fixed is not None else get_redis()
+
+    # ── keys ──
+    @staticmethod
+    def _key(lobby_id) -> str:
+        return f"lobby:{lobby_id}"
+
+    @staticmethod
+    def _code_key(code: str) -> str:
+        return f"lobbycode:{str(code).upper()}"
+
+    @staticmethod
+    def _sid_key(sid: str) -> str:
+        return f"sid:{sid}"
+
+    # ── reading and changing ──
+    async def _load(self, lobby_id) -> Optional[LobbyState]:
+        raw = await self._r.get(self._key(lobby_id))
+        return LobbyState.from_json(raw) if raw else None
+
+    @asynccontextmanager
+    async def _edit(self, lobby_id):
+        """The lobby (or None) for the body to change. Nobody else changes it meanwhile, and it is saved afterwards only if something changed."""
+        async with locked(f"lock:lobby:{lobby_id}", timeout=LOCK_SECONDS, wait=LOCK_SECONDS, client=self._r):
+            lobby = await self._load(lobby_id)
+            before = lobby.to_json() if lobby else None
+            yield lobby
+            if lobby is not None:
+                after = lobby.to_json()
+                if after != before:
+                    await self._r.set(self._key(lobby_id), after, ex=LOBBY_TTL_SECONDS)
+
+    async def generate_code(self) -> str:
         while True:
             code = uuid.uuid4().hex[:6].upper()
-            if code not in self._lobby_codes:
+            if not await self._r.exists(self._code_key(code)):
                 return code
 
-    def create_lobby(
+    async def create_lobby(
         self,
         lobby_id,
         code,
@@ -154,134 +240,148 @@ class LobbyManager:
             topics=topics or [],
             time_per_question=time_per_question,
         )
-        self._lobbies[lobby_id] = lobby
-        self._lobby_codes[code] = lobby_id
+        await self._r.set(self._key(lobby_id), lobby.to_json(), ex=LOBBY_TTL_SECONDS)
+        await self._r.set(self._code_key(code), str(lobby_id), ex=LOBBY_TTL_SECONDS)
+        await self._r.sadd("lobbies", lobby_id)
         return lobby
 
-    def get_lobby(self, lobby_id: int) -> Optional[LobbyState]:
-        return self._lobbies.get(lobby_id)
+    async def get_lobby(self, lobby_id) -> Optional[LobbyState]:
+        return await self._load(lobby_id)
 
-    def get_lobby_by_code(self, code: str) -> Optional[LobbyState]:
-        lid = self._lobby_codes.get(code.upper())
-        return self._lobbies.get(lid) if lid else None
+    async def get_lobby_by_code(self, code: str) -> Optional[LobbyState]:
+        lobby_id = await self._r.get(self._code_key(code))
+        return await self._load(lobby_id) if lobby_id else None
 
-    def get_public_lobbies(self) -> List[LobbyState]:
-        return [
-            lobby
-            for lobby in self._lobbies.values()
-            if lobby.is_public and lobby.status == GameStatus.WAITING
-        ]
+    async def get_public_lobbies(self) -> List[LobbyState]:
+        ids = sorted(await self._r.smembers("lobbies"), key=lambda i: (0, int(i)) if str(i).isdigit() else (1, str(i)))
+        if not ids:
+            return []
+        found = []
+        for lobby_id, raw in zip(ids, await self._r.mget([self._key(i) for i in ids])):
+            if raw is None:
+                await self._r.srem("lobbies", lobby_id)   # it expired: stop listing it
+                continue
+            lobby = LobbyState.from_json(raw)
+            if lobby.is_public and lobby.status == GameStatus.WAITING:
+                found.append(lobby)
+        return found
 
-    def join_lobby(self, lobby_id, player_id, user_id, username, sid) -> Optional[LobbyState]:
-        lobby = self._lobbies.get(lobby_id)
-        if not lobby or len(lobby.players) >= lobby.max_players:
-            return None
+    # ── players ──
+    async def join_lobby(self, lobby_id, player_id, user_id, username, sid) -> Optional[LobbyState]:
+        async with self._edit(lobby_id) as lobby:
+            if not lobby or len(lobby.players) >= lobby.max_players:
+                return None
 
-        if player_id in lobby.players:
-            lobby.players[player_id].sid = sid
-        else:
-            lobby.players[player_id] = PlayerState(
-                id=player_id, user_id=user_id, username=username, sid=sid
-            )
-
-        self._player_sessions[sid] = player_id
-        self._sid_to_lobby[sid] = lobby_id
+            if player_id in lobby.players:
+                lobby.players[player_id].sid = sid
+            else:
+                lobby.players[player_id] = PlayerState(id=player_id, user_id=user_id, username=username, sid=sid)
+        await self._r.set(self._sid_key(sid), json.dumps({"player_id": player_id, "lobby_id": lobby_id}), ex=LOBBY_TTL_SECONDS)
         return lobby
 
-    def leave_lobby(self, sid: str) -> Optional[LobbyState]:
-        player_id = self._player_sessions.pop(sid, None)
-        if not player_id:
-            return None
+    async def player_for_sid(self, sid: str):
+        """The player this socket joined as, or None."""
+        raw = await self._r.get(self._sid_key(sid))
+        return json.loads(raw)["player_id"] if raw else None
 
-        lobby_id = self._sid_to_lobby.pop(sid, None)
-        if lobby_id:
-            lobby = self._lobbies.get(lobby_id)
+    async def leave_lobby(self, sid: str) -> Optional[LobbyState]:
+        raw = await self._r.get(self._sid_key(sid))
+        if not raw:
+            return None
+        await self._r.delete(self._sid_key(sid))
+        session = json.loads(raw)
+        player_id, lobby_id = session["player_id"], session.get("lobby_id")
+        if not player_id or not lobby_id:
+            return None
+        async with self._edit(lobby_id) as lobby:
             if lobby and player_id in lobby.players:
                 del lobby.players[player_id]
                 return lobby
         return None
 
-    def start_game(self, lobby_id: int) -> Optional[LobbyState]:
-        lobby = self._lobbies.get(lobby_id)
-        if not lobby or lobby.status != GameStatus.WAITING or not lobby.players:
+    # ── the game ──
+    async def start_game(self, lobby_id) -> Optional[LobbyState]:
+        async with self._edit(lobby_id) as lobby:
+            if not lobby or lobby.status != GameStatus.WAITING or not lobby.players:
+                return None
+
+            lobby.status = GameStatus.STARTED
+            lobby.started_at = datetime.utcnow()
+            lobby.current_round = 0
+
+            for p in lobby.players.values():
+                p.score = 0
+                p.questions_solved = 0
+                p.finished = False
+            lobby.leaderboard = {}
+            lobby.shared_questions = []
+            lobby.question_submissions = {}
+            return lobby
+
+    async def start_round(self, lobby_id, round_number: int, questions: list) -> Optional[LobbyState]:
+        async with self._edit(lobby_id) as lobby:
+            if not lobby or lobby.status != GameStatus.STARTED:
+                return None
+
+            lobby.current_round = round_number
+            lobby.rounds[round_number] = RoundState(
+                round_number=round_number,
+                questions=questions,
+                started_at=datetime.utcnow().isoformat(),
+            )
+            return lobby
+
+    async def end_round(self, lobby_id, round_number: int) -> Optional[LobbyState]:
+        async with self._edit(lobby_id) as lobby:
+            if not lobby:
+                return None
+
+            round_state = lobby.rounds.get(round_number)
+            if round_state:
+                round_state.ended = True
+            return lobby
+
+    async def advance_question(self, lobby_id) -> Optional[dict]:
+        async with self._edit(lobby_id) as lobby:
+            if not lobby:
+                return None
+
+            round_state = lobby.rounds.get(lobby.current_round)
+            if not round_state:
+                return None
+
+            round_state.current_question_index += 1
+            if round_state.current_question_index < len(round_state.questions):
+                return round_state.questions[round_state.current_question_index]
             return None
 
-        lobby.status = GameStatus.STARTED
-        lobby.started_at = datetime.utcnow()
-        lobby.current_round = 0
+    async def end_game(self, lobby_id) -> Optional[LobbyState]:
+        async with self._edit(lobby_id) as lobby:
+            if not lobby or lobby.status != GameStatus.STARTED:
+                return None
 
-        for p in lobby.players.values():
-            p.score = 0
-            p.questions_solved = 0
-            p.finished = False
-        lobby.leaderboard = {}
-        lobby.shared_questions = []
-        return lobby
+            lobby.status = GameStatus.ENDED
+            for p in lobby.players.values():
+                lobby.leaderboard[p.id] = p.score
+            return lobby
 
-    def start_round(self, lobby_id: int, round_number: int, questions: list) -> Optional[LobbyState]:
-        lobby = self._lobbies.get(lobby_id)
-        if not lobby or lobby.status != GameStatus.STARTED:
-            return None
-
-        lobby.current_round = round_number
-        lobby.rounds[round_number] = RoundState(
-            round_number=round_number,
-            questions=questions,
-            started_at=datetime.utcnow().isoformat(),
-        )
-        return lobby
-
-    def end_round(self, lobby_id: int, round_number: int) -> Optional[LobbyState]:
-        lobby = self._lobbies.get(lobby_id)
-        if not lobby:
-            return None
-
-        round_state = lobby.rounds.get(round_number)
-        if round_state:
-            round_state.ended = True
-        return lobby
-
-    def advance_question(self, lobby_id: int) -> Optional[dict]:
-        lobby = self._lobbies.get(lobby_id)
-        if not lobby:
-            return None
-
-        round_state = lobby.rounds.get(lobby.current_round)
-        if not round_state:
-            return None
-
-        round_state.current_question_index += 1
-        if round_state.current_question_index < len(round_state.questions):
-            return round_state.questions[round_state.current_question_index]
-        return None
-
-    def end_game(self, lobby_id: int) -> Optional[LobbyState]:
-        lobby = self._lobbies.get(lobby_id)
-        if not lobby or lobby.status != GameStatus.STARTED:
-            return None
-
-        lobby.status = GameStatus.ENDED
-        for p in lobby.players.values():
-            lobby.leaderboard[p.id] = p.score
-        return lobby
-
-    def store_question(self, lobby_id: int, question: dict, index: int) -> None:
+    async def store_question(self, lobby_id, question: dict, index: int) -> None:
         """Store a shared question so all players get the same one."""
-        lobby = self._lobbies.get(lobby_id)
-        if not lobby:
-            return
-        # Extend list if needed
-        while len(lobby.shared_questions) <= index:
-            lobby.shared_questions.append(None)
-        lobby.shared_questions[index] = question
+        async with self._edit(lobby_id) as lobby:
+            if not lobby:
+                return
+            # Extend list if needed
+            while len(lobby.shared_questions) <= index:
+                lobby.shared_questions.append(None)
+            lobby.shared_questions[index] = question
 
-    def get_shared_question(self, lobby_id: int, index: int) -> Optional[dict]:
-        lobby = self._lobbies.get(lobby_id)
+    async def get_shared_question(self, lobby_id, index: int) -> Optional[dict]:
+        lobby = await self._load(lobby_id)
         if not lobby or index >= len(lobby.shared_questions):
             return None
         return lobby.shared_questions[index]
 
-    def mark_player_finished(self, lobby_id: int, player_id: int) -> dict:
+    async def mark_player_finished(self, lobby_id, player_id) -> dict:
         """
         Mark a player as having completed all their questions.
         Returns a dict with:
@@ -289,60 +389,58 @@ class LobbyManager:
           - total_count: total players in the lobby
           - all_done: True when every player has finished
         """
-        lobby = self._lobbies.get(lobby_id)
-        if not lobby or player_id not in lobby.players:
-            return {"finished_count": 0, "total_count": 0, "all_done": False}
+        async with self._edit(lobby_id) as lobby:
+            if not lobby or player_id not in lobby.players:
+                return {"finished_count": 0, "total_count": 0, "all_done": False}
 
-        lobby.players[player_id].finished = True
-        finished_count = sum(1 for p in lobby.players.values() if p.finished)
-        total_count = len(lobby.players)
-        return {
-            "finished_count": finished_count,
-            "total_count": total_count,
-            "all_done": finished_count >= total_count,
-        }
+            lobby.players[player_id].finished = True
+            finished_count = sum(1 for p in lobby.players.values() if p.finished)
+            total_count = len(lobby.players)
+            return {
+                "finished_count": finished_count,
+                "total_count": total_count,
+                "all_done": finished_count >= total_count,
+            }
 
-    def mark_question_submitted(self, lobby_id: int, player_id: int, question_index: int) -> dict:
+    async def mark_question_submitted(self, lobby_id, player_id, question_index: int) -> dict:
         """
         Track per-question submissions. Returns all_submitted=True when every
         active player has submitted for this question_index.
         """
-        lobby = self._lobbies.get(lobby_id)
-        if not lobby:
-            return {"submitted_count": 0, "total_count": 0, "all_submitted": False}
+        async with self._edit(lobby_id) as lobby:
+            if not lobby:
+                return {"submitted_count": 0, "total_count": 0, "all_submitted": False}
 
-        # Lazy-init the per-question submission set
-        if not hasattr(lobby, "_question_submissions"):
-            lobby._question_submissions = {}
-        submitted_set = lobby._question_submissions.setdefault(question_index, set())
-        submitted_set.add(player_id)
+            submitted = lobby.question_submissions.setdefault(question_index, [])
+            if player_id not in submitted:
+                submitted.append(player_id)
 
-        total_count = len(lobby.players)
-        submitted_count = len(submitted_set)
-        return {
-            "submitted_count": submitted_count,
-            "total_count": total_count,
-            "all_submitted": submitted_count >= total_count,
-        }
+            total_count = len(lobby.players)
+            submitted_count = len(submitted)
+            return {
+                "submitted_count": submitted_count,
+                "total_count": total_count,
+                "all_submitted": submitted_count >= total_count,
+            }
 
-    def reset_question_submissions(self, lobby_id: int, question_index: int) -> None:
+    async def reset_question_submissions(self, lobby_id, question_index: int) -> None:
         """Clear submission tracking for a question index (called when moving to next question)."""
-        lobby = self._lobbies.get(lobby_id)
-        if lobby and hasattr(lobby, "_question_submissions"):
-            lobby._question_submissions.pop(question_index, None)
+        async with self._edit(lobby_id) as lobby:
+            if lobby:
+                lobby.question_submissions.pop(question_index, None)
 
-    def update_score(self, lobby_id, player_id, score) -> Optional[LobbyState]:
-        lobby = self._lobbies.get(lobby_id)
-        if not lobby or player_id not in lobby.players:
-            return None
+    async def update_score(self, lobby_id, player_id, score) -> Optional[LobbyState]:
+        async with self._edit(lobby_id) as lobby:
+            if not lobby or player_id not in lobby.players:
+                return None
 
-        lobby.players[player_id].score += score
-        lobby.players[player_id].questions_solved += 1
-        lobby.leaderboard[player_id] = lobby.players[player_id].score
-        return lobby
+            lobby.players[player_id].score += score
+            lobby.players[player_id].questions_solved += 1
+            lobby.leaderboard[player_id] = lobby.players[player_id].score
+            return lobby
 
-    def get_leaderboard(self, lobby_id: int) -> list:
-        lobby = self._lobbies.get(lobby_id)
+    async def get_leaderboard(self, lobby_id) -> list:
+        lobby = await self._load(lobby_id)
         if not lobby:
             return []
 

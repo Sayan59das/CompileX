@@ -95,7 +95,7 @@ class Fakes:
         self.generated: list[DifficultyLevel] = []
         self.runs: list[dict] = []
 
-    async def generate_question(self, difficulty, topic=None, num_test_cases=None, description=None, exclude_titles=None):
+    async def generate_question(self, difficulty, topic=None, num_test_cases=None, description=None, exclude_titles=None, player_ids=None):
         self.generated.append(difficulty)
         n = len(self.generated)
         tests = [{"input": f"1\n{i}", "output": str(i)} for i in range(5)]
@@ -130,7 +130,10 @@ def fakes(monkeypatch):
     f = Fakes()
     monkeypatch.setattr(routes.ai_generator, "generate_question", f.generate_question)
     monkeypatch.setattr(routes.code_executor, "execute_code", f.execute_code)
-    monkeypatch.setattr(routes, "_check_rate_limit", lambda *a, **k: (True, ""))
+    async def allowed(*a, **k):
+        return True, ""
+
+    monkeypatch.setattr(routes, "_check_rate_limit", allowed)
     return f
 
 
