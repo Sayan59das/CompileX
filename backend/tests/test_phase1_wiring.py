@@ -33,6 +33,7 @@ def test_the_app_imports_and_answers_its_health_check():
 
     main = importlib.import_module("app.main")
     assert TestClient(main.app_http).get("/health").json() == {"status": "healthy"}
+    assert TestClient(main.app_http).head("/health").status_code == 200       # uptime monitors check with HEAD
     paths = {route.path for route in main.app_http.routes}
     assert "/api/v1/lobbies" in paths and "/api/v1/questions/generate" in paths and "/api/v1/lobbies/{lobby_id}/leaderboard" in paths
 

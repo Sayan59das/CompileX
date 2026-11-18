@@ -92,7 +92,8 @@ async def root():
     return {"message": "CodeArena API", "status": "running"}
 
 
-@app_http.get("/health")
+# GET and HEAD: uptime monitors (UptimeRobot's free plan) check with HEAD, and a 405 there reads as "down".
+@app_http.api_route("/health", methods=["GET", "HEAD"])
 async def health():
     return {"status": "healthy"}
 
