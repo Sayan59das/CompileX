@@ -2,6 +2,7 @@ services:
   # Backend API Service
   - type: web
     name: compilex-backend
+    plan: free
     env: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend/
@@ -57,6 +58,7 @@ services:
   # Question service (serves the questions the backend asks for)
   - type: web
     name: compilex-ai
+    plan: free
     env: docker
     dockerfilePath: ./question-service/Dockerfile
     dockerContext: ./question-service/
@@ -66,5 +68,6 @@ services:
 
 databases:
   - name: compilex-db
+    plan: free
     databaseName: compilex
     user: compilex
