@@ -347,13 +347,14 @@ html:not(.lp-js) .rounded-3xl { border-radius: 16px; }
 /* The coder scene behind the signed-in pages: fixed in the bottom-right corner, faded at its edges,
    and the cards over it a little see-through so it reads as one backdrop rather than slices between cards. */
 .cx-scene {
-  width: min(82vw, 1180px);
-  height: min(92vh, 820px);
-  opacity: 0.85;
-  -webkit-mask-image: radial-gradient(ellipse 68% 72% at 58% 56%, #000 48%, transparent 100%);
-  mask-image: radial-gradient(ellipse 68% 72% at 58% 56%, #000 48%, transparent 100%);
+  width: min(60vw, 900px);
+  height: min(80vh, 680px);
+  opacity: 0.4;
+  -webkit-mask-image: radial-gradient(ellipse 62% 66% at 62% 60%, #000 30%, transparent 100%);
+  mask-image: radial-gradient(ellipse 62% 66% at 62% 60%, #000 30%, transparent 100%);
 }
-.app-shell main .bg-\[\#0A0A0A\] { background-color: rgb(10 10 10 / 0.87); }
+/* panels, tables and text columns sit on a nearly solid surface so the scene never shows through what is being read */
+.app-shell main .bg-\[\#0A0A0A\] { background-color: rgb(10 10 10 / 0.95); }
 
 /* ─── Smoothness ─────────────────────────────────────────────────────────────
    Pages fade in, the sections of a signed-in page rise in one after another, every interactive element eases the same way,

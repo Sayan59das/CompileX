@@ -48,8 +48,21 @@ services:
         sync: false
       - key: GOOGLE_API_KEY
         sync: false
+      # the public URL of the compilex-ai service below, e.g. https://compilex-ai.onrender.com
       - key: AI_SERVICE_URL
         sync: false
+      # NOTE: Render cannot run Docker sandboxes. With DEBUG False the API refuses to run players' code ("temporarily unavailable"),
+      # so questions, lobbies and scores work but Run/Submit do not until code execution is moved to a machine with Docker (Phase 2).
+
+  # Question service (serves the questions the backend asks for)
+  - type: web
+    name: compilex-ai
+    env: docker
+    dockerfilePath: ./question-service/Dockerfile
+    dockerContext: ./question-service/
+    envVars:
+      - key: PORT
+        value: 10000
 
 databases:
   - name: compilex-db

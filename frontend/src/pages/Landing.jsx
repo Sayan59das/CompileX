@@ -151,10 +151,6 @@ function MatchSection() {
   const lines = full.slice(0, typed).split('\n')
   const passes = Math.floor(clamp((p - 0.36) / 0.16, 0, 1) * 5)
   const rivalPasses = Math.floor(clamp((p - 0.22) / 0.4, 0, 1) * 3)
-  const elapsed = Math.round((Math.min(p, 0.52) / 0.52) * 118)
-  const left = 300 - elapsed
-  const mm = String(Math.floor(left / 60)).padStart(2, '0')
-  const ss = String(left % 60).padStart(2, '0')
   const done = p >= 0.52
   const won = p >= 0.57
   const status = p < 0.05 ? 'Ready' : typed < full.length ? 'Writing' : passes < 5 ? 'Running tests' : 'All tests passed'
@@ -210,8 +206,7 @@ function MatchSection() {
               style={{ transform: `rotateY(${(1 - e) * 14}deg) rotateX(${(1 - e) * 6}deg) translateY(${(1 - e) * 40}px)`, opacity: 0.35 + 0.65 * e, transformOrigin: '100% 50%' }}
             >
               <div className="flex items-end justify-between">
-                <span className="text-[13px] font-semibold uppercase tracking-[0.12em] text-slate-400">Time left</span>
-                <span className="font-mono text-[48px] font-semibold leading-none tabular-nums text-white">{mm}:{ss}</span>
+                <span className="text-[13px] font-semibold uppercase tracking-[0.12em] text-slate-400">Scoreboard</span>
               </div>
               <div className="my-5 h-px bg-white/10" />
 
