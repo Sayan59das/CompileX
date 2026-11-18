@@ -68,6 +68,7 @@ const LANGUAGES = [
   { value: 'javascript', label: 'JavaScript', monaco: 'javascript' },
   { value: 'cpp',        label: 'C++',        monaco: 'cpp'        },
   { value: 'java',       label: 'Java',       monaco: 'java'       },
+  { value: 'c',          label: 'C',          monaco: 'c'          },
 ]
 
 // Strip Sample Input / Sample Output sections from description text

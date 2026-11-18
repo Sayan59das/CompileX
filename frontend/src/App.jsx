@@ -1,23 +1,72 @@
-import React from 'react'
+import React, { Suspense, lazy, useEffect } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import SmoothScroll from './components/SmoothScroll'
 import { SceneBackdrop } from './components/CoderScene'
 import { AuthProvider, useAuth } from './context/AuthContext'
-import Login    from './pages/Login'
-import Register from './pages/Register'
-import ForgotPassword from './pages/ForgotPassword'
-import ResetPassword from './pages/ResetPassword'
-import Landing  from './pages/Landing'
-import HomeDashboard from './pages/HomeDashboard'
-import About    from './pages/About'
-import Lobby    from './pages/Lobby'
-import Game     from './pages/Game'
-import OfflinePractice from './pages/OfflinePractice'
-import Profile from './pages/Profile'
-import Tournaments from './pages/Tournaments'
-import TournamentDetail from './pages/TournamentDetail'
-import MatchHistory from './pages/MatchHistory'
-import SkillAssessment from './pages/SkillAssessment'
+
+// Each page is its own file that the browser downloads only when the page is opened, so the first visit loads a small
+// start-up bundle instead of every page and library at once. The loaders are named so they can also be started early (see PREFETCH).
+const loaders = {
+  Login:             () => import('./pages/Login'),
+  Register:          () => import('./pages/Register'),
+  ForgotPassword:    () => import('./pages/ForgotPassword'),
+  ResetPassword:     () => import('./pages/ResetPassword'),
+  Landing:           () => import('./pages/Landing'),
+  About:             () => import('./pages/About'),
+  Lobby:             () => import('./pages/Lobby'),
+  Game:              () => import('./pages/Game'),
+  OfflinePractice:   () => import('./pages/OfflinePractice'),
+  Profile:           () => import('./pages/Profile'),
+  Tournaments:       () => import('./pages/Tournaments'),
+  TournamentDetail:  () => import('./pages/TournamentDetail'),
+  MatchHistory:      () => import('./pages/MatchHistory'),
+  SkillAssessment:   () => import('./pages/SkillAssessment'),
+}
+const Login = lazy(loaders.Login)
+const Register = lazy(loaders.Register)
+const ForgotPassword = lazy(loaders.ForgotPassword)
+const ResetPassword = lazy(loaders.ResetPassword)
+const Landing = lazy(loaders.Landing)
+const About = lazy(loaders.About)
+const Lobby = lazy(loaders.Lobby)
+const Game = lazy(loaders.Game)
+const OfflinePractice = lazy(loaders.OfflinePractice)
+const Profile = lazy(loaders.Profile)
+const Tournaments = lazy(loaders.Tournaments)
+const TournamentDetail = lazy(loaders.TournamentDetail)
+const MatchHistory = lazy(loaders.MatchHistory)
+const SkillAssessment = lazy(loaders.SkillAssessment)
+
+// Pages a visitor is most likely to open next, fetched quietly once the current page has settled (never on a slow or
+// data-saving connection), so clicking through feels instant.
+const PREFETCH = {
+  '/':          ['Login', 'Register', 'OfflinePractice', 'Profile'],
+  '/home':      ['Login', 'Register', 'OfflinePractice', 'Profile'],
+  '/login':     ['Register', 'Profile', 'SkillAssessment', 'OfflinePractice'],
+  '/register':  ['Login', 'SkillAssessment'],
+  '/skill-assessment': ['Profile', 'OfflinePractice'],
+  '/dashboard': ['OfflinePractice', 'Tournaments', 'MatchHistory', 'Lobby'],
+  '/profile':   ['OfflinePractice', 'Tournaments', 'MatchHistory', 'Lobby'],
+  '/practice':  ['Profile', 'Lobby'],
+}
+
+function usePrefetch(pathname) {
+  useEffect(() => {
+    const names = PREFETCH[pathname]
+    const net = navigator.connection
+    if (!names || net?.saveData || /(^|-)2g$/.test(net?.effectiveType || '')) return undefined
+    const run = () => names.forEach((n) => loaders[n]().catch(() => {}))
+    if (typeof requestIdleCallback === 'function') {
+      const id = requestIdleCallback(run, { timeout: 4000 })
+      return () => cancelIdleCallback(id)
+    }
+    const id = setTimeout(run, 1500)
+    return () => clearTimeout(id)
+  }, [pathname])
+}
+
+// Shown for the instant a page's file is still arriving: the same black as the page, so nothing flashes.
+const PageWait = <div style={{ minHeight: '100vh', background: 'var(--bg, #000)' }} aria-busy="true" />
 
 function Protected({ children }) {
   const { user } = useAuth()
@@ -46,10 +95,12 @@ function Chrome({ pathname }) {
 
 export default function App() {
   const { pathname } = useLocation()
+  usePrefetch(pathname)
   return (
     <AuthProvider>
       <Chrome pathname={pathname} />
       <div key={pathname} className={pathname === '/' || pathname === '/home' ? undefined : 'route-fade'}>
+      <Suspense fallback={PageWait}>
       <Routes>
         <Route path="/login"    element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -68,6 +119,7 @@ export default function App() {
         <Route path="/tournaments" element={<Protected><Tournaments /></Protected>} />
         <Route path="/tournament/:code" element={<Protected><TournamentDetail /></Protected>} />
       </Routes>
+      </Suspense>
       </div>
     </AuthProvider>
   )
