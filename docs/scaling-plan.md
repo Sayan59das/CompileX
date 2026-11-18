@@ -67,7 +67,11 @@ the same code runs against an in-process stand-in (`MemoryRedis`).
       judge worker on a separate VM, reusing today's executor. It also lists four gaps in today's sandbox (process limit, read-only files, root user, input
       passed through a shell). The owner's decision is still open.
 - [ ] A job queue (Celery is already in `requirements.txt`): submission request returns a job id; the result arrives on the socket and by polling.
-- [ ] Judge worker: a fixed number of sandboxes per CPU core, pre-warmed, no network, memory and process limits, read-only filesystem.
+- [x] Judge service (`judge/`, built from the same executor as the backend): `POST /run` with a shared secret (`JUDGE_TOKEN`), size limits, 503 and never a local run without
+      Docker, no network / memory / process limits and dropped capabilities in each sandbox. The backend sends code there when `JUDGE_URL` is set and answers "temporarily
+      unavailable" if the judge cannot be reached, never running code itself. Checked against real Docker with real programs in all five languages (also: compile error, time
+      limit, runtime error, no network, a fork bomb contained, wrong token refused). Still open: read-only file system and a non-root user in the sandbox, and a job queue
+      (requests are answered synchronously for now; the admission gate bounds the line).
 - [x] Admission gate (`app/services/execution_gate.py`, in the working tree): one player may have `MAX_EXECUTIONS_PER_USER` (2) runs going or waiting, and all
       players together `MAX_EXECUTION_BACKLOG` (200); one more is refused with 429, a message and a Retry-After header instead of waiting minutes for a timeout.
       Kept in shared state (sorted sets), so it holds across processes; entries of a dead process drop out after 5 minutes. In front of all four places that run a
@@ -77,7 +81,7 @@ the same code runs against an in-process stand-in (`MemoryRedis`).
       a Skill Assessment answer sent by the timer that is refused with 429 is not graded and is closed as unanswered later.
 - [ ] A wait-time message in the UI. The pages already show the server's text for a refused submit (Practice, Skill Assessment, the Game page's Submit); the Game page's
       Run with sample inputs shows nothing on any error, as before. Ask before touching the frontend.
-- [ ] Remove `/var/run/docker.sock` from the API container in `docker-compose.yml`.
+- [x] `/var/run/docker.sock` is removed from the API container in `docker-compose.yml`; only the `judge` service has it (a test enforces this).
 - [ ] Acceptance: 200 simultaneous submissions queue, none lost, results correct, API latency unaffected (the load test in Phase 4 measures this).
 
 ## Phase 3: precomputed pool and variants (about 6 to 10 days)

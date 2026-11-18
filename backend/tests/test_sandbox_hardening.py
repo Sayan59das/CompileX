@@ -36,7 +36,7 @@ def test_debug_is_off_unless_asked_for():
 def test_the_example_env_file_lists_every_variable_compose_requires_and_holds_no_secrets():
     text = open(os.path.join(ROOT, ".env.example"), encoding="utf-8").read()
     needed = set(re.findall(r"\$\{([A-Z_]+)[:?\-}]", open(os.path.join(ROOT, "docker-compose.yml"), encoding="utf-8").read()))
-    needed.discard("DEBUG")
+    needed -= set(re.findall(r"\$\{([A-Z_]+):-", open(os.path.join(ROOT, "docker-compose.yml"), encoding="utf-8").read()))   # has a default
     for name in needed:
         assert re.search(rf"^{name}=", text, re.M), f"{name} is missing from .env.example"
         if re.search(r"PASSWORD|KEY", name):

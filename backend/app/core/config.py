@@ -72,6 +72,10 @@ class Settings(BaseSettings):
     # running or waiting, and how many may be running or waiting in all before the next one is refused with 429 instead of queued.
     MAX_EXECUTIONS_PER_USER: int = 2
     MAX_EXECUTION_BACKLOG: int = 200
+    # The judge service (judge/): when JUDGE_URL is set, players' code runs there, not on this machine, and this process needs no Docker.
+    JUDGE_URL: str = ""
+    JUDGE_TOKEN: str = ""
+    JUDGE_TIMEOUT_SECONDS: int = 90
     # Worker threads that draw graph and tree diagrams (CPU work, kept off the event loop and off the code-execution threads).
     DIAGRAM_WORKERS: int = 2
 

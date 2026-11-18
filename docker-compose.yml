@@ -25,19 +25,39 @@ services:
       - COMPLEXITY_NVIDIA_API_KEY=${COMPLEXITY_NVIDIA_API_KEY}
       - OLLAMA_BASE_URL=http://ollama:11434/v1
       - OLLAMA_MODEL=llama3
-      - DOCKER_HOST=unix:///var/run/docker.sock
+      # players' code runs in the judge service, not here, so this container has no Docker socket
+      - JUDGE_URL=http://judge:9000
+      - JUDGE_TOKEN=${JUDGE_TOKEN:?set JUDGE_TOKEN in .env (letters and digits only, at least 16)}
       - CODE_EXECUTION_TIMEOUT=10
       - MAX_MEMORY_MB=256
     volumes:
       - ./backend:/app
-      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
+      judge:
+        condition: service_started
       db:
         condition: service_healthy
       redis:
         condition: service_started
       ai:
         condition: service_started
+    restart: unless-stopped
+    networks:
+      - compilex-network
+
+  # Runs players' code in Docker sandboxes (see judge/main.py). It is the only service with the Docker socket, which is root on this machine,
+  # so it must not be reachable from outside: no published port, only the backend can call it, and every call needs JUDGE_TOKEN.
+  judge:
+    build:
+      context: .
+      dockerfile: judge/Dockerfile
+    container_name: compilex-judge
+    environment:
+      - JUDGE_TOKEN=${JUDGE_TOKEN:?set JUDGE_TOKEN in .env (letters and digits only, at least 16)}
+      - MAX_CONCURRENT_EXECUTIONS=${MAX_CONCURRENT_EXECUTIONS:-8}
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
     networks:
       - compilex-network

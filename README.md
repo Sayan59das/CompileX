@@ -237,8 +237,12 @@ Open browser: `http://localhost:5173`
 5. Open the site from another device and play a game with a friend: register, join a lobby, submit in each language.
 6. Update later with `git pull` and `docker compose up -d --build`. Back up the `postgres_data` volume.
 
-Known limits (see `docs/scaling-plan.md`): the API container still mounts the Docker socket to run sandboxes, so keep this server for the app only;
-moving code execution to its own machine is Phase 2 of the plan.
+Players' code runs in the separate `judge` service (`judge/`), the only container that has the Docker socket. It is not published to the network and every call needs
+`JUDGE_TOKEN`. Keep this server for the app only: the Docker socket is root on the machine.
+
+**If the website is on Vercel and the backend on Render:** Render cannot run Docker, so run the judge on any small Linux machine with Docker:
+`docker build -f judge/Dockerfile -t compilex-judge .`, then `docker run -d --restart unless-stopped -e JUDGE_TOKEN=<secret> -v /var/run/docker.sock:/var/run/docker.sock compilex-judge`.
+Put it behind HTTPS (for example a Caddy or Cloudflare Tunnel in front of port 9000), and set `JUDGE_URL` (its https address) and `JUDGE_TOKEN` on the Render backend.
 
 ### **6. Explainer videos (optional)**
 

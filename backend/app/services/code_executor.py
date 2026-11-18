@@ -27,6 +27,9 @@ DOCKER_AVAILABLE = False
 docker_client = None
 
 try:
+    if settings.JUDGE_URL:
+        # Players' code runs in the judge service, so this process neither needs Docker nor pulls the sandbox images.
+        raise RuntimeError("a judge service is configured (JUDGE_URL)")
     import docker
 
     docker_client = docker.from_env()
@@ -516,6 +519,10 @@ class CodeExecutor:
                 score=0,
             )
 
+        # A judge service is configured: it runs the code (and has its own cap on simultaneous sandboxes); nothing runs on this machine.
+        if settings.JUDGE_URL:
+            return await self._execute_remotely(code, language, test_cases, time_limit_ms, function_signature)
+
         # At most MAX_CONCURRENT_EXECUTIONS run at once; the others wait here (cheap: a waiting coroutine holds no thread and no container).
         async with _execution_slots():
             if DOCKER_AVAILABLE and docker_client:
@@ -531,6 +538,54 @@ class CodeExecutor:
                     total_tests=len(test_cases), passed_tests=0, execution_time_ms=0, score=0,
                     results=[ExecutionResult(False, False, "", message) for _ in test_cases],
                 )
+
+    async def _execute_remotely(
+        self,
+        code: str,
+        language: str,
+        test_cases: List[TestCase],
+        time_limit_ms: int = 2000,
+        function_signature: dict = None,
+    ) -> SubmissionResult:
+        """Send the program and its tests to the judge service. If the judge cannot be reached the answer is "unavailable", never a local run."""
+        import httpx
+
+        def unavailable(message: str) -> SubmissionResult:
+            return SubmissionResult(
+                total_tests=len(test_cases), passed_tests=0, execution_time_ms=0, score=0,
+                results=[ExecutionResult(False, False, "", message) for _ in test_cases],
+            )
+
+        payload = {
+            "code": code,
+            "language": language,
+            "test_cases": [{"input_data": t.input_data, "expected_output": t.expected_output} for t in test_cases],
+            "time_limit_ms": time_limit_ms,
+            "function_signature": function_signature,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=settings.JUDGE_TIMEOUT_SECONDS) as client:
+                response = await client.post(
+                    f"{settings.JUDGE_URL.rstrip('/')}/run", json=payload, headers={"X-Judge-Token": settings.JUDGE_TOKEN}
+                )
+            if response.status_code == 503:
+                print("[Judge] the judge has no Docker")
+                return unavailable("Code execution is temporarily unavailable. Please try again in a few minutes.")
+            response.raise_for_status()
+            data = response.json()
+            return SubmissionResult(
+                total_tests=data["total_tests"],
+                passed_tests=data["passed_tests"],
+                execution_time_ms=data["execution_time_ms"],
+                score=data.get("score", 0),
+                results=[
+                    ExecutionResult(r["success"], r["passed"], r["output"], r.get("error"), r.get("execution_time_ms", 0.0))
+                    for r in data["results"]
+                ],
+            )
+        except Exception as e:  # unreachable, timed out, refused (bad token), or an unreadable answer
+            print(f"[Judge] request failed: {type(e).__name__}: {e}")
+            return unavailable("Code execution is temporarily unavailable. Please try again in a few minutes.")
 
     async def _execute_with_docker(
         self,
