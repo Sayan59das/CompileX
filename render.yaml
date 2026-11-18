@@ -52,8 +52,15 @@ services:
       # the public URL of the compilex-ai service below, e.g. https://compilex-ai.onrender.com
       - key: AI_SERVICE_URL
         sync: false
-      # NOTE: Render cannot run Docker sandboxes. With DEBUG False the API refuses to run players' code ("temporarily unavailable"),
-      # so questions, lobbies and scores work but Run/Submit do not until code execution is moved to a machine with Docker (Phase 2).
+      # Players' code runs in the compilex-judge service below, never in this one. The secret is shared between the two by Render itself.
+      - key: JUDGE_TOKEN
+        fromService:
+          type: web
+          name: compilex-judge
+          envVarKey: JUDGE_TOKEN
+      # the public URL of the compilex-judge service, e.g. https://compilex-judge.onrender.com
+      - key: JUDGE_URL
+        sync: false
 
   # Question service (serves the questions the backend asks for)
   - type: web
@@ -65,6 +72,25 @@ services:
     envVars:
       - key: PORT
         value: 10000
+
+  # The judge: runs players' code. Render cannot run Docker, so this image (judge/Dockerfile.render) sandboxes each run as an unprivileged
+  # throwaway user with limits and no internet sockets. It is weaker than a Docker judge, and it holds no secret except its own JUDGE_TOKEN.
+  - type: web
+    name: compilex-judge
+    plan: free
+    env: docker
+    dockerfilePath: ./judge/Dockerfile.render
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: JUDGE_TOKEN
+        generateValue: true
+      - key: SANDBOX_MODE
+        value: process
+      - key: MAX_CONCURRENT_EXECUTIONS
+        value: 2
 
 databases:
   - name: compilex-db

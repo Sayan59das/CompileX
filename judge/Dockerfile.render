@@ -1,0 +1,31 @@
+# The judge for hosts WITHOUT Docker (a free Render web service). Build with the REPOSITORY ROOT as the context:
+#   docker build -f judge/Dockerfile.render -t compilex-judge-process .
+# Players' code runs in the same container, one unprivileged throwaway user per run, with limits and no internet sockets
+# (backend/app/services/process_sandbox.py). It starts as root because it must drop privileges for each run; the judge's own secret stays in
+# this root process, which the unprivileged users cannot read. Weaker than the Docker judge (judge/Dockerfile): see the module's docstring.
+FROM python:3.11-slim
+
+# compilers and runtimes for the five languages (python is already here); the static libraries are for `-static` builds
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        gcc g++ libc6-dev default-jdk-headless nodejs tini \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /srv
+
+COPY judge/requirements.txt .
+RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+
+# Only what the executor and the sandbox need, copied from the backend so there is one executor, not two.
+COPY backend/app/__init__.py app/__init__.py
+COPY backend/app/core/__init__.py backend/app/core/config.py app/core/
+COPY backend/app/services/__init__.py backend/app/services/code_executor.py backend/app/services/process_sandbox.py backend/app/services/process_sandbox_exec.py app/services/
+COPY judge/main.py main.py
+
+ENV SANDBOX_MODE=process \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=10000
+EXPOSE 10000
+# tini is process 1: it reaps the orphaned processes a run leaves behind. Without it they stay as zombies, and zombies count against the
+# per-user process limit, so after a few fork-heavy submissions the next one on that user id could not start.
+ENTRYPOINT ["tini", "--"]
+CMD ["bash", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-10000}"]

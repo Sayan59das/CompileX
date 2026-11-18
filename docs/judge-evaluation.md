@@ -55,7 +55,10 @@ Each fix needs the 333 starter checks re-run through real Docker afterwards (a l
 - Done in `code_executor.py`: process limit (128), no swap, all capabilities dropped, `no-new-privileges`, and test input passed as a file (gap 4). Checked
   with real Docker on python, node and C: an input with `'`, `"`, `$`, backticks and a backslash arrives unchanged, and a fork loop stops at the limit.
   The tests in `test_sandbox_hardening.py` keep those settings from being removed.
-- Not done: a read-only file system and a non-root user (gaps 2 and 3). Files are copied into the container with `put_archive`, which does not work
+- Done 2026-11-18: the player's program (compile and run) now runs as an unprivileged user (uid 65534) in a container that has no capabilities; checked with real Docker: it cannot
+  write system files, cannot become root, has no network, and honest programs still work in all five languages. A read-only root file system was tried and is NOT possible with this
+  design: Docker refuses `put_archive` into a read-only container (even into a tmpfs path). A non-root user gives nearly the same protection, because the container is thrown away.
+- Earlier note (no longer open): a read-only file system and a non-root user (gaps 2 and 3). Files are copied into the container with `put_archive`, which does not work
   on a read-only root or a tmpfs `/sandbox`, so this needs a small redesign (a writable volume per run) and a full re-run of the 333 checks.
 - **New finding:** when Docker cannot be reached, `_execute_with_subprocess` runs the player's code directly on the server with no sandbox at all.
   Fine on a developer's laptop, dangerous in production. It should be switched off there (an environment setting that refuses to run code without Docker).

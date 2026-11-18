@@ -1,0 +1,59 @@
+# The judge machine: the judge service plus an HTTPS front door. Run from this folder on a dedicated Linux machine with Docker:
+#   cp .env.example .env   (fill it in)   then   docker compose up -d --build
+# Only Caddy is reachable from the internet (ports 80 and 443). The judge itself publishes no port; Caddy passes it /run and /health only.
+services:
+  judge:
+    build:
+      context: ../..
+      dockerfile: judge/Dockerfile
+    container_name: compilex-judge
+    environment:
+      - JUDGE_TOKEN=${JUDGE_TOKEN:?set JUDGE_TOKEN in .env (letters and digits only, at least 16)}
+      - MAX_CONCURRENT_EXECUTIONS=${MAX_CONCURRENT_EXECUTIONS:-4}
+      - PYTHONDONTWRITEBYTECODE=1
+    volumes:
+      # root-equivalent on this machine: this is why the machine must hold nothing else
+      - /var/run/docker.sock:/var/run/docker.sock
+    # the judge process itself needs no extra powers and writes nothing to its own disk
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 512m
+    pids_limit: 256
+    restart: unless-stopped
+    networks:
+      - judge-net
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: compilex-judge-caddy
+    environment:
+      - JUDGE_DOMAIN=${JUDGE_DOMAIN:?set JUDGE_DOMAIN in .env (for example 203-0-113-5.sslip.io)}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    ports:
+      - "80:80"
+      - "443:443"
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    depends_on:
+      - judge
+    restart: unless-stopped
+    networks:
+      - judge-net
+
+volumes:
+  caddy_data:
+
+networks:
+  judge-net:
+    driver: bridge

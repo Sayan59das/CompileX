@@ -1,0 +1,19 @@
+# HTTPS for the judge. Caddy gets and renews the certificate by itself. Only the two paths the backend uses are passed on, and bodies are capped.
+{$JUDGE_DOMAIN} {
+	request_body {
+		max_size 2MB
+	}
+
+	@judge {
+		path /run /health
+		method POST GET HEAD
+	}
+
+	handle @judge {
+		reverse_proxy judge:9000
+	}
+
+	handle {
+		respond "Not found" 404
+	}
+}

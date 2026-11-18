@@ -22,14 +22,18 @@ def _execution_slots() -> asyncio.Semaphore:
         slots = _slots_by_loop[loop] = asyncio.Semaphore(max(1, settings.MAX_CONCURRENT_EXECUTIONS))
     return slots
 
+# The player's program runs as this unprivileged user ("nobody"), never as root: it can write only where it is allowed to (its work folder and /tmp).
+SANDBOX_USER = "65534:65534"
+SANDBOX_ENV = {"HOME": "/tmp", "PYTHONDONTWRITEBYTECODE": "1"}
+
 # Defined first: when Docker cannot be reached below, execute_code still reads this name to choose the subprocess fallback.
 DOCKER_AVAILABLE = False
 docker_client = None
 
 try:
-    if settings.JUDGE_URL:
-        # Players' code runs in the judge service, so this process neither needs Docker nor pulls the sandbox images.
-        raise RuntimeError("a judge service is configured (JUDGE_URL)")
+    if settings.JUDGE_URL or settings.SANDBOX_MODE == "process":
+        # Players' code runs in the judge service (or in the process sandbox), so this process neither needs Docker nor pulls the sandbox images.
+        raise RuntimeError("a judge service or the process sandbox is configured (JUDGE_URL / SANDBOX_MODE)")
     import docker
 
     docker_client = docker.from_env()
@@ -532,6 +536,9 @@ class CodeExecutor:
         async with _execution_slots():
             if DOCKER_AVAILABLE and docker_client:
                 return await self._execute_with_docker(code, language, test_cases, function_signature)
+            elif settings.SANDBOX_MODE == "process":
+                # No Docker, but the process sandbox (services/process_sandbox.py) is configured: unprivileged user, limits, no internet sockets.
+                return await self._execute_in_process_sandbox(code, language, test_cases, function_signature)
             elif settings.DEBUG:
                 # Development only: with no Docker the code runs straight on this machine, with no sandbox at all.
                 return await self._execute_with_subprocess(code, language, test_cases, function_signature)
@@ -657,7 +664,8 @@ class CodeExecutor:
                         tar.addfile(tarinfo, io.BytesIO(content_bytes))
                     tar_stream.seek(0)
 
-                    container.exec_run(["mkdir", "-p", "/sandbox"])
+                    # set up as root (the container has no capabilities), then everything the player controls runs as SANDBOX_USER
+                    container.exec_run(["sh", "-c", "mkdir -p /sandbox && chmod 1777 /sandbox"], user="root")
                     container.put_archive("/sandbox", tar_stream.read())
 
                     compile_cmd = config.get("compile_cmd")
@@ -673,7 +681,7 @@ class CodeExecutor:
                             )
                             for c in compile_cmd
                         ]
-                        exit_code, output = container.exec_run(cmd, workdir="/sandbox")
+                        exit_code, output = container.exec_run(cmd, workdir="/sandbox", user=SANDBOX_USER, environment=SANDBOX_ENV)
                         if exit_code != 0:
                             err = output.decode("utf-8", "replace")
                             for _ in test_cases:
@@ -715,7 +723,7 @@ class CodeExecutor:
                         sh_cmd = f"timeout {timeout_sec}s {run_str} < /sandbox/input.txt"
 
                         exit_code, output = container.exec_run(
-                            ["sh", "-c", sh_cmd], workdir="/sandbox"
+                            ["sh", "-c", sh_cmd], workdir="/sandbox", user=SANDBOX_USER, environment=SANDBOX_ENV
                         )
                         elapsed = (datetime.now() - start).total_seconds() * 1000
                         total_time += elapsed
@@ -798,6 +806,114 @@ class CodeExecutor:
             return results, total_time, passed
 
         results, total_time, passed = await asyncio.to_thread(do_execute)
+        score = (passed * 100 // len(test_cases)) if test_cases else 0
+        return SubmissionResult(len(test_cases), passed, total_time, results, score)
+
+    def _outputs_match(self, output: str, expected_output: str) -> bool:
+        """The same comparison the Docker path makes: trailing blank lines ignored, [..] and commas read as spaces, case ignored."""
+        actual_lines = output.strip().split('\n')
+        expected_lines = expected_output.strip().split('\n')
+        while actual_lines and not actual_lines[-1].strip():
+            actual_lines.pop()
+        while expected_lines and not expected_lines[-1].strip():
+            expected_lines.pop()
+        if len(actual_lines) != len(expected_lines):
+            return False
+        for actual_line, expected_line in zip(actual_lines, expected_lines):
+            actual_normalized = self._normalize_output(actual_line)
+            expected_normalized = self._normalize_output(expected_line)
+            if actual_normalized != expected_normalized and actual_normalized.lower() != expected_normalized.lower():
+                return False
+        return True
+
+    async def _execute_in_process_sandbox(
+        self,
+        code: str,
+        language: str,
+        test_cases: List[TestCase],
+        function_signature: dict = None,
+    ) -> SubmissionResult:
+        """No Docker: run in the process sandbox. Blocking work happens on a thread so the server keeps answering."""
+        config = LANGUAGE_CONFIG[language.lower()]
+        lang = language.lower()
+        code_with_imports = add_language_imports(code, lang)
+        has_own_io = _code_has_own_io(code, lang)
+        if not has_own_io and function_signature and function_signature.get("parameters"):
+            code_with_harness = generate_test_harness(code_with_imports, lang, function_signature)
+            if lang == "java":
+                config = {**config, "classname": "Main"}   # the harness's `class Main` has the main method
+        else:
+            code_with_harness = code_with_imports
+        return await asyncio.to_thread(self._run_in_process_sandbox, code_with_harness, lang, config, test_cases)
+
+    def _run_in_process_sandbox(self, program: str, lang: str, config: dict, test_cases: List[TestCase]) -> SubmissionResult:
+        from app.services import process_sandbox as ps
+
+        def all_failed(message: str) -> SubmissionResult:
+            return SubmissionResult(
+                len(test_cases), 0, 0, [ExecutionResult(False, False, "", message) for _ in test_cases], 0
+            )
+
+        works, why = ps.check()
+        if not works:
+            print(f"[ProcessSandbox] not usable, refusing to run code: {why}")
+            return all_failed("Code execution is temporarily unavailable. Please try again in a few minutes.")
+
+        timeout = config.get("timeout", 10)
+        runtime_env = {}
+        run_limits = ps.Limits(cpu_seconds=timeout, wall_seconds=timeout, nproc=64, nofile=64, fsize_mb=16, data_mb=256)
+        if lang == "java":
+            # the JVM reserves far more address space than it uses, so it is limited by its own flags instead of RLIMIT_DATA
+            runtime_env = {"JAVA_TOOL_OPTIONS": "-Xmx192m -Xss1m -XX:+UseSerialGC -XX:TieredStopAtLevel=1 -XX:-UsePerfData"}
+            run_limits = ps.Limits(cpu_seconds=timeout, wall_seconds=timeout, nproc=200, nofile=256, fsize_mb=16, data_mb=0)
+        elif lang == "javascript":
+            runtime_env = {"NODE_OPTIONS": "--max-old-space-size=192"}
+            run_limits = ps.Limits(cpu_seconds=timeout, wall_seconds=timeout, nproc=64, nofile=64, fsize_mb=16, data_mb=0)
+        compile_limits = ps.Limits(cpu_seconds=30, wall_seconds=40, nproc=200, nofile=256, fsize_mb=64, data_mb=0)
+
+        def clean(text: str) -> str:
+            return "\n".join(line for line in text.split("\n") if not line.startswith("Picked up "))
+
+        pool = ps.get_slots(settings.MAX_CONCURRENT_EXECUTIONS)
+        slot = pool.acquire()
+        results: List[ExecutionResult] = []
+        total_time = 0.0
+        passed = 0
+        try:
+            with ps.Sandbox(slot) as box:
+                filename = f"Solution.{config['extension']}" if lang == "java" else f"solution.{config['extension']}"
+                path = box.write(filename, program.encode("utf-8"))
+                fmt = {"exe": os.path.join(box.dir, "solution"), "filename": path, "dir": box.dir, "classname": config.get("classname", "Solution")}
+
+                compile_cmd = config.get("compile_cmd")
+                if compile_cmd:
+                    built = box.run([c.format(**fmt) for c in compile_cmd], b"", compile_limits, runtime_env)
+                    if built.timed_out or built.returncode != 0:
+                        detail = "Compilation timed out" if built.timed_out else clean(built.stderr or built.stdout)
+                        return all_failed(f"Compilation failed:\n{detail}")
+
+                run_cmd = [c.format(**fmt) for c in config["run_cmd"]]
+                for test in test_cases:
+                    start = datetime.now()
+                    ran = box.run(run_cmd, (test.input_data + "\n").encode("utf-8"), run_limits, runtime_env)
+                    elapsed = (datetime.now() - start).total_seconds() * 1000
+                    total_time += elapsed
+                    if ran.timed_out or ran.returncode in (-24, -9):       # SIGXCPU (CPU limit) or SIGKILL
+                        results.append(ExecutionResult(False, False, "", "Time limit exceeded", elapsed))
+                    elif ran.returncode != 0:
+                        detail = clean(ran.stderr or ran.stdout).strip()[:2000]
+                        results.append(ExecutionResult(False, False, "", f"Runtime Error (exit {ran.returncode}): {detail}", elapsed))
+                    else:
+                        output = ran.stdout.strip()
+                        is_passed = self._outputs_match(output, test.expected_output)
+                        results.append(ExecutionResult(True, is_passed, output, None, elapsed))
+                        passed += 1 if is_passed else 0
+        except Exception as e:
+            print(f"[ProcessSandbox] failed: {type(e).__name__}: {e}")
+            return all_failed("Code execution is temporarily unavailable. Please try again in a few minutes.")
+        finally:
+            pool.release(slot)
+
         score = (passed * 100 // len(test_cases)) if test_cases else 0
         return SubmissionResult(len(test_cases), passed, total_time, results, score)
 

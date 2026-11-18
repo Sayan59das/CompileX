@@ -76,6 +76,9 @@ class Settings(BaseSettings):
     JUDGE_URL: str = ""
     JUDGE_TOKEN: str = ""
     JUDGE_TIMEOUT_SECONDS: int = 90
+    # "process": this process (the judge) runs players' code itself as unprivileged throwaway users, with limits and no internet sockets,
+    # for machines that cannot run Docker (see services/process_sandbox.py). Empty: use Docker.
+    SANDBOX_MODE: str = ""
     # Worker threads that draw graph and tree diagrams (CPU work, kept off the event loop and off the code-execution threads).
     DIAGRAM_WORKERS: int = 2
 

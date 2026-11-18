@@ -240,7 +240,12 @@ Open browser: `http://localhost:5173`
 Players' code runs in the separate `judge` service (`judge/`), the only container that has the Docker socket. It is not published to the network and every call needs
 `JUDGE_TOKEN`. Keep this server for the app only: the Docker socket is root on the machine.
 
-**If the website is on Vercel and the backend on Render:** Render cannot run Docker, so run the judge on any small Linux machine with Docker:
+**If the website is on Vercel and the backend on Render (no card, no Docker):** `render.yaml` also creates a `compilex-judge` service, built from
+`judge/Dockerfile.render`, which runs each program as an unprivileged throwaway user with time, memory and process limits and no internet sockets. The two
+services share `JUDGE_TOKEN` by themselves; you only set `JUDGE_URL` (the judge's public address) on the backend. This is weaker than Docker (it cannot stop a
+kernel flaw, and runs share one machine), so it suits a demo or a small site, and it holds no secret except its own token. CI attacks it on every push.
+
+**For a stronger setup,** run the Docker judge on any small Linux machine (`judge/deploy/` has the whole kit):
 `docker build -f judge/Dockerfile -t compilex-judge .`, then `docker run -d --restart unless-stopped -e JUDGE_TOKEN=<secret> -v /var/run/docker.sock:/var/run/docker.sock compilex-judge`.
 Put it behind HTTPS (for example a Caddy or Cloudflare Tunnel in front of port 9000), and set `JUDGE_URL` (its https address) and `JUDGE_TOKEN` on the Render backend.
 

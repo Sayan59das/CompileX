@@ -79,6 +79,13 @@ the same code runs against an in-process stand-in (`MemoryRedis`).
       It works with today's Docker executor and stays in front of the judge tier when that lands.
       Limits: the total is a soft cap (simultaneous admissions can overshoot it by a few); the message says how many are running or waiting, not a position in line;
       a Skill Assessment answer sent by the timer that is refused with 429 is not graded and is closed as unanswered later.
+- [x] Setup kit for the judge machine (`judge/deploy/`: compose with HTTPS front door, firewall script, step-by-step README); tests keep its safety choices in place.
+      Not validated here: the Caddyfile with the real Caddy binary and the judge image build (both need downloads); do `docker compose config` and `up` on the machine.
+- [x] No-Docker judge for hosts like Render (`SANDBOX_MODE=process`, `judge/Dockerfile.render`, `backend/app/services/process_sandbox*.py`): each run is an unprivileged throwaway user
+      with limits, no internet sockets (a syscall filter, inherited by children; io_uring refused), a scrubbed environment and a work folder deleted afterwards, behind a startup self-check
+      that must pass or the judge refuses to run code. Attacked for real (`judge/checks/`, run by CI): secret theft, signalling the judge, system writes, root, sockets, DNS, memory and
+      output floods, cross-run file reads, leftover processes. Found and fixed on the way: orphaned processes stayed as zombies and used up the per-user process limit (tini as process 1).
+      Weaker than Docker: a kernel flaw is not stopped, runs share a machine, and a free instance has 512 MB.
 - [ ] A wait-time message in the UI. The pages already show the server's text for a refused submit (Practice, Skill Assessment, the Game page's Submit); the Game page's
       Run with sample inputs shows nothing on any error, as before. Ask before touching the frontend.
 - [x] `/var/run/docker.sock` is removed from the API container in `docker-compose.yml`; only the `judge` service has it (a test enforces this).

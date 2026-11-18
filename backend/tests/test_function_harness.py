@@ -66,5 +66,5 @@ def test_the_cpp_harness_compiles_and_reads_what_it_is_given(params):
 
 def test_a_java_question_run_through_the_harness_starts_the_harness_class():
     source = open(EXECUTOR, encoding="utf-8").read()
-    assert source.count('config = {**config, "classname": "Main"}') == 2, "both the Docker and the subprocess path must run Main with the harness"
+    assert source.count('config = {**config, "classname": "Main"}') == 3, "the Docker, subprocess and process-sandbox paths must all run Main with the harness"
     assert "class Main" in generate_test_harness("class Solution { static int solve(int a) { return a; } }", "java", sig(("a", "int")))

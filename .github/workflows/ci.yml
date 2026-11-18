@@ -54,7 +54,7 @@ jobs:
         working-directory: backend
         run: |
           pip install pytest
-          pytest tests/test_scaling_phase0.py tests/test_judge.py tests/test_sandbox_hardening.py tests/test_function_harness.py -q
+          pytest tests/test_scaling_phase0.py tests/test_judge.py tests/test_sandbox_hardening.py tests/test_function_harness.py tests/test_judge_deploy.py tests/test_process_sandbox.py -q
       - name: Shared state (lobbies, limits, locks)
         # Every scenario runs against the in-process stand-in and against the real Redis above, so the two cannot drift apart.
         working-directory: backend
@@ -113,6 +113,35 @@ jobs:
         env:
           COMPILEX_TEST_PG_URL: postgresql://postgres:postgres@localhost:5432/postgres
         run: pytest tests -q -rs
+
+  judge-process-mode:
+    name: Judge without Docker
+    # Builds the image Render runs and starts it the way Render does (unprivileged container, only the capabilities it needs), then runs real programs
+    # in five languages and real attacks against it: no network, no secret theft, no escape, limits hold, nothing left behind.
+    runs-on: ubuntu-latest
+    env:
+      JUDGE_TOKEN: ci-only-token-0123456789abcdef
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the image
+        run: docker build -f judge/Dockerfile.render -t compilex-judge-process .
+      - name: Start it
+        run: |
+          docker run -d --name judge --cap-drop ALL --cap-add CHOWN --cap-add DAC_OVERRIDE --cap-add FOWNER --cap-add KILL --cap-add SETUID --cap-add SETGID \
+            --security-opt no-new-privileges --tmpfs /tmp:exec,mode=1777,size=256m --memory 512m --memory-swap 512m --pids-limit 512 \
+            -e JUDGE_TOKEN -e MAX_CONCURRENT_EXECUTIONS=2 -v "$PWD/judge/checks:/checks:ro" compilex-judge-process
+          for i in $(seq 1 40); do
+            docker exec judge python -c "import urllib.request,sys; sys.exit(0 if b'\"sandbox\":true' in urllib.request.urlopen('http://127.0.0.1:10000/health').read() else 1)" && break
+            sleep 2
+          done
+          docker exec judge python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:10000/health').read().decode())"
+      - name: Real programs in five languages
+        run: docker exec -e JUDGE_TOKEN judge python /checks/judge_e2e.py http://127.0.0.1:10000
+      - name: Attacks on the sandbox
+        run: docker exec -e JUDGE_TOKEN judge python /checks/process_security_e2e.py http://127.0.0.1:10000
+      - name: Show the judge's log if anything failed
+        if: failure()
+        run: docker logs judge | tail -60
 
   frontend:
     name: Frontend

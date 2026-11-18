@@ -97,7 +97,7 @@ def test_without_docker_it_says_503_and_never_runs_the_code(served, monkeypatch)
     monkeypatch.setattr(ce, "DOCKER_AVAILABLE", False)
     assert client.post("/run", json=GOOD, headers={"X-Judge-Token": TOKEN}).status_code == 503
     assert seen == []
-    assert client.get("/health").json() == {"status": "no-docker", "docker": False}
+    assert client.get("/health").json() == {"status": "no-sandbox", "mode": "docker", "sandbox": False, "docker": False}
 
 
 def test_requests_that_are_too_big_or_malformed_are_refused(served):
@@ -113,7 +113,7 @@ def test_requests_that_are_too_big_or_malformed_are_refused(served):
 
 def test_health_answers_get_and_head_without_a_token(served):
     client, _ = served
-    assert client.get("/health").json() == {"status": "ok", "docker": True}
+    assert client.get("/health").json() == {"status": "ok", "mode": "docker", "sandbox": True, "docker": True}
     assert client.head("/health").status_code == 200
 
 
