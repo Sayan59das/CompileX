@@ -53,4 +53,11 @@ Read this first. These are things that are not visible from the code and that ha
 - Backend question path: `backend/app/api/v1/routes.py` (`/questions/generate`), `services/ai_generator.py`, `question_history.py`,
   `hidden_tests.py` (hidden tests stay on the server), `code_executor.py`, `execution_gate.py` (per-player and total limit on code runs; every call to the executor in `routes.py` must sit inside
   `async with execution_slot(...)`, and a test enforces it), `websocket_handler.py`, `lobby_manager.py` (kept in Redis when `REDIS_URL` is set, see `shared_state.py`).
+- Security rules (from the 2026-11-18 review; `test_socket_security.py`, `test_oauth_security.py`, `test_auth_security.py` enforce them):
+  - Sockets: a socket must carry the sign-in token at connect (`services/socket_auth.py`). Every event handler starts from `_identity` or `_seat`; who the
+    player is and which seat they hold come from the token and the join, never from message fields; host-only events check `lobby.created_by`.
+    Live scores are the ones `/submissions` graded and recorded (`lobby_manager.record_graded_score`); the browser's `score` is never read.
+  - OAuth: only a provider-verified email counts; a provider login never links into a password account (`email_in_use`); `state` is a random value in a cookie.
+  - Sign-in, sign-up and reset routes are rate-limited (`services/auth_limits.py`); the reset code logic lives in `services/password_reset.py` (atomic try counter,
+    `secrets`). Behind Render set `TRUSTED_PROXY_HOPS=1` or every caller shares one address. Reset requests must answer the same for unknown names.
 - Scaling work is planned in `docs/scaling-plan.md`; tick tasks there as they land.

@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import api from '../services/api'
+import { oauthErrorMessage } from '../utils/oauthErrors'
 
 export default function OAuthCallback() {
   const [searchParams] = useSearchParams()
@@ -17,16 +18,7 @@ export default function OAuthCallback() {
 
       if (oauthError) {
         // Handle OAuth error
-        const errorMessages = {
-          'no_code': 'Authorization code not received',
-          'token_exchange_failed': 'Failed to exchange authorization code',
-          'no_email': 'Email not provided by OAuth provider',
-          'google_not_configured': 'Google Sign-In is not available at the moment. Please use username/password to login.',
-          'github_not_configured': 'GitHub Sign-In is not available at the moment. Please use username/password to login.',
-          'apple_not_configured': 'Apple Sign-In is not available at the moment. Please use username/password to login.',
-        }
-        
-        const errorMsg = errorMessages[oauthError] || `OAuth error: ${oauthError}`
+        const errorMsg = oauthErrorMessage(oauthError)
         nav('/login', { state: { error: errorMsg } })
         return
       }

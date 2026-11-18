@@ -63,6 +63,13 @@ jobs:
         run: |
           pip install pytest
           pytest tests/test_shared_state.py tests/test_lobby_manager.py tests/test_rate_limit.py tests/test_execution_gate.py tests/test_socket_handlers.py tests/test_phase1_wiring.py -q -rs
+      - name: Security fixes (live-match sockets, OAuth sign-in, login and password reset)
+        # Each test is one attack from the security review played against the real handlers or routes: forged sockets and scores, taking over an account
+        # through a provider login, guessing passwords and reset codes in bulk or all at once.
+        working-directory: backend
+        run: |
+          pip install pytest
+          pytest tests/test_socket_security.py tests/test_oauth_security.py tests/test_auth_security.py tests/test_reset_email_delivery.py -q
       - name: Two backend processes, one game
         # Starts two real servers on one Redis, plays a lobby across them, kills one mid-game and carries on through the other.
         working-directory: backend

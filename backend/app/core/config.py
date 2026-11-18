@@ -87,6 +87,10 @@ class Settings(BaseSettings):
     #   ALLOWED_ORIGINS=https://CompileX.vercel.app,https://your-domain.com
     # Leave empty to allow all origins (dev only).
     ALLOWED_ORIGINS: str = ""
+
+    # How many proxies sit in front of this server (Render: 1). With N > 0 the client address for rate limits is the Nth from the right in
+    # X-Forwarded-For; with 0 the header is ignored. See services/auth_limits.py.
+    TRUSTED_PROXY_HOPS: int = 0
     
     # Email Configuration (for password reset)
     SMTP_HOST: str = "smtp.gmail.com"

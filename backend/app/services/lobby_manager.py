@@ -284,6 +284,11 @@ class LobbyManager:
         raw = await self._r.get(self._sid_key(sid))
         return json.loads(raw)["player_id"] if raw else None
 
+    async def session_for_sid(self, sid: str) -> Optional[dict]:
+        """{"player_id", "lobby_id"} for the seat this socket joined, or None."""
+        raw = await self._r.get(self._sid_key(sid))
+        return json.loads(raw) if raw else None
+
     async def leave_lobby(self, sid: str) -> Optional[LobbyState]:
         raw = await self._r.get(self._sid_key(sid))
         if not raw:
@@ -437,6 +442,53 @@ class LobbyManager:
             lobby.players[player_id].score += score
             lobby.players[player_id].questions_solved += 1
             lobby.leaderboard[player_id] = lobby.players[player_id].score
+            return lobby
+
+    # ── scores the server graded itself ──
+    # The browser used to tell the room how many points it had earned. Now the submit request records the score the server graded, and the
+    # socket's `score_update` only asks the server to apply the oldest one it has not applied yet: the browser's own number is never read.
+    async def record_graded_score(self, user_id, question_id, score) -> None:
+        key = f"pendingscore:{user_id}"
+        async with locked(f"lock:{key}", timeout=LOCK_SECONDS, wait=LOCK_SECONDS, client=self._r):
+            raw = await self._r.get(key)
+            items = json.loads(raw) if raw else []
+            items.append({"q": question_id, "s": int(score)})
+            await self._r.set(key, json.dumps(items[-50:]), ex=3600)
+
+    async def take_graded_score(self, user_id) -> Optional[dict]:
+        """The oldest recorded {"q": question id, "s": score} for this user, removed from the record; None if there is none."""
+        key = f"pendingscore:{user_id}"
+        async with locked(f"lock:{key}", timeout=LOCK_SECONDS, wait=LOCK_SECONDS, client=self._r):
+            raw = await self._r.get(key)
+            items = json.loads(raw) if raw else []
+            if not items:
+                return None
+            first = items.pop(0)
+            if items:
+                await self._r.set(key, json.dumps(items), ex=3600)
+            else:
+                await self._r.delete(key)
+            return first
+
+    async def apply_graded_score(self, lobby_id, player_id, question_id, score) -> Optional[LobbyState]:
+        """Add a graded score to the player's total. A question counts once: sending the same solution again adds nothing, and a better
+        one adds only the difference."""
+        async with self._edit(lobby_id) as lobby:
+            if not lobby or player_id not in lobby.players:
+                return None
+            best_key = f"bestscore:{lobby_id}:{player_id}"
+            raw = await self._r.get(best_key)
+            best = json.loads(raw) if raw else {}
+            previous = best.get(str(question_id))
+            gain = max(0, int(score) - (previous or 0))
+            if previous is None or score > previous:
+                best[str(question_id)] = int(score)
+                await self._r.set(best_key, json.dumps(best), ex=LOBBY_TTL_SECONDS)
+            player = lobby.players[player_id]
+            player.score += gain
+            if previous is None:
+                player.questions_solved += 1
+            lobby.leaderboard[player_id] = player.score
             return lobby
 
     async def get_leaderboard(self, lobby_id) -> list:

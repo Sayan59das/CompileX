@@ -130,7 +130,8 @@ class OAuthService:
                 
                 return {
                     'provider_id': data['id'],
-                    'email': data['email'],
+                    # an address Google has not verified proves nothing about who owns it: treat it as no email at all
+                    'email': data.get('email') if data.get('verified_email') is True else None,
                     'name': data.get('name'),
                     'picture': data.get('picture'),
                 }
@@ -164,10 +165,11 @@ class OAuthService:
                 email_response.raise_for_status()
                 emails = email_response.json()
                 
-                # Find primary email
+                # Only the primary address, and only when GitHub has verified it. The old fallback to "the first address in the list" could
+                # hand us an address the person never proved they own.
                 primary_email = next(
-                    (email['email'] for email in emails if email['primary']),
-                    emails[0]['email'] if emails else None
+                    (email['email'] for email in emails if email.get('primary') and email.get('verified') is True),
+                    None
                 )
                 
                 return {
@@ -201,7 +203,7 @@ class OAuthService:
             
             return {
                 'provider_id': decoded['sub'],
-                'email': decoded.get('email'),
+                'email': decoded.get('email') if decoded.get('email_verified') in (True, 'true') else None,
                 'name': None,  # Apple doesn't always provide name
                 'picture': None,
             }

@@ -1,3 +1,4 @@
+import hmac
 import json
 import secrets
 import time
@@ -7,7 +8,7 @@ from typing import Optional
 
 import bcrypt
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
+from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile, File, Query
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 from sqlalchemy import delete, select, func as sa_func, desc
@@ -68,6 +69,8 @@ from app.services import question_history
 from app.services import starter_lock
 from app.services.ai_generator import ai_generator
 from app.services.code_executor import TestCase, code_executor
+from app.services import auth_limits, password_reset
+from app.services.auth_limits import client_ip
 from app.services.lobby_manager import lobby_manager
 from app.services.scoring_engine import scoring_engine
 
@@ -130,7 +133,8 @@ async def get_current_user(
 @router.post(
     "/auth/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
 )
-async def register(user: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register(user: UserCreate, request: Request, db: AsyncSession = Depends(get_db)):
+    await auth_limits.enforce("register:ip", client_ip(request), 20, 3600)
     if (
         await db.execute(select(User).where(User.username == user.username))
     ).scalar_one_or_none():
@@ -159,21 +163,31 @@ class LoginRequest(BaseModel):
 
 
 @router.post("/auth/login", response_model=Token)
-async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
+async def login(body: LoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
+    ip = client_ip(request)
+    name = body.username.strip().lower()
+    # Nothing used to stop a script trying passwords all day. Every attempt from one address is counted; failed attempts against one name are
+    # counted too, from anywhere and from one address. (Failures are recorded the same way for a name that does not exist.)
+    await auth_limits.enforce("login:ip", ip, 60, 600)
+    await auth_limits.check("login:user", name, 30, 3600)
+    await auth_limits.check("login:user-ip", f"{name}:{ip}", 8, 600)
+
+    async def fail(detail: str):
+        await auth_limits.record("login:user", name, 3600)
+        await auth_limits.record("login:user-ip", f"{name}:{ip}", 600)
+        raise HTTPException(status_code=401, detail=detail)
+
     result = await db.execute(select(User).where(User.username == body.username))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    
+        await fail("Invalid credentials")
+
     # Check if user has a password (not OAuth-only user)
     if not user.hashed_password:
-        raise HTTPException(
-            status_code=401, 
-            detail="This account uses OAuth sign-in. Please use Google, GitHub, or Apple to login."
-        )
-    
+        await fail("This account uses OAuth sign-in. Please use Google, GitHub, or Apple to login.")
+
     if not verify_password(body.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        await fail("Invalid credentials")
 
     token = create_access_token(
         {"sub": str(user.id)},
@@ -184,222 +198,129 @@ async def login(body: LoginRequest, db: AsyncSession = Depends(get_db)):
 
 @router.post("/auth/forgot-password-otp")
 async def forgot_password_otp(
-    body: PasswordResetOTPRequest, db: AsyncSession = Depends(get_db)
+    body: PasswordResetOTPRequest, request: Request, db: AsyncSession = Depends(get_db)
 ):
     """
-    Initiate password reset by sending OTP to email.
-    Returns error if user has no email registered.
+    Initiate password reset by sending a one-time code to the account's email.
+    The answer is the same whether or not the username exists or has an email, so this cannot be used to find out who has an account.
     """
-    import secrets
-    import random
-    from datetime import datetime, timedelta
+    from datetime import datetime
     from app.services.email_service import email_service
-    
+
+    name = body.username.strip().lower()
+    await auth_limits.enforce("otp-request:ip", client_ip(request), 15, 3600)
+    await auth_limits.enforce("otp-request:user", name, 3, 3600)
+
     result = await db.execute(select(User).where(User.username == body.username))
     user = result.scalar_one_or_none()
-    
-    # Check if user exists
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="Username not found. Please check your username and try again."
-        )
-    
-    # Check if user has email registered
-    if not user.email:
-        raise HTTPException(
-            status_code=400,
-            detail="No email found for this account. Password reset requires an email address. Please contact support."
-        )
-    
-    # Generate 6-digit OTP
-    otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
-    
-    # Set OTP expiration (10 minutes from now)
-    user.reset_otp = otp
-    user.reset_otp_expires = datetime.utcnow() + timedelta(minutes=10)
-    user.reset_otp_attempts = 0
-    await db.commit()
-    
-    # Send email with OTP
-    email_sent = await email_service.send_otp_email(
-        to_email=user.email,
-        username=user.username,
-        otp=otp
-    )
-    
-    if not email_sent:
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to send OTP email. Please try again later."
-        )
-    
-    return {
-        "message": "OTP has been sent to your registered email address.",
-        "success": True
-    }
+    now = datetime.utcnow()
+    if not user or not user.email or password_reset.made_too_recently(user, now):
+        return password_reset.GENERIC_REQUEST_REPLY
 
+    otp = password_reset.new_otp()
+    await password_reset.store_new_otp(db, user.id, otp, now)
+
+    email_sent = await email_service.send_otp_email(to_email=user.email, username=user.username, otp=otp)
+    if not email_sent:
+        await password_reset.clear_otp(db, user.id)        # nobody has this code: do not let it block the next request
+        raise HTTPException(status_code=500, detail="Failed to send OTP email. Please try again later.")
+    return password_reset.GENERIC_REQUEST_REPLY
 
 
 @router.post("/auth/verify-otp-reset-password")
 async def verify_otp_reset_password(
-    body: PasswordResetOTPVerify, db: AsyncSession = Depends(get_db)
+    body: PasswordResetOTPVerify, request: Request, db: AsyncSession = Depends(get_db)
 ):
     """
-    Verify OTP and reset password.
-    OTP must be valid and not expired.
+    Verify the one-time code and reset the password. A code gets five tries however fast they arrive, and works once.
     """
-    from datetime import datetime
-    
-    # Find user by username
-    result = await db.execute(
-        select(User).where(User.username == body.username)
+    name = body.username.strip().lower()
+    await auth_limits.enforce("otp-verify:ip", client_ip(request), 30, 600)
+    await auth_limits.enforce("otp-verify:user", name, 10, 3600)
+
+    done, message = await password_reset.verify_and_reset(
+        db, body.username, body.otp, lambda: get_password_hash(body.new_password)
     )
-    user = result.scalar_one_or_none()
-    
-    if not user:
-        raise HTTPException(
-            status_code=400, 
-            detail="Invalid username or OTP"
-        )
-    
-    # Check if OTP exists
-    if not user.reset_otp:
-        raise HTTPException(
-            status_code=400, 
-            detail="No OTP request found. Please request a new OTP."
-        )
-    
-    # Check if OTP is expired
-    if not user.reset_otp_expires or user.reset_otp_expires < datetime.utcnow():
-        # Clear expired OTP
-        user.reset_otp = None
-        user.reset_otp_expires = None
-        user.reset_otp_attempts = 0
-        await db.commit()
-        raise HTTPException(
-            status_code=400, 
-            detail="OTP has expired. Please request a new one."
-        )
-    
-    # Check attempts (max 5 attempts)
-    if user.reset_otp_attempts >= 5:
-        # Clear OTP after too many attempts
-        user.reset_otp = None
-        user.reset_otp_expires = None
-        user.reset_otp_attempts = 0
-        await db.commit()
-        raise HTTPException(
-            status_code=400, 
-            detail="Too many failed attempts. Please request a new OTP."
-        )
-    
-    # Verify OTP
-    if user.reset_otp != body.otp:
-        # Increment attempts
-        user.reset_otp_attempts += 1
-        await db.commit()
-        
-        remaining = 5 - user.reset_otp_attempts
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Invalid OTP. {remaining} attempts remaining."
-        )
-    
-    # OTP is valid - update password
-    user.hashed_password = get_password_hash(body.new_password)
-    
-    # Clear OTP
-    user.reset_otp = None
-    user.reset_otp_expires = None
-    user.reset_otp_attempts = 0
-    
-    await db.commit()
-    
-    return {
-        "message": "Password reset successful. You can now login with your new password.",
-        "success": True
-    }
+    if not done:
+        raise HTTPException(status_code=400, detail=message)
+    return {"message": message, "success": True}
 
 
 @router.post("/auth/forgot-password")
 async def forgot_password(
-    body: PasswordResetRequest, db: AsyncSession = Depends(get_db)
+    body: PasswordResetRequest, request: Request, db: AsyncSession = Depends(get_db)
 ):
     """
     Initiate password reset by sending email with reset token.
-    Returns error if user has no email registered.
+    The answer is the same whether or not the username exists or has an email.
     """
     import secrets
     from datetime import datetime, timedelta
     from app.services.email_service import email_service
-    
+
+    name = body.username.strip().lower()
+    await auth_limits.enforce("reset-request:ip", client_ip(request), 15, 3600)
+    await auth_limits.enforce("reset-request:user", name, 3, 3600)
+
     result = await db.execute(select(User).where(User.username == body.username))
     user = result.scalar_one_or_none()
-    
-    # Check if user exists
-    if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="Username not found. Please check your username and try again."
-        )
-    
-    # Check if user has email registered
-    if not user.email:
-        raise HTTPException(
-            status_code=400,
-            detail="No email found for this account. Password reset requires an email address. Please contact support."
-        )
-    
+    if not user or not user.email:
+        return {
+            "message": "If that account has an email address, a password reset link has been sent to it.",
+            "success": True,
+        }
+
     # Generate secure reset token
     reset_token = secrets.token_urlsafe(32)
-    
+
     # Set token expiration (1 hour from now)
     user.reset_token = reset_token
     user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
     await db.commit()
-    
+
     # Send email with reset link
     email_sent = await email_service.send_password_reset_email(
         to_email=user.email,
         username=user.username,
         reset_token=reset_token
     )
-    
+
     if not email_sent:
         raise HTTPException(
             status_code=500,
             detail="Failed to send password reset email. Please try again later."
         )
-    
+
     return {
-        "message": "A password reset link has been sent to your registered email address.",
+        "message": "If that account has an email address, a password reset link has been sent to it.",
         "success": True
     }
 
 
 @router.post("/auth/reset-password")
 async def reset_password(
-    body: PasswordResetConfirm, db: AsyncSession = Depends(get_db)
+    body: PasswordResetConfirm, request: Request, db: AsyncSession = Depends(get_db)
 ):
     """
     Reset password using valid reset token.
     Token must exist and not be expired.
     """
     from datetime import datetime
-    
+
+    await auth_limits.enforce("reset-confirm:ip", client_ip(request), 20, 600)
+
     # Find user by reset token
     result = await db.execute(
         select(User).where(User.reset_token == body.reset_token)
     )
     user = result.scalar_one_or_none()
-    
+
     if not user:
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail="Invalid or expired reset token"
         )
-    
+
     # Check if token is expired
     if not user.reset_token_expires or user.reset_token_expires < datetime.utcnow():
         # Clear expired token
@@ -407,19 +328,19 @@ async def reset_password(
         user.reset_token_expires = None
         await db.commit()
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail="Reset token has expired. Please request a new one."
         )
-    
+
     # Update password
     user.hashed_password = get_password_hash(body.new_password)
-    
+
     # Clear reset token
     user.reset_token = None
     user.reset_token_expires = None
-    
+
     await db.commit()
-    
+
     return {
         "message": "Password reset successful. You can now login with your new password.",
         "success": True
@@ -455,6 +376,10 @@ OAUTH_PROVIDERS = {
 }
 
 
+OAUTH_STATE_COOKIE = "oauth_state"
+OAUTH_STATE_PATH = "/api/v1/auth"
+
+
 @router.get("/auth/{provider}")
 async def oauth_redirect(provider: str):
     """Redirect user to OAuth provider login page."""
@@ -463,7 +388,11 @@ async def oauth_redirect(provider: str):
         raise HTTPException(status_code=404, detail="Unknown OAuth provider")
 
     cfg = OAUTH_PROVIDERS[provider]
-    
+
+    # A fresh random value per sign-in, kept in this browser's cookie and sent back by the provider: the callback only accepts a code that
+    # arrives together with the matching cookie, so a link someone else made cannot sign this browser in to their account.
+    oauth_state = secrets.token_urlsafe(24)
+
     # Get client ID from settings (not os.getenv)
     if provider == "google":
         client_id = settings.GOOGLE_CLIENT_ID
@@ -495,37 +424,56 @@ async def oauth_redirect(provider: str):
         "redirect_uri": redirect_uri,
         "scope": cfg["scope"],
         "response_type": "code",
-        "state": provider,
+        "state": oauth_state,
     }
     if provider == "apple":
         params["response_mode"] = "form_post"
 
     url = cfg["auth_url"] + "?" + urllib.parse.urlencode(params)
-    return RedirectResponse(url)
+    response = RedirectResponse(url)
+    response.set_cookie(
+        OAUTH_STATE_COOKIE, oauth_state, max_age=600, httponly=True, samesite="lax",
+        secure=redirect_uri.startswith("https://"), path=OAUTH_STATE_PATH,
+    )
+    return response
 
 
 @router.get("/auth/{provider}/callback")
 async def oauth_callback(
-    provider: str, 
-    code: str = None, 
+    provider: str,
+    request: Request,
+    code: str = None,
     error: str = None,
+    state: str = None,
     db: AsyncSession = Depends(get_db)
 ):
     """OAuth callback — exchange code for token and create/login user"""
+    import urllib.parse
     from app.services.oauth_service import oauth_service
-    
+
     frontend_url = settings.FRONTEND_URL or "http://localhost:5173"
-    
+
+    def finish(url: str):
+        response = RedirectResponse(url)
+        response.delete_cookie(OAUTH_STATE_COOKIE, path=OAUTH_STATE_PATH)       # a state is good for one sign-in
+        return response
+
+    def failed(reason: str):
+        return finish(f"{frontend_url}/?oauth_error={urllib.parse.quote(reason, safe='')}")
+
+    # The provider must send back the random value this browser was given when it started the sign-in.
+    expected = request.cookies.get(OAUTH_STATE_COOKIE)
+    if not expected or not state or not hmac.compare_digest(expected.encode(), state.encode()):
+        return failed("invalid_state")
+
     if error:
-        return RedirectResponse(f"{frontend_url}/?oauth_error={error}")
-    
+        return failed(error)
+
     if not code:
-        return RedirectResponse(f"{frontend_url}/?oauth_error=no_code")
-    
+        return failed("no_code")
+
     if not oauth_service.is_provider_configured(provider):
-        return RedirectResponse(
-            f"{frontend_url}/?oauth_error={provider}_not_configured"
-        )
+        return failed(f"{provider}_not_configured")
     
     # Exchange code for access token
     # Use OAUTH_REDIRECT_URI from settings, or construct
@@ -540,17 +488,13 @@ async def oauth_callback(
     )
     
     if not access_token:
-        return RedirectResponse(
-            f"{frontend_url}/?oauth_error=token_exchange_failed"
-        )
+        return failed("token_exchange_failed")
     
     # Get user info from provider
     user_info = await oauth_service.get_user_info(provider, access_token)
     
     if not user_info or not user_info.get("email"):
-        return RedirectResponse(
-            f"{frontend_url}/?oauth_error=no_email"
-        )
+        return failed("no_email")        # also what an address the provider has not verified becomes (see oauth_service)
     
     # Find or create user
     email = user_info["email"]
@@ -569,9 +513,14 @@ async def oauth_callback(
         # Check if user exists with this email
         result = await db.execute(select(User).where(User.email == email))
         user = result.scalar_one_or_none()
-        
+
+        if user and user.hashed_password and not user.oauth_provider:
+            # A password account made by typing this address in at sign-up. Nobody has ever proved they own that address, so signing in
+            # with Google or GitHub must not hand over the account (nor let a stranger who signed up with your address keep one you use).
+            return failed("email_in_use")
+
         if user:
-            # Link OAuth to existing account
+            # Link OAuth to an account that was itself created from a provider's verified address
             user.oauth_provider = provider
             user.oauth_provider_id = provider_id
             if user_info.get("picture"):
@@ -612,8 +561,8 @@ async def oauth_callback(
     )
     
     # Redirect to frontend with token
-    return RedirectResponse(
-        f"{frontend_url}/?oauth_success=true&token={jwt_token}&username={user.username}"
+    return finish(
+        f"{frontend_url}/?oauth_success=true&token={urllib.parse.quote(jwt_token, safe='')}&username={urllib.parse.quote(user.username, safe='')}"
     )
 
 
@@ -1498,6 +1447,9 @@ async def submit_code(
     db.add(db_submission)
     await db.commit()
     await db.refresh(db_submission)
+
+    # The live leaderboard takes its points from here, not from what the browser later says over the socket (see websocket_handler.score_update).
+    await lobby_manager.record_graded_score(current_user.id, submission.question_id, final_score)
 
     # Check achievements asynchronously
     await _check_achievements(db, current_user)
@@ -2565,7 +2517,7 @@ def _caller_key(request: Request) -> str:
                 return f"user:{payload['sub']}"
         except jwt.PyJWTError:
             pass
-    return f"ip:{request.client.host if request.client else 'unknown'}"
+    return f"ip:{client_ip(request)}"
 
 
 @router.post("/videos/generate")

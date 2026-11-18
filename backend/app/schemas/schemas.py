@@ -1,4 +1,6 @@
-from pydantic import BaseModel, EmailStr, Field
+import re
+
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from datetime import datetime
 from typing import Optional, List
 from app.models.models import DifficultyLevel, GameStatus, GameMode, Language
@@ -11,6 +13,16 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=6)
+
+    @field_validator("email")
+    @classmethod
+    def _email_must_look_like_an_address(cls, value):
+        if value is None or value == "":
+            return None
+        value = value.strip()
+        if not re.fullmatch(r"[^@\s<>\"',;]+@[^@\s<>\"',;]+\.[^@\s<>\"',;]+", value):
+            raise ValueError("Enter a valid email address")
+        return value
 
 
 class UserResponse(UserBase):

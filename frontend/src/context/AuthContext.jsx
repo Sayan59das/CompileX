@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import api from '../services/api'
+import { disconnectSocket } from '../services/socket'
 
 const AuthContext = createContext(null)
 
@@ -23,12 +24,14 @@ export function AuthProvider({ children }) {
   }, [])
 
   function login(userData, token) {
+    disconnectSocket()          // a socket opened as someone else must not stay signed in as them
     localStorage.setItem('token', token)
     localStorage.setItem('user', JSON.stringify(userData))
     setUser(userData)
   }
 
   function logout() {
+    disconnectSocket()
     localStorage.removeItem('token')
     localStorage.removeItem('user')
     setUser(null)

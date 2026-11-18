@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import ArenaCanvas from '../components/ArenaCanvas'
+import { oauthErrorMessage } from '../utils/oauthErrors'
 import './landing.css'
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -263,8 +264,9 @@ export default function Landing() {
     const oauthError = params.get('oauth_error')
 
     if (oauthError) {
-      console.error('OAuth error:', oauthError)
+      // The server sends the browser back to the landing page with an error code: show the player what went wrong on the login page.
       window.history.replaceState({}, document.title, window.location.pathname)
+      navigate('/login', { state: { error: oauthErrorMessage(oauthError) }, replace: true })
       return
     }
     if (oauthSuccess === 'true' && token && username) {

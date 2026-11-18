@@ -1,6 +1,7 @@
 """
 Email service for sending password reset emails
 """
+import html
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -108,6 +109,10 @@ class EmailService:
         Returns:
             True if email sent successfully, False otherwise
         """
+        if "\r" in to_email or "\n" in to_email:
+            logger.error("Refusing to send: the recipient address contains a line break")
+            return False
+
         if not self._is_configured():
             logger.warning(
                 "Email service not configured. Set SMTP_HOST, SMTP_USER, "
@@ -143,6 +148,7 @@ class EmailService:
         Returns:
             True if email sent successfully, False otherwise
         """
+        safe_username = html.escape(username)          # a username is free text: in HTML it must stay text
         reset_link = f"{settings.FRONTEND_URL}/reset-password?token={reset_token}"
         
         subject = "Reset Your CompileX Password"
@@ -178,7 +184,7 @@ class EmailService:
                                     </h2>
                                     
                                     <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #cbd5e1;">
-                                        Hi <strong style="color: #f1f5f9;">{username}</strong>,
+                                        Hi <strong style="color: #f1f5f9;">{safe_username}</strong>,
                                     </p>
                                     
                                     <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #cbd5e1;">
@@ -269,6 +275,7 @@ class EmailService:
         Returns:
             True if email sent successfully, False otherwise
         """
+        safe_username = html.escape(username)
         subject = "Your CompileX Password Reset Code"
         
         # HTML email template
@@ -302,7 +309,7 @@ class EmailService:
                                     </h2>
                                     
                                     <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #cbd5e1;">
-                                        Hi <strong style="color: #f1f5f9;">{username}</strong>,
+                                        Hi <strong style="color: #f1f5f9;">{safe_username}</strong>,
                                     </p>
                                     
                                     <p style="margin: 0 0 20px; font-size: 16px; line-height: 1.6; color: #cbd5e1;">

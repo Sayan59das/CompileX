@@ -19,7 +19,9 @@ export function getSocket() {
       transports: ['websocket', 'polling'],
       autoConnect: false,
       withCredentials: true,
-      path: '/socket.io/'
+      path: '/socket.io/',
+      // The server takes who you are from this token, and refuses a socket without a valid one. It is read on every (re)connect.
+      auth: (cb) => cb({ token: localStorage.getItem('token') || '' })
     })
   }
   return socket

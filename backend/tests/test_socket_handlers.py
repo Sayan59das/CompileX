@@ -14,14 +14,20 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import pytest
 
-from app.services import question_history, shared_state as ss
+from app.services import question_history, shared_state as ss, socket_auth
 from app.services.lobby_manager import lobby_manager
 from app.services.websocket_handler import register_socket_events
 
 
 class FakeSio:
     def __init__(self):
-        self.handlers, self.emitted, self.rooms = {}, [], {}
+        self.handlers, self.emitted, self.rooms, self.sessions = {}, [], {}, {}
+
+    async def save_session(self, sid, data):
+        self.sessions[sid] = data
+
+    async def get_session(self, sid):
+        return self.sessions.get(sid)
 
     def on(self, event):
         def register(fn):
@@ -45,6 +51,8 @@ class FakeSio:
         self.emitted.clear()
         if event == "disconnect":                     # Socket.IO calls this one with the socket id alone
             await self.handlers[event](sid)
+        elif event == "connect":                      # and this one with the environ and the auth the browser sent
+            await self.handlers[event](sid, {}, data)
         else:
             await self.handlers[event](sid, data or {})
         return list(self.emitted)
@@ -69,6 +77,19 @@ def game(monkeypatch):
     import app.db.database as database
 
     monkeypatch.setattr(database, "session_factory", lambda: Session())
+
+    # Sign-in tokens "tok1".."tok3" belong to ann, bob and cat (user ids 1-3). A seat is the player id the join request would have given:
+    # here player n sits in lobby 5 as user n.
+    people = {"tok1": {"user_id": 1, "username": "ann"}, "tok2": {"user_id": 2, "username": "bob"}, "tok3": {"user_id": 3, "username": "cat"}}
+
+    async def authenticate(token):
+        return people.get(token)
+
+    async def player_belongs(player_id, lobby_id, user_id):
+        return player_id == user_id and lobby_id == 5
+
+    monkeypatch.setattr(socket_auth, "authenticate", authenticate)
+    monkeypatch.setattr(socket_auth, "player_belongs", player_belongs)
     monkeypatch.setattr(question_history, "record_seen", record_seen)
     sio = FakeSio()
     register_socket_events(sio)
@@ -85,8 +106,14 @@ async def open_lobby(max_players=3, **kw):
     return await lobby_manager.create_lobby(5, "HHH111", "Room", 1, "host", max_players=max_players, time_per_question=300, **kw)
 
 
+async def sign_in(sio, sid, user_id):
+    await sio.fire("connect", sid, {"token": f"tok{user_id}"})
+
+
 async def join(sio, sid, player_id, name):
-    return await sio.fire("join_lobby", sid, {"lobby_id": 5, "player_id": player_id, "user_id": player_id * 10, "username": name})
+    """Sign the socket in as user `player_id` and join. The user id and name in the message are lies on purpose: the server must ignore them."""
+    await sign_in(sio, sid, player_id)
+    return await sio.fire("join_lobby", sid, {"lobby_id": 5, "player_id": player_id, "user_id": 999, "username": "mallory"})
 
 
 def test_the_player_who_joins_is_sent_a_lobby_that_includes_them(game):
@@ -107,6 +134,7 @@ def test_the_player_who_joins_is_sent_a_lobby_that_includes_them(game):
 
 def test_joining_a_lobby_that_does_not_exist_or_is_full_is_refused(game):
     async def scenario():
+        await sign_in(game, "s1", 1)
         none = await game.fire("join_lobby", "s1", {"lobby_id": 404, "player_id": 1})
         assert [(e["event"], e["data"]["message"], e["to"]) for e in none] == [("error", "Lobby not found", "s1")]
         await open_lobby(max_players=1)
@@ -134,9 +162,11 @@ def test_a_whole_game_sends_the_events_it_always_sent(game):
         sent = await game.fire("broadcast_question", "s1", {"lobby_id": 5, "question": question, "question_index": 0})
         assert [(e["event"], e["room"]) for e in sent] == [("new_question", "5")]
         assert sent[0]["data"] == {"question": question, "question_index": 0, "time_per_question": 300}
-        assert game.history == [([10, 20], "Two Sum", "arrays", "easy")]            # every player in the lobby saw it, not only the host
+        assert game.history == [([1, 2], "Two Sum", "arrays", "easy")]            # every player in the lobby saw it, not only the host
         assert await lobby_manager.get_shared_question(5, 0) == question
 
+        await lobby_manager.record_graded_score(1, 101, 80)            # what the submit request graded for ann
+        await lobby_manager.record_graded_score(2, 101, 50)
         scores = await game.fire("score_update", "s1", {"lobby_id": 5, "player_id": 1, "score": 80})
         assert [(e["event"], e["data"]["leaderboard"][0]["username"], e["data"]["leaderboard"][0]["score"]) for e in scores] == [("leaderboard_update", "ann", 80)]
         await game.fire("score_update", "s2", {"lobby_id": 5, "player_id": 2, "score": 50})
@@ -177,7 +207,7 @@ def test_rounds_and_questions_advance_and_end(game):
         ended = await game.fire("end_round", "s1", {"lobby_id": 5, "round_number": 1})
         assert ended[0]["event"] == "round_ended" and ended[0]["data"]["round_number"] == 1
         refused = await game.fire("start_round", "s1", {"lobby_id": 404, "round_number": 1, "questions": []})
-        assert [(e["event"], e["data"]["message"]) for e in refused] == [("error", "Cannot start round")]
+        assert [(e["event"], e["data"]["message"]) for e in refused] == [("error", "Only the host can start a round")]
 
     play(scenario)
 
@@ -222,6 +252,7 @@ def test_a_player_can_leave_on_purpose(game):
 
 def test_a_lobby_the_server_forgot_is_not_started(game):
     async def scenario():
+        await sign_in(game, "s1", 1)
         refused = await game.fire("start_game", "s1", {"lobby_id": 5})
         assert refused and refused[0]["event"] == "error"
 
@@ -230,6 +261,8 @@ def test_a_lobby_the_server_forgot_is_not_started(game):
 
 def test_progress_events_are_relayed_to_the_others_in_the_room(game):
     async def scenario():
+        await open_lobby()
+        await join(game, "s1", 1, "ann")
         typing = await game.fire("typing_progress", "s1", {"lobby_id": 5, "player_id": 1, "progress": 40})
         tests = await game.fire("test_progress", "s1", {"lobby_id": 5, "player_id": 1, "passed": 2, "total": 5})
         assert [(e["event"], e["data"], e["room"], e["skip_sid"]) for e in typing + tests] == [

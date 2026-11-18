@@ -25,6 +25,9 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false
+      # one proxy (Render's) sits in front of this service: lets the per-address limits on sign-in and password reset see the real caller
+      - key: TRUSTED_PROXY_HOPS
+        value: 1
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT
