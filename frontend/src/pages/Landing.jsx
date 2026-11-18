@@ -30,7 +30,7 @@ const CHAPTERS = [
 // so the words stay readable.
 const LAYOUT = {
   desktop: {
-    offsets: [3.0, 0, 3.9, 3.3],
+    offsets: [3.55, 0, 3.9, 3.3],
     ys: [0, 0, 0, 0.35],
     scales: [1.38, 0.9, 1.06, 0.95],
     opacities: [1, 0.22, 1, 1],
@@ -41,6 +41,13 @@ const LAYOUT = {
     scales: [0.72, 0.7, 0.7, 0.72],
     opacities: [0.85, 0.12, 0.16, 0.5],
   },
+}
+
+// An element's bottom edge in page coordinates, from layout offsets, so an entrance animation's transform does not move it.
+function docBottom(el) {
+  let y = el.offsetHeight
+  for (let e = el; e; e = e.offsetParent) y += e.offsetTop
+  return y
 }
 
 // Which chapter the page is on, as a continuous number. A chapter owns the page from its top to the top of the next one; the
@@ -122,7 +129,7 @@ const MODES = [
   { name: 'Tournament', to: '/tournaments', text: 'Win your bracket.' },
 ]
 
-// The small things: each one is something the product really does today.
+// Built for a fair fight: each one is something the product really does today.
 const FEATURES = [
   { name: 'A locked harness', text: 'The code that reads the input and prints the answer is read-only. You write only the logic.' },
   { name: 'Hidden tests', text: 'Your code is graded on the server against tests you never see, so there is nothing to read off the page.' },
@@ -305,7 +312,15 @@ export default function Landing() {
     if (lenis) window.__lenis = lenis
     const els = CHAPTERS.map((c) => document.getElementById(c.id))
     const root = document.documentElement
-    const layout = () => arena.current?.setLayout(window.innerWidth < 900 ? LAYOUT.mobile : LAYOUT.desktop)
+    // On a narrow screen the laptop sits in the space under the hero's text, measured from the page itself (where that text ends
+    // depends on the phone's width and the font), and shrinks if a short screen leaves too little room.
+    const layout = () => {
+      if (window.innerWidth >= 900) { arena.current?.setLayout(LAYOUT.desktop); return }
+      const m = LAYOUT.mobile
+      const langs = document.getElementById('hero-langs')
+      const fit = langs && arena.current?.fitUnder ? arena.current.fitUnder(docBottom(langs) + 28, m.scales[0]) : null
+      arena.current?.setLayout(fit ? { ...m, ys: [fit.y, ...m.ys.slice(1)], scales: [fit.scale, ...m.scales.slice(1)] } : m)
+    }
     layout()
     window.addEventListener('resize', layout)
 
@@ -366,7 +381,7 @@ export default function Landing() {
       </nav>
 
       {/* ── 1. Arena ─────────────────────────────────────────────────────── */}
-      <section id="top" data-chapter className="relative z-10 flex min-h-[88svh] items-center pb-6 pt-24">
+      <section id="top" data-chapter className="relative z-10 flex min-h-[100svh] items-start pb-6 pt-24 md:min-h-[88svh] md:items-center">
         <div className="mx-auto w-full max-w-[1280px] px-5 md:px-8">
           <div className="max-w-[32rem] md:max-w-[40rem]">
             <h1 className="display text-[clamp(3.1rem,6.8vw,6.2rem)] text-white" aria-label="Outcode your rival.">
@@ -376,11 +391,11 @@ export default function Landing() {
             <p className="lp-in mt-7 text-[19px] leading-relaxed text-slate-300 md:text-[22px]" style={{ '--d': '1.05s' }}>
               Live coding matches on problems nobody has seen. You write the logic, we run the match.
             </p>
-            <div className="lp-in mt-9 flex flex-wrap gap-4" style={{ '--d': '1.25s' }}>
+            <div className="lp-in cta-row mt-9 flex flex-wrap gap-4" style={{ '--d': '1.25s' }}>
               <Link to={start} className="btn btn-primary btn-lg">{startLabel}<Arrow /></Link>
               <a href="#match" className="btn btn-secondary btn-lg">Watch a match</a>
             </div>
-            <p className="lp-in mt-8 text-[16px] text-slate-400" style={{ '--d': '1.45s' }}>Python · C++ · Java · JavaScript · C</p>
+            <p id="hero-langs" className="lp-in mt-8 text-[16px] text-slate-400" style={{ '--d': '1.45s' }}>Python · C++ · Java · JavaScript · C</p>
           </div>
         </div>
       </section>
@@ -412,13 +427,13 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── 3b. The small things ─────────────────────────────────────────── */}
+      {/* ── 3b. Built for a fair fight ───────────────────────────────────── */}
       <section id="details" className="relative z-10 py-14 md:py-20">
         <div className="mx-auto max-w-[1280px] px-5 md:px-8">
           <div className="lg:w-[57%]">
-            <h2 data-reveal className="display text-[clamp(2.1rem,4.2vw,3.7rem)]">And the <span className="text-arc">small things.</span></h2>
+            <h2 data-reveal className="display text-[clamp(2.1rem,4.2vw,3.7rem)]">Built for a <span className="text-arc">fair fight.</span></h2>
             <p data-reveal style={{ '--d': '0.06s' }} className="mt-4 max-w-md text-[19px] leading-relaxed text-slate-300">
-              Nothing here is the headline. It is what keeps a match fair and practice honest.
+              What keeps every match fair, and what helps you get better after it.
             </p>
             <dl className="mt-10">
               {FEATURES.map((f, i) => (
@@ -440,7 +455,7 @@ export default function Landing() {
             <p data-reveal style={{ '--d': '0.06s' }} className="mt-4 max-w-md text-[19px] leading-relaxed text-slate-300">
               Take the five-question skill check, get your rating, then step into your first match.
             </p>
-            <div data-reveal style={{ '--d': '0.12s' }} className="mt-8 flex flex-wrap gap-4">
+            <div data-reveal style={{ '--d': '0.12s' }} className="cta-row mt-8 flex flex-wrap gap-4">
               <Link to={start} className="btn btn-primary btn-xl">{startLabel}<Arrow /></Link>
               {!user && <Link to="/login" className="btn btn-secondary btn-xl">Log in</Link>}
             </div>

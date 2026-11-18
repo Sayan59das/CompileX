@@ -7,12 +7,14 @@
 //
 // The screen is a canvas texture redrawn as characters are typed (the same solution in Python, C++, Java, JavaScript and C in
 // turn), every typed character presses a real key, and the scroll steers the pose: it opens as you arrive, turns to the
-// match, swings round to show its back, and shuts at the end. Nothing here touches React: `createArena` takes a canvas and
-// returns a handle.
+// match, and after the match it flies onto a table between two players typing against each other, with a scoreboard above them
+// (three/duel.js). Nothing here touches React: `createArena` takes a canvas and returns a handle.
 
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
+import { createDuel, bake } from './duel'
+import { createPodium } from './podium'
 
 export const CHAPTERS = 4
 
@@ -23,7 +25,7 @@ const easeOutBack = (t) => { const c = 1.5; return 1 + (c + 1) * Math.pow(t - 1,
 
 // How the machine is posed in each chapter: turn (ry), tip toward you (rx), how far the lid is open (0 shut, 1 open), scale.
 const POSES = [
-  { ry: -0.5, rx: 0.12, lid: 1, s: 1 },      // arena: three-quarter front, screen toward the page
+  { ry: -0.28, rx: 0.12, lid: 1, s: 1 },     // arena: turned a little to the left, toward the text; tipped so the keyboard shows
   { ry: 0.28, rx: 0.06, lid: 1, s: 1 },      // a match: almost square to the screen
   { ry: 2.55, rx: 0.07, lid: 0.94, s: 1 },   // modes: turned round, the lid, vents and light bar toward you
   { ry: 3.4, rx: -0.86, lid: 0.03, s: 1.12 }, // start: lid shut, seen from above and behind so the lid reads upright
@@ -537,6 +539,131 @@ export function createArena(canvas) {
   stage.add(laptop)
   scene.add(stage)
 
+  // ── the duel: further down the page the machine lands on a table between two players (three/duel.js) ──
+  // Where the duel stands per chapter: its own placement, larger than the laptop's. On a wide screen it is sized to fill the space
+  // right of the text (`ss` scales that fit per chapter); on a narrow one it is centred behind the text (`ss` is the scale). `ys`
+  // is the height of its floor; in the last chapter it rises clear of the footer.
+  const DUEL_RADIUS = 1.39 // the platform's radius in metres
+  const DUEL_PLACE = {
+    wide: { ys: [-1.35, -1.35, -1.35, -0.42], ss: [1, 1, 1, 0.66] },
+    narrow: { ys: [-2.2, -2.2, -2.2, -0.55], ss: [1.55, 1.55, 1.55, 1.1] },
+  }
+  const duel = createDuel()
+  duel.group.visible = false
+  scene.add(duel.group)
+  // and in the last chapter the duel gives way to a podium in the same spot (three/podium.js)
+  const podium = createPodium()
+  podium.group.visible = false
+  scene.add(podium.group)
+  // When the podium takes over the laptop shrinks away; once it is gone its meshes are hidden. Its screen light stays in the scene,
+  // turned down, so the number of lights (and so every compiled shader) stays the same.
+  let machineHidden = false
+  const hideMachine = (h) => {
+    if (h === machineHidden) return
+    machineHidden = h
+    laptop.children.forEach((c) => { if (c !== lid && c !== pool && c !== wash) c.visible = !h })
+    lid.children.forEach((c) => { if (c !== screenLight) c.visible = !h })
+  }
+  // the rival's machine is a copy of this one, with its own screen, a violet screen light and none of the floor glow
+  const rivalLaptop = laptop.clone(true)
+  const rLid = rivalLaptop.children[laptop.children.indexOf(lid)]
+  const rScreen = rLid.children[lid.children.indexOf(screen)]
+  const rLight = rLid.children[lid.children.indexOf(screenLight)]
+  rivalLaptop.children[laptop.children.indexOf(pool)].visible = false
+  rivalLaptop.children[laptop.children.indexOf(wash)].visible = false
+  const rivalCanvas = document.createElement('canvas')
+  rivalCanvas.width = screenCanvas.width
+  rivalCanvas.height = screenCanvas.height
+  const rctx = rivalCanvas.getContext('2d')
+  const rivalTex = new THREE.CanvasTexture(rivalCanvas)
+  rivalTex.colorSpace = THREE.SRGBColorSpace
+  rivalTex.anisotropy = screenTex.anisotropy
+  rScreen.material = new THREE.MeshBasicMaterial({ map: rivalTex, toneMapped: false })
+  // The rival's screen light lives at scene level and stays switched on (at zero) the whole time: a light that appears only with
+  // the duel would change the light count and make every material recompile mid-scroll.
+  rLid.remove(rLight)
+  scene.add(rLight)
+  rLight.color.setHex(0x9b7bff)
+  rLight.intensity = 0
+  rLight.distance = 1.6
+  const rLightAt = rLight.position.clone()
+  rLid.rotation.x = -0.3
+  // the rival's machine never moves on the table: merge it into a handful of draws (its geometry is shared with the original)
+  bake(rivalLaptop, false)
+  duel.slotB.add(rivalLaptop)
+  duel.parts.push([rivalLaptop, 0.55, 0.95])
+
+  // Soft shadows, for the duel only. The key light casts them; the map is redrawn only while the duel is on screen
+  // (autoUpdate is off), so the laptop chapters above pay nothing for it.
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = THREE.PCFShadowMap
+  renderer.shadowMap.autoUpdate = false
+  keyLight.castShadow = true
+  keyLight.shadow.mapSize.set(1024, 1024)
+  keyLight.shadow.camera.left = keyLight.shadow.camera.bottom = -4.2
+  keyLight.shadow.camera.right = keyLight.shadow.camera.top = 4.2
+  keyLight.shadow.camera.near = 1
+  keyLight.shadow.camera.far = 24
+  keyLight.shadow.bias = -0.0004
+  keyLight.shadow.normalBias = 0.025
+  keyLight.shadow.radius = 3
+  keyLight.shadow.intensity = 0.85
+  scene.add(keyLight.target)
+  const keyDir = keyLight.position.clone().normalize().multiplyScalar(11)
+  ;[laptop, rivalLaptop].forEach((l) => l.traverse((o) => {
+    if (o.isMesh && !o.material.transparent && !o.material.isMeshBasicMaterial) o.castShadow = true
+  }))
+  const duelInv = new THREE.Quaternion()
+  let matchClock = 0
+  let shadowTick = 0
+  // While the duel is on screen the laptop screens are a few dozen pixels wide: their text is redrawn ten times a second, not on
+  // every typed character (each redraw re-uploads a 1024 x 640 texture).
+  let landed = 0
+  let screenT = -1
+  let rivalScreenT = -1
+
+  // compile the duel's materials now, while the page is loading, not when it first scrolls into view
+  duel.group.visible = podium.group.visible = true
+  renderer.compile(scene, camera)
+  duel.group.visible = podium.group.visible = false
+  // The shadow pass compiles its own depth shaders the first time it runs. Run it once off screen when the page is idle, drawing
+  // the scene itself with one plain material, so the first scroll into the duel does not stall on it.
+  let disposed = false
+  const warmShadows = () => {
+    if (disposed) return
+    const target = new THREE.WebGLRenderTarget(4, 4)
+    const plain = new THREE.MeshBasicMaterial()
+    duel.group.visible = podium.group.visible = true
+    scene.overrideMaterial = plain
+    renderer.shadowMap.needsUpdate = true
+    renderer.setRenderTarget(target)
+    renderer.render(scene, camera)
+    renderer.setRenderTarget(null)
+    scene.overrideMaterial = null
+    duel.group.visible = podium.group.visible = false
+    target.dispose()
+    plain.dispose()
+  }
+  const idle = window.requestIdleCallback ? (f) => window.requestIdleCallback(f, { timeout: 5000 }) : (f) => setTimeout(f, 2500)
+  idle(warmShadows)
+  const rivalTyping = { lang: 2, chars: 0, acc: 0, pause: 0.6, done: false, doneT: 0 }
+  let rivalDirty = true
+  // A duel round: both players start a problem together (each in their own language); the first to finish celebrates, and once
+  // both are done and the celebration is over, both start the next one. `winner` is 'you', 'rival' or null; `t` is the time since.
+  const round = { winner: null, t: 0 }
+  let inDuel = false
+  let wasInDuel = false
+  function startRound() {
+    restart((typing.lang + 1) % SNIPPETS.length)
+    Object.assign(rivalTyping, { lang: (typing.lang + 2) % SNIPPETS.length, chars: 0, acc: 0, pause: 0.25, done: false, doneT: 0 })
+    round.winner = null
+    round.t = 0
+    matchClock = 0
+    dirty = true
+    rivalDirty = true
+  }
+  const slotPos = new THREE.Vector3(), slotQuat = new THREE.Quaternion(), slotScale = new THREE.Vector3()
+
   // ── typing ───────────────────────────────────────────────────────────────
   const typing = { lang: 0, chars: 0, acc: 0, pause: 0, done: false, doneT: 0 }
   function restart(lang) {
@@ -547,12 +674,28 @@ export function createArena(canvas) {
     typing.done = false
     typing.doneT = 0
   }
+  // the key a typed character lands on (the same mapping for both players)
+  function keyFor(ch, n) {
+    if (ch === ' ') return keyIndex.space
+    if (ch === '\n') return keyIndex.enter
+    return keyIndex.letters[(ch.charCodeAt(0) * 7 + n) % keyIndex.letters.length]
+  }
+  // In the duel each player's hands go to the keys they really type: the last key each hand struck (in the laptop's own units) and
+  // when. Keys left of centre are the left hand's, right of centre the right's; the space bar goes to whichever hand is free.
+  const newHands = () => ({ L: { x: -0.75, z: -0.3, t: -9 }, R: { x: 0.75, z: -0.3, t: -9 }, last: 'R' })
+  const handsA = newHands()
+  const handsB = newHands()
+  function strike(hands, i, at) {
+    const k = layout[i]
+    let side = k.x < -0.08 ? 'L' : k.x > 0.08 ? 'R' : hands.last === 'L' ? 'R' : 'L'
+    if (i === keyIndex.space) side = hands.last === 'L' ? 'R' : 'L'
+    Object.assign(hands[side], { x: k.x, z: k.z, t: at })
+    hands.last = side
+  }
   function hit(ch) {
-    let i
-    if (ch === ' ') i = keyIndex.space
-    else if (ch === '\n') i = keyIndex.enter
-    else i = keyIndex.letters[(ch.charCodeAt(0) * 7 + typing.chars) % keyIndex.letters.length]
+    const i = keyFor(ch, typing.chars)
     press[i] = 1
+    strike(handsA, i, state.time)
   }
   restart(0)
 
@@ -565,9 +708,16 @@ export function createArena(canvas) {
     time: 0, intro: reduce ? 1 : 0, chapter: 0, lastOpacity: -1,
   }
 
-  // The sharpness the scene is drawn at. It starts at 1.25 and only ever goes down, one step at a time, when frames are coming slowly
-  // (see the end of `frame`), so a weak GPU gets a slightly softer picture instead of a stuttering one.
-  let quality = 1.25
+  // The sharpness the scene is drawn at: the screen's own pixel density, up to 2. When frames come slowly (see the start of `frame`)
+  // it steps down 0.25 at a time, to no lower than 1, so a weak GPU gets a slightly softer picture instead of a stuttering one. Once
+  // frames are quick again it steps back up, and a level that proved too slow is retried only after a wait that doubles each time.
+  const maxQuality = Math.min(window.devicePixelRatio || 1, 2)
+  const minQuality = Math.min(1, maxQuality)
+  let quality = maxQuality
+  let ceiling = maxQuality
+  let retryAt = 0
+  let backoff = 15000
+  let goodWindows = 0
   function resize() {
     const w = canvas.clientWidth || window.innerWidth
     const h = canvas.clientHeight || window.innerHeight
@@ -611,16 +761,29 @@ export function createArena(canvas) {
     raf = requestAnimationFrame(frame)
     if (document.hidden) { last = now; return }
     const gap = now - last
-    const dt = Math.min(0.05, gap / 1000)
+    // the first frame's timestamp can be older than `last` (set when the scene was built), so the step is never negative
+    const dt = clamp(gap / 1000, 0, 0.05)
     last = now
 
     // Adaptive sharpness: after the first second (shaders compiling are always slow), count frames that took over ~28 ms (under 36 fps).
-    // If most of the last 60 were slow, draw fewer pixels from now on.
+    // A gap over 120 ms is a throttled tab or a one-off hitch, not a slow GPU, and counts neither way. If most of the last 60 frames
+    // were slow, draw fewer pixels; after three quick windows in a row, draw more again.
     frames++
     if (frames > 60) {
-      if (gap > 28) slowFrames++
+      if (gap > 28 && gap < 120) slowFrames++
       if ((frames - 60) % 60 === 0) {
-        if (slowFrames > 30 && quality > 0.8) { quality = Math.max(0.75, quality - 0.25); resize() }
+        if (now > retryAt) ceiling = maxQuality
+        if (slowFrames > 30 && quality > minQuality) {
+          quality = Math.max(minQuality, quality - 0.25)
+          ceiling = quality
+          retryAt = now + backoff
+          backoff = Math.min(backoff * 2, 240000)
+          goodWindows = 0
+          resize()
+        } else if (slowFrames < 4) {
+          goodWindows++
+          if (goodWindows >= 3 && quality < ceiling - 0.001) { quality = Math.min(ceiling, quality + 0.25); goodWindows = 0; resize() }
+        } else goodWindows = 0
         slowFrames = 0
       }
     }
@@ -636,8 +799,10 @@ export function createArena(canvas) {
     if (chap !== state.chapter && t - lastChapterSwitch > 0.35) {
       state.chapter = chap
       lastChapterSwitch = t
-      restart(CHAPTER_LANG[chap])
-      dirty = true
+      if (!inDuel) {
+        restart(CHAPTER_LANG[chap])
+        dirty = true
+      }
     }
 
     // typing
@@ -645,7 +810,7 @@ export function createArena(canvas) {
     if (!typing.done && state.intro > 0.45) {
       if (typing.pause > 0) typing.pause -= dt
       else {
-        typing.acc += dt * (reduce ? 400 : 24 + Math.sin(t * 2.3) * 6)
+        typing.acc += dt * (reduce ? 400 : 30 + Math.sin(t * 2.3) * 5)
         const text = snip.code.join('\n')
         while (typing.acc >= 1 && typing.chars < text.length) {
           typing.acc -= 1
@@ -661,11 +826,12 @@ export function createArena(canvas) {
       typing.doneT += dt
       // The result fades in over the first ~1.6 s and then stops changing: redraw the screen only while it moves (it used to be every frame for 5 s)
       if (typing.doneT < 1.7) dirty = true
-      if (typing.doneT > 5.2) { restart((typing.lang + 1) % SNIPPETS.length); dirty = true }
+      if (typing.doneT > 5.2 && !inDuel) { restart((typing.lang + 1) % SNIPPETS.length); dirty = true }
     }
     const nowCaret = Math.floor(t * 2) % 2 === 0
     if (nowCaret !== caret) { caret = nowCaret; dirty = true }
-    if (dirty && fontsReady) {
+    if (dirty && fontsReady && !machineHidden && (landed < 0.6 || t - screenT > 0.1)) {
+      screenT = t
       drawScreen(sctx, SNIPPETS[typing.lang], typing.chars, caret, typing.done ? clamp((typing.doneT - 0.2) / 1.4, 0, 1) : 0)
       screenTex.needsUpdate = true
       dirty = false
@@ -704,7 +870,7 @@ export function createArena(canvas) {
     state.smy += (state.my - state.smy) * (1 - Math.exp(-dt * 2))
     state.spin += state.kick
     state.kick *= Math.exp(-dt * 3)
-    state.spin *= Math.exp(-dt * 1.1)
+    state.spin *= Math.exp(-dt * 2.2)
 
     const x = lerp(state.xs[k0], state.xs[k1], f)
     const y = lerp(state.ys[k0], state.ys[k1], f)
@@ -712,8 +878,137 @@ export function createArena(canvas) {
     stage.position.set(x, y + Math.sin(t * 0.6) * 0.045 - 0.95 * s, 0)
     stage.scale.setScalar(s)
     stage.rotation.order = 'YXZ'
-    stage.rotation.y = lerp(a.ry, b.ry, f) + state.spin + state.smx * 0.2 + (1 - intro) * -0.9 + Math.sin(t * 0.25) * 0.03
-    stage.rotation.x = lerp(a.rx, b.rx, f) - state.smy * 0.09
+    // no turn from the pointer: the machine keeps the turn its pose gives it (the pointer only tips it a little)
+    stage.rotation.y = lerp(a.ry, b.ry, f) + state.spin + (1 - intro) * -0.9
+    stage.rotation.x = lerp(a.rx, b.rx, f) - state.smy * 0.03
+    // no roll, ever: landing on the table blends the whole rotation (roll included) towards the table's, and only the turn and
+    // tip are set above, so without this the machine kept a leftover lean after scrolling back up
+    stage.rotation.z = 0
+
+    // ── the duel: from the match chapter on, the machine flies onto a table and two players form around it ──
+    const duelF = smooth(clamp((ci - 1) / 0.85, 0, 1))
+    // ... and from the modes chapter into the last one the duel packs away and the podium rises where it stood
+    const podF = smooth(clamp((ci - 2.1) / 0.8, 0, 1))
+    inDuel = duelF > 0.5 && podF < 0.999
+    if (inDuel && !wasInDuel) startRound()
+    if (inDuel) {
+      if (!round.winner && (typing.done || rivalTyping.done)) { round.winner = typing.done ? 'you' : 'rival'; round.t = 0 }
+      if (round.winner) round.t += dt
+      if (round.winner && typing.done && rivalTyping.done && round.t > 3.4) startRound()
+    }
+    wasInDuel = inDuel
+    if (duelF > 0.001) {
+      duel.group.visible = podF < 0.999
+      if (camera.aspect >= 1) {
+        // on a wide screen the table fills the space right of the text column (which ends near x = 0.8), as large as fits with a margin each side
+        const halfW = Math.tan((camera.fov * Math.PI) / 360) * camera.position.z * camera.aspect
+        const s = clamp((halfW - 1.9) / (2 * DUEL_RADIUS), 1.2, 2.3) * lerp(DUEL_PLACE.wide.ss[k0], DUEL_PLACE.wide.ss[k1], f)
+        duel.group.position.set(0.9 + DUEL_RADIUS * s, lerp(DUEL_PLACE.wide.ys[k0], DUEL_PLACE.wide.ys[k1], f), 0)
+        duel.group.scale.setScalar(s)
+      } else {
+        const p = DUEL_PLACE.narrow
+        duel.group.position.set(0, lerp(p.ys[k0], p.ys[k1], f), 0)
+        duel.group.scale.setScalar(lerp(p.ss[k0], p.ss[k1], f))
+      }
+      duel.group.rotation.order = 'YXZ'
+      // a slow drift round the table, plus the pointer and the scroll
+      duel.group.rotation.y = 0.55 + Math.sin(t * 0.13) * 0.12 + state.smx * 0.15 + state.spin * 0.5
+      duel.group.rotation.x = 0.2 - state.smy * 0.05
+      // whoever finished first this round celebrates; the other drops their head for a moment
+      const winT = (who) => (round.winner === who ? round.t : -1)
+      duel.update(duelF * (1 - podF), t, reduce,
+        { hands: handsA, win: winT('you'), lose: winT('rival') },
+        { hands: handsB, win: winT('rival'), lose: winT('you') })
+      if (podF > 0.001) {
+        podium.group.visible = true
+        podium.group.position.copy(duel.group.position)
+        podium.group.scale.copy(duel.group.scale)
+        podium.group.rotation.order = 'YXZ'
+        podium.group.rotation.y = -0.3 + Math.sin(t * 0.13) * 0.08 + state.smx * 0.15 + state.spin * 0.5
+        podium.group.rotation.x = 0.2 - state.smy * 0.05
+        podium.update(podF, t, reduce, fontsReady)
+      } else podium.group.visible = false
+      // the scoreboard faces the viewer and shows how far each solution has got
+      duelInv.copy(duel.group.quaternion).invert()
+      duel.board.quaternion.copy(duelInv)
+      if (duelF > 0.75) {
+        matchClock += dt
+        const progress = (s) => s.chars / Math.max(1, SNIPPETS[s.lang].code.join('\n').length)
+        duel.setScore({
+          you: typing.done ? 1 : progress(typing), rival: rivalTyping.done ? 1 : progress(rivalTyping),
+          youDone: typing.done, rivalDone: rivalTyping.done,
+          youLang: SNIPPETS[typing.lang].lang, rivalLang: SNIPPETS[rivalTyping.lang].lang,
+          clock: matchClock,
+          winner: round.winner,
+        }, fontsReady)
+      }
+      // shadows: aim the key light's shadow camera at the table and redraw the map, thirty times a second
+      keyLight.target.position.copy(duel.group.position)
+      keyLight.position.copy(duel.group.position).add(keyDir)
+      if (++shadowTick % 2 === 0) renderer.shadowMap.needsUpdate = true
+      // the arena machine lands on the table as yours (duel.update has just brought the slot's matrix up to date)
+      duel.slotA.matrixWorld.decompose(slotPos, slotQuat, slotScale)
+      const land = smooth(clamp((duelF - 0.05) / 0.85, 0, 1))
+      landed = land
+      stage.position.lerp(slotPos, land)
+      stage.quaternion.slerp(slotQuat, land)
+      stage.scale.lerp(slotScale, land)
+      lid.rotation.x = lerp(lid.rotation.x, -0.3, land)
+      pool.material.opacity = 1 - land
+      wash.material.opacity = 1 - land
+      // the glow planes under the machine are large: once they have faded out, do not draw them at all
+      pool.visible = wash.visible = land < 0.99
+      screenLight.intensity = lerp(screenLight.intensity, 2.2, land)
+      screenLight.distance = lerp(5, 1.6, land)
+      rLight.position.copy(rLightAt)
+      rLid.localToWorld(rLight.position)
+      rLight.intensity = 2.2 * smooth(clamp((duelF - 0.55) / 0.4, 0, 1)) * (1 - podF)
+      // as the podium rises the laptop shrinks away
+      const away = smooth(clamp(podF * 1.8, 0, 1))
+      if (away > 0) {
+        stage.scale.multiplyScalar(Math.max(0.0001, 1 - away))
+        screenLight.intensity *= 1 - away
+      }
+      hideMachine(away > 0.999)
+      // the rival types too, in another language
+      if (duelF > 0.5 && podF < 0.999) {
+        if (!rivalTyping.done) {
+          if (rivalTyping.pause > 0) rivalTyping.pause -= dt
+          else {
+            rivalTyping.acc += dt * (reduce ? 400 : 26 + Math.sin(t * 1.7 + 1) * 4)
+            const text = SNIPPETS[rivalTyping.lang].code.join('\n')
+            while (rivalTyping.acc >= 1 && rivalTyping.chars < text.length) {
+              rivalTyping.acc -= 1
+              const ch = text[rivalTyping.chars]
+              rivalTyping.chars++
+              strike(handsB, keyFor(ch, rivalTyping.chars), t)
+              rivalDirty = true
+              if (ch === '\n') { rivalTyping.pause = 0.2; break }
+            }
+            if (rivalTyping.chars >= text.length) { rivalTyping.done = true; rivalTyping.doneT = 0 }
+          }
+        } else {
+          rivalTyping.doneT += dt
+          if (rivalTyping.doneT < 1.7) rivalDirty = true
+        }
+        if (rivalDirty && fontsReady && t - rivalScreenT > 0.1) {
+          rivalScreenT = t
+          drawScreen(rctx, SNIPPETS[rivalTyping.lang], rivalTyping.chars, caret, rivalTyping.done ? clamp((rivalTyping.doneT - 0.2) / 1.4, 0, 1) : 0)
+          rivalTex.needsUpdate = true
+          rivalDirty = false
+        }
+      }
+    } else if (duel.group.visible || podium.group.visible || machineHidden) {
+      duel.group.visible = false
+      podium.group.visible = false
+      hideMachine(false)
+      rLight.intensity = 0
+      landed = 0
+      pool.material.opacity = 1
+      wash.material.opacity = 1
+      pool.visible = wash.visible = true
+      screenLight.distance = 5
+    }
 
     // visibility of the whole canvas per chapter
     const op = lerp(state.opacities[k0], state.opacities[k1], f)
@@ -734,9 +1029,28 @@ export function createArena(canvas) {
       if (scales) state.scales = scales.slice(0, CHAPTERS)
       if (opacities) state.opacities = opacities.slice(0, CHAPTERS)
     },
+    /**
+     * For the first chapter on a narrow screen: the `ys` value (and a scale no larger than `scale`) that puts the top of the open
+     * machine `px` pixels down the viewport and keeps all of it on screen, or null when there is not room for a readable machine.
+     * Worked out from the canvas size the same way `resize` places the camera, in the first chapter's pose; the machine's top sits
+     * about 1.5 of its own scale above `ys`, and its front edge and the glow under it reach about 1.5 below.
+     */
+    fitUnder(px, scale) {
+      const w = canvas.clientWidth || window.innerWidth
+      const h = canvas.clientHeight || window.innerHeight
+      const halfTan = Math.tan((camera.fov * Math.PI) / 360)
+      const z = Math.max(12.5, 5.6 / (2 * halfTan * (w / h)))
+      const perPx = (2 * halfTan * z) / h // world units per pixel at the machine's depth
+      const room = (h - 12 - px) * perPx // from the point down to just above the bottom of the screen
+      const s = Math.min(scale, room / 3.0) // 3.0: lid top to the glow under the front edge, which sits nearer the camera
+      if (s < 0.42) return null
+      const topY = camera.position.y + (h / 2 - px) * perPx
+      return { y: topY - 1.5 * s, scale: s }
+    },
     /** Feed scroll distance in pixels: the machine swings with the page. */
     pulse(dy) { if (!reduce) state.kick = clamp(state.kick + dy * 0.00006, -0.012, 0.012) },
     dispose() {
+      disposed = true
       cancelAnimationFrame(raf)
       ro.disconnect()
       window.removeEventListener('pointermove', onMove)
@@ -748,6 +1062,9 @@ export function createArena(canvas) {
         }
       })
       screenTex.dispose()
+      rivalTex.dispose()
+      duel.dispose()
+      podium.dispose()
       matrixTex.dispose()
       pmrem.dispose()
       renderer.dispose()

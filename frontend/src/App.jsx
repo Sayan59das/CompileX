@@ -4,6 +4,7 @@ import SmoothScroll from './components/SmoothScroll'
 import { SceneBackdrop } from './components/CoderScene'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import PageLoader from './components/PageLoader'
+import PageTransitions from './components/PageTransitions'
 
 // Each page is its own file that the browser downloads only when the page is opened, so the first visit loads a small
 // start-up bundle instead of every page and library at once. The loaders are named so they can also be started early (see PREFETCH).
@@ -69,6 +70,13 @@ function usePrefetch(pathname) {
 // Shown while a page's file is still arriving: the branded loading screen, the same one index.html paints before the app starts.
 const PageWait = <PageLoader />
 
+// Sits beside the routes inside the Suspense boundary, so its effect runs only once a real page (not the loading fallback) is on
+// screen: that is when the start-up splash may fade (main.jsx).
+function PageReady() {
+  useEffect(() => { window.__cxPageReady?.() }, [])
+  return null
+}
+
 function Protected({ children }) {
   const { user } = useAuth()
   if (!user) return <Navigate to="/login" replace />
@@ -100,8 +108,11 @@ export default function App() {
   return (
     <AuthProvider>
       <Chrome pathname={pathname} />
-      <div key={pathname} className={pathname === '/' || pathname === '/home' ? undefined : 'route-fade'}>
+      <PageTransitions />
+      {/* One Suspense boundary for every page, outside the keyed wrapper: navigations run as transitions (main.jsx), so while the
+          next page's file is still arriving the current page stays on screen instead of the loading screen flashing in between. */}
       <Suspense fallback={PageWait}>
+      <div key={pathname} className={pathname === '/' || pathname === '/home' ? undefined : 'route-fade'}>
       <Routes>
         <Route path="/login"    element={<Login />} />
         <Route path="/register" element={<Register />} />
@@ -120,8 +131,9 @@ export default function App() {
         <Route path="/tournaments" element={<Protected><Tournaments /></Protected>} />
         <Route path="/tournament/:code" element={<Protected><TournamentDetail /></Protected>} />
       </Routes>
-      </Suspense>
+      <PageReady />
       </div>
+      </Suspense>
     </AuthProvider>
   )
 }

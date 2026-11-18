@@ -139,6 +139,13 @@ button:focus:not(:focus-visible) { outline: none; }
 .btn-danger:hover:not(:disabled) { transform: translateY(-1px); }
 
 .btn-sm { padding: 8px 16px; font-size: 14px; }
+/* Phones: a compact call to action in the top bar, so the logo and the menu button keep their room, and pairs of big buttons
+   stacked to the full width of the column, so they line up instead of ending at two different widths. */
+@media (max-width: 479px) {
+  .nav-cta { padding: 9px 14px; font-size: 15px; }
+  .cta-row { flex-direction: column; align-items: stretch; }
+  .cta-row > .btn { width: 100%; }
+}
 .btn-lg { padding: 16px 32px; font-size: 18px; }
 .btn-xl { padding: 20px 40px; font-size: 19px; border-radius: var(--radius-lg); }
 .btn-icon { width: 36px; height: 36px; padding: 0; }
@@ -361,6 +368,14 @@ html:not(.lp-js) .rounded-3xl { border-radius: 16px; }
    and the scrollbar gutter is reserved so the layout does not jump between a short page and a long one.
    `:where` keeps these at zero specificity, so any utility class on an element still wins. */
 html { scrollbar-gutter: stable; }
+/* Page changes: the old page fades out quickly while the new one fades in and settles (components/PageTransitions.jsx) */
+::view-transition-old(root) { animation: vtOut 0.22s cubic-bezier(0.4, 0, 1, 1) both; }
+::view-transition-new(root) { animation: vtIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes vtOut { to { opacity: 0 } }
+@keyframes vtIn  { from { opacity: 0 } }
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none; }
+}
 @keyframes routeFade { from { opacity: 0 } }
 @keyframes riseIn    { from { opacity: 0; transform: translateY(10px) } }
 .route-fade { animation: routeFade 0.28s ease-out backwards; }

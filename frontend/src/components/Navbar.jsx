@@ -37,10 +37,10 @@ export default function Navbar() {
 
   return (
     <header className={`fixed inset-x-0 top-0 z-50 transition-[background-color,border-color] duration-300 ${solid || open ? 'border-b border-white/10 bg-ink/95' : 'border-b border-transparent'}`}>
-      <div className="mx-auto flex max-w-[1280px] items-center justify-between px-5 py-4 md:px-8">
-        <Link to="/" className="flex items-center gap-2.5" aria-label="CompileX home">
-          <Logo size={40} />
-          <Wordmark className="text-[25px]" />
+      <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-3 px-5 py-4 md:px-8">
+        <Link to="/" className="flex shrink-0 items-center gap-2.5" aria-label="CompileX home">
+          <Logo size={40} className="h-9 w-9 sm:h-10 sm:w-10" />
+          <Wordmark className="text-[22px] sm:text-[25px]" />
         </Link>
 
         <nav className="hidden items-center gap-8 lg:flex" aria-label="Sections">
@@ -48,19 +48,19 @@ export default function Navbar() {
           <Link to="/about" className={linkClass}>About</Link>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2.5 sm:gap-3">
           {user ? (
             <>
               <span className="hidden items-center gap-2 text-[16px] font-medium text-slate-200 sm:flex">
                 <span className="h-2 w-2 rounded-full bg-pass" />{user.username}
               </span>
-              <Link to="/dashboard" className="btn btn-secondary">Dashboard</Link>
+              <Link to="/dashboard" className="btn btn-secondary nav-cta">Dashboard</Link>
               <button onClick={() => { logout(); navigate('/login') }} className="hidden text-[16px] font-medium text-slate-400 hover:text-white sm:block">Sign out</button>
             </>
           ) : (
             <>
               <Link to="/login" className="hidden text-[16px] font-medium text-slate-300 hover:text-white sm:block">Log in</Link>
-              <Link to="/register" className="btn btn-primary">Get started</Link>
+              <Link to="/register" className="btn btn-primary nav-cta">Get started</Link>
             </>
           )}
           <button
