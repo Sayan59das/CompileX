@@ -62,7 +62,10 @@ the same code runs against an in-process stand-in (`MemoryRedis`).
 
 ## Phase 2: judge tier (about 6 to 10 days)
 *Decision for the owner:* where the judges run (a VPS or VM with Docker, or a managed Judge0). Render's plain web service cannot host them.
-- [ ] Evaluate Judge0 and Piston against the five languages and the locked-starter harness (`starter_lock.py`); choose, write down why.
+- [x] Evaluate Judge0 and Piston against the five languages and the locked-starter harness (`starter_lock.py`); choose, write down why.
+      Written in `docs/judge-evaluation.md` (on paper: both need privileged containers, which are not run on the owner's machine). Recommendation: our own
+      judge worker on a separate VM, reusing today's executor. It also lists four gaps in today's sandbox (process limit, read-only files, root user, input
+      passed through a shell). The owner's decision is still open.
 - [ ] A job queue (Celery is already in `requirements.txt`): submission request returns a job id; the result arrives on the socket and by polling.
 - [ ] Judge worker: a fixed number of sandboxes per CPU core, pre-warmed, no network, memory and process limits, read-only filesystem.
 - [x] Admission gate (`app/services/execution_gate.py`, in the working tree): one player may have `MAX_EXECUTIONS_PER_USER` (2) runs going or waiting, and all

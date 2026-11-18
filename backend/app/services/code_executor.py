@@ -560,8 +560,12 @@ class CodeExecutor:
                     detach=True,
                     network_disabled=True,
                     mem_limit="256m",
+                    memswap_limit="256m",          # no swap: the memory limit is a real limit
                     cpu_period=100000,
                     cpu_quota=50000,
+                    pids_limit=128,                # a program that keeps starting copies of itself hits this, not the whole machine
+                    cap_drop=["ALL"],              # no extra powers inside the box
+                    security_opt=["no-new-privileges"],
                     working_dir="/sandbox",
                     remove=False,
                 )
@@ -627,7 +631,17 @@ class CodeExecutor:
                         start = datetime.now()
                         timeout_sec = config.get("timeout", 10)
 
-                        sh_cmd = f"timeout {timeout_sec}s sh -c 'echo \"{test.input_data.replace(chr(34), chr(92) + chr(34))}\" | {run_str}'"
+                        # The input goes in as a file and is redirected to the program: no shell ever reads it, so quotes, $, backticks and
+                        # backslashes in a test arrive exactly as written (the old shell echo of the input changed or broke them).
+                        input_tar = io.BytesIO()
+                        with tarfile.open(fileobj=input_tar, mode="w") as tar:
+                            data = (test.input_data + "\n").encode("utf-8")
+                            info = tarfile.TarInfo(name="input.txt")
+                            info.size = len(data)
+                            tar.addfile(info, io.BytesIO(data))
+                        container.put_archive("/sandbox", input_tar.getvalue())
+
+                        sh_cmd = f"timeout {timeout_sec}s {run_str} < /sandbox/input.txt"
 
                         exit_code, output = container.exec_run(
                             ["sh", "-c", sh_cmd], workdir="/sandbox"

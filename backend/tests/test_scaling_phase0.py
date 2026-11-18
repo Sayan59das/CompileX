@@ -337,4 +337,4 @@ def test_the_compose_file_runs_the_deployed_question_service_on_the_port_the_bac
     ai, api = service_block("ai"), service_block("api")
     assert "main_dynamic:app" in ai, "the mounted folder's own main.py is the retired transformer service"
     port = re.search(r"AI_SERVICE_URL=http://ai:(\d+)", api).group(1)
-    assert re.search(rf'"--port", "{port}"', ai) and re.search(rf'"{port}:{port}"', ai)
+    assert re.search(rf'"--port", "{port}"', ai) and re.search(rf'"(127\.0\.0\.1:)?{port}:{port}"', ai)
