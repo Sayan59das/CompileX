@@ -159,9 +159,28 @@ def test_without_docker_the_executor_falls_back_instead_of_failing(monkeypatch):
 
     monkeypatch.setattr(ce, "DOCKER_AVAILABLE", False)
     monkeypatch.setattr(ce, "docker_client", None)
+    monkeypatch.setattr(ce.settings, "DEBUG", True)
     monkeypatch.setattr(ce.CodeExecutor, "_execute_with_subprocess", subprocess_path)
     asyncio.run(ce.code_executor.execute_code("print(1)", "python", []))
     assert used == ["subprocess"]
+
+
+def test_in_production_without_docker_code_is_refused_not_run_on_the_server(monkeypatch):
+    """With DEBUG off, a missing Docker must never turn into running a stranger's code on the web server itself."""
+    used = []
+
+    async def subprocess_path(self, *args, **kwargs):
+        used.append("subprocess")
+        return ce.SubmissionResult(0, 0, 0.0, [], 0)
+
+    monkeypatch.setattr(ce, "DOCKER_AVAILABLE", False)
+    monkeypatch.setattr(ce, "docker_client", None)
+    monkeypatch.setattr(ce.settings, "DEBUG", False)
+    monkeypatch.setattr(ce.CodeExecutor, "_execute_with_subprocess", subprocess_path)
+    tests = [ce.TestCase(input_data="1", expected_output="1"), ce.TestCase(input_data="2", expected_output="2")]
+    result = asyncio.run(ce.code_executor.execute_code("import os; os.system('id')", "python", tests))
+    assert used == [] and result.passed_tests == 0 and result.total_tests == 2
+    assert len(result.results) == 2 and all("unavailable" in r.error for r in result.results)
 
 
 def test_an_unsupported_language_does_not_take_a_slot(monkeypatch):

@@ -520,8 +520,17 @@ class CodeExecutor:
         async with _execution_slots():
             if DOCKER_AVAILABLE and docker_client:
                 return await self._execute_with_docker(code, language, test_cases, function_signature)
-            else:
+            elif settings.DEBUG:
+                # Development only: with no Docker the code runs straight on this machine, with no sandbox at all.
                 return await self._execute_with_subprocess(code, language, test_cases, function_signature)
+            else:
+                # Production (DEBUG off): never run a stranger's code outside a sandbox.
+                print("[Sandbox] Docker is not available and DEBUG is off: refusing to run code without a sandbox")
+                message = "Code execution is temporarily unavailable. Please try again in a few minutes."
+                return SubmissionResult(
+                    total_tests=len(test_cases), passed_tests=0, execution_time_ms=0, score=0,
+                    results=[ExecutionResult(False, False, "", message) for _ in test_cases],
+                )
 
     async def _execute_with_docker(
         self,

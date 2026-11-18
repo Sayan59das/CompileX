@@ -1131,11 +1131,11 @@ export default function Game() {
         setActivePanel('right')
       }
     } catch (err) {
-      if (useCustomInput) {
-        setConsoleOutput([{ error: err.response?.data?.detail || 'Execution failed', index: 0 }])
-        setRightPanelTab('console')
-      }
-    } finally { 
+      // Always say why a run failed (a busy judge answers 429 with a message); before, only runs with custom input showed anything.
+      setConsoleOutput([{ error: err.response?.data?.detail || 'Execution failed', index: 0 }])
+      setRightPanelTab('console')
+      setActivePanel('right')
+    } finally {
       setRunningCustom(false) 
     }
   }

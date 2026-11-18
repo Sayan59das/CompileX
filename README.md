@@ -226,6 +226,20 @@ This starts:
 ### **5. Access Application**
 Open browser: `http://localhost:5173`
 
+### **Putting it online (one Linux server with Docker)**
+
+1. Rent a small Linux server and install Docker with the compose plugin. Open only ports 80/443 (or 5173 and 8000 while testing) in its firewall.
+2. Clone the repo on the server and copy the settings file: `cp .env.example .env`.
+3. Fill in `.env`: a long random `POSTGRES_PASSWORD`, `REDIS_PASSWORD` (letters and digits only) and `SECRET_KEY`
+   (`python -c "import secrets; print(secrets.token_hex(32))"`). The database, Redis and question service listen on the server itself only, and compose
+   refuses to start without `REDIS_PASSWORD`. Leave `DEBUG` unset: with it off, code is never run outside a sandbox.
+4. `docker compose up -d --build`, then `docker compose ps` should show every service running.
+5. Open the site from another device and play a game with a friend: register, join a lobby, submit in each language.
+6. Update later with `git pull` and `docker compose up -d --build`. Back up the `postgres_data` volume.
+
+Known limits (see `docs/scaling-plan.md`): the API container still mounts the Docker socket to run sandboxes, so keep this server for the app only;
+moving code execution to its own machine is Phase 2 of the plan.
+
 ### **6. Explainer videos (optional)**
 
 The landing page's **Learn More** section generates a narrated explainer video
