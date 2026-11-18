@@ -565,10 +565,13 @@ export function createArena(canvas) {
     time: 0, intro: reduce ? 1 : 0, chapter: 0, lastOpacity: -1,
   }
 
+  // The sharpness the scene is drawn at. It starts at 1.25 and only ever goes down, one step at a time, when frames are coming slowly
+  // (see the end of `frame`), so a weak GPU gets a slightly softer picture instead of a stuttering one.
+  let quality = 1.25
   function resize() {
     const w = canvas.clientWidth || window.innerWidth
     const h = canvas.clientHeight || window.innerHeight
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25))
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, quality))
     renderer.setSize(w, h, false)
     camera.aspect = w / h
     // a tall, narrow screen needs the camera further back to keep the machine in view
@@ -601,11 +604,26 @@ export function createArena(canvas) {
   let caret = true
   let lastChapterSwitch = 0
   let matrixT = -1
+  let colourT = -1
+  let frames = 0
+  let slowFrames = 0
   function frame(now) {
     raf = requestAnimationFrame(frame)
     if (document.hidden) { last = now; return }
-    const dt = Math.min(0.05, (now - last) / 1000)
+    const gap = now - last
+    const dt = Math.min(0.05, gap / 1000)
     last = now
+
+    // Adaptive sharpness: after the first second (shaders compiling are always slow), count frames that took over ~28 ms (under 36 fps).
+    // If most of the last 60 were slow, draw fewer pixels from now on.
+    frames++
+    if (frames > 60) {
+      if (gap > 28) slowFrames++
+      if ((frames - 60) % 60 === 0) {
+        if (slowFrames > 30 && quality > 0.8) { quality = Math.max(0.75, quality - 0.25); resize() }
+        slowFrames = 0
+      }
+    }
     if (!reduce) state.time += dt
     const t = state.time
 
@@ -641,7 +659,8 @@ export function createArena(canvas) {
       }
     } else if (typing.done) {
       typing.doneT += dt
-      dirty = true
+      // The result fades in over the first ~1.6 s and then stops changing: redraw the screen only while it moves (it used to be every frame for 5 s)
+      if (typing.doneT < 1.7) dirty = true
       if (typing.doneT > 5.2) { restart((typing.lang + 1) % SNIPPETS.length); dirty = true }
     }
     const nowCaret = Math.floor(t * 2) % 2 === 0
@@ -666,7 +685,8 @@ export function createArena(canvas) {
       if (press[i] > 0) { press[i] = Math.max(0, press[i] - dt * 4.5); anyPressed = true }
     }
     if (anyPressed) placeKeys()
-    colourKeys(t)
+    // the glow wave is slow: recolouring and re-uploading every key's colour 20 times a second looks the same as 60 and costs a third as much
+    if (anyPressed || t - colourT > 1 / 20) { colourKeys(t); colourT = t }
 
     // pose, blended between chapters
     const ci = clamp(state.cs, 0, CHAPTERS - 1)
@@ -699,7 +719,8 @@ export function createArena(canvas) {
     const op = lerp(state.opacities[k0], state.opacities[k1], f)
     if (Math.abs(op - state.lastOpacity) > 0.004) { canvas.style.opacity = op.toFixed(3); state.lastOpacity = op }
 
-    renderer.render(scene, camera)
+    // nobody can see a canvas that is faded out (between chapters the machine is hidden), so do not spend the GPU on it
+    if (op > 0.01) renderer.render(scene, camera)
   }
   raf = requestAnimationFrame(frame)
 

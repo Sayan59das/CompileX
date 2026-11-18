@@ -122,6 +122,20 @@ const MODES = [
   { name: 'Tournament', to: '/tournaments', text: 'Win your bracket.' },
 ]
 
+// The small things: each one is something the product really does today.
+const FEATURES = [
+  { name: 'A locked harness', text: 'The code that reads the input and prints the answer is read-only. You write only the logic.' },
+  { name: 'Hidden tests', text: 'Your code is graded on the server against tests you never see, so there is nothing to read off the page.' },
+  { name: 'Your own input', text: 'Try any input in the Custom tab and see the output before you submit.' },
+  { name: 'Complexity, read from your code', text: 'One click shows the time and space cost of what you wrote.' },
+  { name: 'A coach that starts from the failure', text: 'Ask why it is wrong and the hint is built from the failing input, the expected output and what you printed.' },
+  { name: 'Pictures for graphs and trees', text: 'Graph and tree problems come with a drawing made from the problem’s own data.' },
+  { name: 'Maths that reads like maths', text: 'Formulas in a problem are typeset, not squeezed into plain text.' },
+  { name: 'No repeats', text: 'A problem you have already seen is not served to you again.' },
+  { name: 'Syllabus in, topics out', text: 'Upload a syllabus and your practice set is built from its topics.' },
+  { name: 'Watch your rival type', text: 'In a match, each rival’s typing and passing tests update live beside yours.' },
+]
+
 // ── the match, played by scrolling ─────────────────────────────────────────
 function MatchSection() {
   const ref = useRef(null)
@@ -394,6 +408,26 @@ export default function Landing() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── 3b. The small things ─────────────────────────────────────────── */}
+      <section id="details" className="relative z-10 py-14 md:py-20">
+        <div className="mx-auto max-w-[1280px] px-5 md:px-8">
+          <div className="lg:w-[57%]">
+            <h2 data-reveal className="display text-[clamp(2.1rem,4.2vw,3.7rem)]">And the <span className="text-arc">small things.</span></h2>
+            <p data-reveal style={{ '--d': '0.06s' }} className="mt-4 max-w-md text-[19px] leading-relaxed text-slate-300">
+              Nothing here is the headline. It is what keeps a match fair and practice honest.
+            </p>
+            <dl className="mt-10">
+              {FEATURES.map((f, i) => (
+                <div key={f.name} data-reveal style={{ '--d': `${(i % 3) * 0.06}s` }} className="fx-row">
+                  <dt className="font-display text-[19px] font-semibold leading-snug tracking-tight text-white">{f.name}</dt>
+                  <dd className="text-[17px] leading-snug text-slate-400">{f.text}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
         </div>
       </section>

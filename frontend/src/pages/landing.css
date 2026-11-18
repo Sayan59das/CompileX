@@ -92,3 +92,10 @@
 .lp-mode .arrow { transition: transform 0.45s var(--ease), color 0.3s; }
 .lp-mode:hover .arrow { transform: translateX(6px); color: var(--arc); }
 .lp-panel:hover { border-color: rgba(61, 224, 255, 0.4); }
+
+/* ── the small things: ruled rows, the name on the left and one line on the right ───────────────── */
+.fx-row { display: grid; grid-template-columns: minmax(0, 14rem) minmax(0, 1fr); gap: 6px 32px; padding: 22px 0; border-top: 1px solid var(--border); }
+.fx-row:last-child { border-bottom: 1px solid var(--border); }
+.fx-row dt { transition: color 0.3s; }
+.fx-row:hover dt { color: var(--arc); }
+@media (max-width: 640px) { .fx-row { grid-template-columns: minmax(0, 1fr); padding: 18px 0; } }
