@@ -16,6 +16,7 @@ import contextlib
 import functools
 import io
 import itertools
+import json
 import math
 import os
 import random
@@ -89,11 +90,30 @@ def test_no_bank_holds_a_question_that_cannot_be_played_fairly():
     assert [x["title"] for x in held if quality.disqualify(x)] == []
 
 
-def test_the_reviewed_bank_serves_no_test_twice():
-    reviewed_bank.reload()
-    repeated = [x["title"] for bucket in reviewed_bank._store.values() for x in bucket
-                if len({str(c["input"]) for c in x["test_cases"]}) != len(x["test_cases"])]
-    assert repeated == [] and sum(len(b) for b in reviewed_bank._store.values()) >= 100
+def test_the_reviewed_bank_serves_no_test_twice(tmp_path):
+    # A reviewed question that stored a test twice: the loader keeps the first of each input, so it is served with three tests.
+    record = {
+        "title": "Echo The Count", "problem_statement": "Return n.", "input_format": "One line: the integer n.",
+        "output_format": "The integer n.", "sample_input": "1", "sample_output": "1",
+        "test_cases": [{"input": "1", "output": "1"}, {"input": "2", "output": "2"}, {"input": "2", "output": "2"}, {"input": "3", "output": "3"}],
+        "topic": "arrays", "difficulty": "easy", "function_name": "echo", "parameters": [{"name": "n", "type": "int"}],
+        "return_type": "int", "starter_code": {lang: "write the logic here" for lang in ("python", "cpp", "java", "javascript")},
+    }
+    bank = tmp_path / "reviewed_bank.jsonl"
+    bank.write_text(json.dumps(record) + "\n", encoding="utf-8")
+    try:
+        reviewed_bank.reload(str(bank))
+        [served] = [x for bucket in reviewed_bank._store.values() for x in bucket]
+        assert [c["input"] for c in served["test_cases"]] == ["1", "2", "3"]
+        # The real bank is kept out of the repository (it is listed in .git/info/exclude), so CI and a fresh clone have none.
+        # Where this checkout has it, every question in it is checked as well.
+        if os.path.exists(reviewed_bank._PATH):
+            reviewed_bank.reload()
+            repeated = [x["title"] for bucket in reviewed_bank._store.values() for x in bucket
+                        if len({str(c["input"]) for c in x["test_cases"]}) != len(x["test_cases"])]
+            assert repeated == [] and sum(len(b) for b in reviewed_bank._store.values()) >= 100
+    finally:
+        reviewed_bank.reload()   # leave the module loaded from its own file, as the other tests expect
 
 
 # ── a collected question keeps its own words about its input ────────────────────────────────────────────────────────────────

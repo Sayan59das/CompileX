@@ -5,10 +5,13 @@ and carries on through the other. It is a script, not a pytest file: it starts s
 
     REDIS_URL=redis://localhost:6379/14 python tests/two_process_check.py        (from the backend folder)
 
-It needs a Redis it may fill with test keys: give it a database nobody else uses. Exit status 0 means every check passed.
+It needs a Redis database it may empty: it clears the one in REDIS_URL before it starts (lobby and player numbers restart with
+each run's fresh database, so keys left by an earlier run would be read as this run's), and it refuses database 0. Exit status 0
+means every check passed.
 """
 
 import asyncio
+import json
 import os
 import secrets
 import signal
@@ -17,6 +20,7 @@ import sys
 import tempfile
 import time
 
+import redis
 import requests
 import socketio
 
@@ -81,6 +85,22 @@ def sign_in(base, name):
     return body["access_token"]
 
 
+def user_id(base, token):
+    r = requests.get(base + "/api/v1/users/me", headers={"Authorization": f"Bearer {token}"}, timeout=10)
+    return r.json()["id"]
+
+
+def grade(uid, question_id, score):
+    """Record a graded score the way /submissions does after it grades a solution. A socket's score_update takes the points from
+    this record, never from the message (lobby_manager.record_graded_score), and this check runs no judge, so it writes the
+    record itself, into the same Redis both processes use."""
+    store = redis.Redis.from_url(REDIS_URL, decode_responses=True)
+    key = f"pendingscore:{uid}"
+    items = json.loads(store.get(key) or "[]")
+    items.append({"q": question_id, "s": int(score)})
+    store.set(key, json.dumps(items), ex=3600)
+
+
 async def next_event(client, wanted, timeout=5):
     """The next event of this name (other events that arrive first are skipped)."""
     end = time.time() + timeout
@@ -89,6 +109,13 @@ async def next_event(client, wanted, timeout=5):
         if event[0] == wanted:
             return event[1] if len(event) > 1 else None
     raise AssertionError(f"no {wanted} event within {timeout} seconds")
+
+
+def empty_the_test_database():
+    store = redis.Redis.from_url(REDIS_URL)
+    if int(store.connection_pool.connection_kwargs.get("db", 0)) == 0:
+        sys.exit("REDIS_URL names database 0: give this check a spare database it may empty, for example redis://localhost:6379/14")
+    store.flushdb()
 
 
 async def play():
@@ -106,9 +133,11 @@ async def play():
     check("process B finds the lobby A created, by its code", status == 200 and seen_by_b["code"] == code)
 
     print("\n  -- one socket on each process")
+    host_id, guest_id = user_id(A, host_token), user_id(B, guest_token)
     on_a, on_b = socketio.AsyncSimpleClient(), socketio.AsyncSimpleClient()
-    await on_a.connect(A, transports=["websocket"], wait_timeout=10)
-    await on_b.connect(B, transports=["websocket"], wait_timeout=10)
+    # a socket must carry its sign-in token when it connects (services/socket_auth.py)
+    await on_a.connect(A, auth={"token": host_token}, transports=["websocket"], wait_timeout=10)
+    await on_b.connect(B, auth={"token": guest_token}, transports=["websocket"], wait_timeout=10)
     check("host is connected to A and guest to B", on_a.connected and on_b.connected)
 
     join = lambda player, name: {"lobby_id": lobby_id, "player_id": player["player_id"], "user_id": player["player_id"], "username": name}
@@ -126,11 +155,13 @@ async def play():
     check("host receives game_started", (await next_event(on_a, "game_started"))["time_limit"] == 600)
     check("guest, on B, receives game_started that A sent", (await next_event(on_b, "game_started"))["time_limit"] == 600)
 
-    await on_b.emit("score_update", {"lobby_id": lobby_id, "player_id": guest_player["player_id"], "score": 70})
+    grade(guest_id, 1, 70)
+    await on_b.emit("score_update", {"lobby_id": lobby_id})
     board_on_a = (await next_event(on_a, "leaderboard_update"))["leaderboard"]
-    check("host, on A, sees the score the guest sent to B", board_on_a[0]["username"] == guest and board_on_a[0]["score"] == 70, str(board_on_a[0]))
+    check("host, on A, sees the score graded for the guest's submission through B", board_on_a[0]["username"] == guest and board_on_a[0]["score"] == 70, str(board_on_a[0]))
     await next_event(on_b, "leaderboard_update")
-    await on_a.emit("score_update", {"lobby_id": lobby_id, "player_id": host_player["player_id"], "score": 30})
+    grade(host_id, 1, 30)
+    await on_a.emit("score_update", {"lobby_id": lobby_id})
     await next_event(on_a, "leaderboard_update")
     http_board, _ = get(A, f"/api/v1/lobbies/{lobby_id}/leaderboard")
     check("the HTTP leaderboard on A shows both scores, one sent through each process", [e["score"] for e in http_board["leaderboard"]] == [70, 30])
@@ -154,12 +185,13 @@ async def play():
 
     print("\n  -- the host reconnects, to B, and the game goes on")
     on_a2 = socketio.AsyncSimpleClient()
-    await on_a2.connect(B, transports=["websocket"], wait_timeout=10)
+    await on_a2.connect(B, auth={"token": host_token}, transports=["websocket"], wait_timeout=10)
     await on_a2.emit("join_lobby", join(host_player, host))
     state = await next_event(on_a2, "lobby_state")
     mine = next(p for p in state["players"] if p["username"] == host)
     check("the host's score survived the crash of the process they were on", mine["score"] == 30 and state["player_count"] == 2)
-    await on_b.emit("score_update", {"lobby_id": lobby_id, "player_id": guest_player["player_id"], "score": 5})
+    grade(guest_id, 2, 5)                                            # a second question: its 5 points add to the 70
+    await on_b.emit("score_update", {"lobby_id": lobby_id})
     board = (await next_event(on_a2, "leaderboard_update"))["leaderboard"]
     check("an update from the guest reaches the host's new socket", board[0]["score"] == 75)
     await on_a2.emit("end_game", {"lobby_id": lobby_id})
@@ -171,6 +203,7 @@ async def play():
 
 
 def main():
+    empty_the_test_database()
     start("A", PORT_A)
     start("B", PORT_B)
     try:

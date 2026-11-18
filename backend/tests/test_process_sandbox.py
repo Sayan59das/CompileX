@@ -107,7 +107,7 @@ def no_docker(monkeypatch):
     monkeypatch.setattr(ce.settings, "JUDGE_URL", "")
 
 
-def tests_for():
+def cases_for():
     return [ce.TestCase(input_data="1", expected_output="1")]
 
 
@@ -125,7 +125,7 @@ def test_process_mode_without_docker_uses_the_process_sandbox_and_never_the_unsa
     monkeypatch.setattr(ce.settings, "DEBUG", True)             # even in development the sandbox wins when it is configured
     monkeypatch.setattr(ce.CodeExecutor, "_execute_in_process_sandbox", sandboxed)
     monkeypatch.setattr(ce.CodeExecutor, "_execute_with_subprocess", unsandboxed)
-    asyncio.run(ce.code_executor.execute_code("print(1)", "python", tests_for()))
+    asyncio.run(ce.code_executor.execute_code("print(1)", "python", cases_for()))
     assert used == ["sandbox"]
 
 
@@ -138,7 +138,7 @@ def test_production_without_docker_and_without_the_sandbox_still_refuses(no_dock
 
     monkeypatch.setattr(ce.CodeExecutor, "_execute_in_process_sandbox", never)
     monkeypatch.setattr(ce.CodeExecutor, "_execute_with_subprocess", never)
-    result = asyncio.run(ce.code_executor.execute_code("print(1)", "python", tests_for()))
+    result = asyncio.run(ce.code_executor.execute_code("print(1)", "python", cases_for()))
     assert result.passed_tests == 0 and "unavailable" in result.results[0].error
 
 
@@ -150,7 +150,7 @@ def test_when_the_sandbox_self_check_fails_nothing_runs(no_docker, monkeypatch):
         raise AssertionError("a program was started")
 
     monkeypatch.setattr(ps, "Sandbox", boom)
-    result = asyncio.run(ce.code_executor.execute_code("print(1)", "python", tests_for()))
+    result = asyncio.run(ce.code_executor.execute_code("print(1)", "python", cases_for()))
     assert result.passed_tests == 0 and result.total_tests == 1 and "unavailable" in result.results[0].error
 
 
@@ -190,6 +190,10 @@ def test_the_judge_in_process_mode_reports_its_mode_and_refuses_to_run_without_a
     monkeypatch.setenv("JUDGE_TOKEN", TOKEN)
     monkeypatch.setattr(ce.settings, "SANDBOX_MODE", "process")
     monkeypatch.setattr(ps, "check", lambda force=False: (False, "probe failed"))
+    # The health report's "docker" field is a fact about the machine; fix it here, or the test depends on where it runs (GitHub's
+    # runners have a Docker daemon, a laptop or a test container may not).
+    monkeypatch.setattr(ce, "DOCKER_AVAILABLE", False)
+    monkeypatch.setattr(ce, "docker_client", None)
     ran = []
 
     async def fake(self, *a, **k):
@@ -204,6 +208,10 @@ def test_the_judge_in_process_mode_reports_its_mode_and_refuses_to_run_without_a
         monkeypatch.setattr(ps, "check", lambda force=False: (True, ""))
         assert client.get("/health").json() == {"status": "ok", "mode": "process", "sandbox": True, "docker": False}
         assert client.post("/run", json=body, headers={"X-Judge-Token": TOKEN}).status_code == 200
+        # on a machine with Docker the report says so, and the mode stays the one configured
+        monkeypatch.setattr(ce, "DOCKER_AVAILABLE", True)
+        monkeypatch.setattr(ce, "docker_client", object())
+        assert client.get("/health").json() == {"status": "ok", "mode": "process", "sandbox": True, "docker": True}
     assert ran == [1]
 
 

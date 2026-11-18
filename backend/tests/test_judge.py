@@ -148,12 +148,12 @@ def remote(monkeypatch):
     return state
 
 
-def tests_for(n=2):
+def cases_for(n=2):
     return [ce.TestCase(input_data=str(i), expected_output=str(i)) for i in range(n)]
 
 
 def run_remote(**kw):
-    return asyncio.run(ce.code_executor.execute_code("print(1)", "python", tests_for(), **kw))
+    return asyncio.run(ce.code_executor.execute_code("print(1)", "python", cases_for(), **kw))
 
 
 def test_the_client_sends_the_program_and_the_token_and_maps_the_verdicts_back(remote):
@@ -206,7 +206,7 @@ def test_an_unreachable_or_slow_judge_gives_unavailable(remote):
 
 def test_an_unsupported_language_never_reaches_the_judge(remote):
     remote["handler"] = lambda req: httpx.Response(200, json={})
-    result = asyncio.run(ce.code_executor.execute_code("x", "brainfuck", tests_for()))
+    result = asyncio.run(ce.code_executor.execute_code("x", "brainfuck", cases_for()))
     assert remote["requests"] == [] and result.passed_tests == 0
 
 

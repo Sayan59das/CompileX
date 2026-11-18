@@ -37,6 +37,21 @@ from test_auth_security import add_user, db, fresh_limits, read_user, run, login
 SMTP_USER, SMTP_PASSWORD = "mailer@example.com", "an-app-password"
 
 
+async def start_tls(writer, context):
+    """Upgrade a server-side stream to TLS. StreamWriter.start_tls arrived in Python 3.11 and CI runs 3.10, so on 3.10 this does
+    what 3.11's method does: hand the connection to the loop's start_tls, then point the writer and its protocol at the TLS
+    transport it returns (the protocol keeps feeding the same reader, now with decrypted data)."""
+    if hasattr(writer, "start_tls"):
+        await writer.start_tls(context)
+        return
+    await writer.drain()
+    protocol = writer._protocol
+    transport = await asyncio.get_running_loop().start_tls(writer.transport, protocol, context, server_side=True)
+    writer._transport = transport
+    protocol._transport = transport
+    protocol._over_ssl = True
+
+
 class MiniSMTP:
     """A small SMTP server on 127.0.0.1 that requires STARTTLS and AUTH before it accepts a message."""
 
@@ -88,7 +103,7 @@ class MiniSMTP:
                     await say("250 8BITMIME")
                 elif word == "STARTTLS":
                     await say("220 go ahead")
-                    await writer.start_tls(self.context)
+                    await start_tls(writer, self.context)
                     tls = True
                 elif word.startswith("AUTH PLAIN"):
                     if not tls:
