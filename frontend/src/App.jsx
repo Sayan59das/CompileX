@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import SmoothScroll from './components/SmoothScroll'
 import { SceneBackdrop } from './components/CoderScene'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import PageLoader from './components/PageLoader'
 
 // Each page is its own file that the browser downloads only when the page is opened, so the first visit loads a small
 // start-up bundle instead of every page and library at once. The loaders are named so they can also be started early (see PREFETCH).
@@ -65,8 +66,8 @@ function usePrefetch(pathname) {
   }, [pathname])
 }
 
-// Shown for the instant a page's file is still arriving: the same black as the page, so nothing flashes.
-const PageWait = <div style={{ minHeight: '100vh', background: 'var(--bg, #000)' }} aria-busy="true" />
+// Shown while a page's file is still arriving: the branded loading screen, the same one index.html paints before the app starts.
+const PageWait = <PageLoader />
 
 function Protected({ children }) {
   const { user } = useAuth()

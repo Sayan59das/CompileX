@@ -4,14 +4,46 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CompileX</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="theme-color" content="#000000" />
-    <style>html,body{background:#000}</style>
+    <style>
+      html, body { background: #000; margin: 0; }
+
+      /* The loading screen. It lives in this file so it paints the instant the page opens, before any script has downloaded; the app's
+         page-loading fallback (src/components/PageLoader.jsx) uses the same markup and these same classes, so there is no flicker between them. */
+      .cx-loader { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px; background: #000; }
+      .cx-loader-mark { display: block; animation: cx-in 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.08s backwards; }
+      .cx-loader-mark path { stroke-dasharray: 1; stroke-dashoffset: 1; animation: cx-draw 1.9s cubic-bezier(0.16, 1, 0.3, 1) infinite; }
+      .cx-loader-mark .cx-b2 { animation-delay: 0.16s; }
+      .cx-loader-bar { position: relative; width: 96px; height: 2px; border-radius: 2px; overflow: hidden; background: rgba(255, 255, 255, 0.08); }
+      .cx-loader-bar::after { content: ""; position: absolute; top: 0; left: 0; height: 100%; width: 40%; border-radius: 2px; background: linear-gradient(90deg, #3DE0FF, #9B7BFF); animation: cx-sweep 1.25s ease-in-out infinite; }
+      .cx-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      @keyframes cx-in { from { opacity: 0; transform: translateY(6px); } }
+      @keyframes cx-draw { 0% { stroke-dashoffset: 1; opacity: 1; } 42%, 78% { stroke-dashoffset: 0; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
+      @keyframes cx-sweep { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+      @media (prefers-reduced-motion: reduce) {
+        .cx-loader-mark, .cx-loader-mark path, .cx-loader-bar::after { animation: none; }
+        .cx-loader-mark path { stroke-dashoffset: 0; }
+      }
+    </style>
     <!-- The code editor (Monaco) downloads its files from this CDN the first time it opens: start the connection early. -->
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
   </head>
   <body>
-    <div id="root"></div>
+    <!-- React replaces everything inside #root when the app starts, which also removes this loading screen. -->
+    <div id="root">
+      <div class="cx-loader" role="status" aria-live="polite">
+        <svg class="cx-loader-mark" width="64" height="64" viewBox="0 0 40 40" aria-hidden="true">
+          <rect width="40" height="40" rx="10" fill="#0A0A0A" />
+          <rect x="0.5" y="0.5" width="39" height="39" rx="9.5" fill="none" stroke="rgba(255,255,255,0.28)" />
+          <path class="cx-b1" pathLength="1" d="M17 11 8 20l9 9" fill="none" stroke="#3DE0FF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" />
+          <path class="cx-b2" pathLength="1" d="M23 11l9 9-9 9" fill="none" stroke="#9B7BFF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span class="cx-loader-bar" aria-hidden="true"></span>
+        <span class="cx-sr">Loading CompileX</span>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
