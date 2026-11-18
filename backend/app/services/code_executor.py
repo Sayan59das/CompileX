@@ -2,6 +2,7 @@ import asyncio
 import os
 import tempfile
 import subprocess
+import time
 import weakref
 from dataclasses import dataclass
 from datetime import datetime
@@ -10,6 +11,11 @@ from typing import List, Optional
 from app.core.config import get_settings
 
 settings = get_settings()
+
+# Waking a sleeping judge (see CodeExecutor.wake_judge): at most one ping per minute, and the running tasks are kept so they are not collected early.
+WAKE_INTERVAL_SECONDS = 60
+_last_wake = -WAKE_INTERVAL_SECONDS
+_wake_tasks: set = set()
 
 # One semaphore per event loop (a semaphore is bound to the loop that first has to wait on it, and tests start a new loop per run).
 _slots_by_loop: "weakref.WeakKeyDictionary" = weakref.WeakKeyDictionary()
@@ -550,6 +556,30 @@ class CodeExecutor:
                     total_tests=len(test_cases), passed_tests=0, execution_time_ms=0, score=0,
                     results=[ExecutionResult(False, False, "", message) for _ in test_cases],
                 )
+
+    def wake_judge(self) -> None:
+        """Start the judge's health check in the background so a sleeping (free-plan) judge is awake by the time the player presses Run.
+
+        Costs one tiny request, at most once a minute per process, and nothing when no judge is configured. It never waits and never raises."""
+        global _last_wake
+        if not settings.JUDGE_URL:
+            return
+        now = time.monotonic()
+        if now - _last_wake < WAKE_INTERVAL_SECONDS:
+            return
+        _last_wake = now
+        task = asyncio.get_running_loop().create_task(self._ping_judge())
+        _wake_tasks.add(task)
+        task.add_done_callback(_wake_tasks.discard)
+
+    async def _ping_judge(self) -> None:
+        try:
+            import httpx
+
+            async with httpx.AsyncClient(timeout=100) as client:       # a sleeping free-plan service takes about a minute to start
+                await client.get(f"{settings.JUDGE_URL.rstrip('/')}/health")
+        except Exception as e:
+            print(f"[Judge] wake-up ping failed: {type(e).__name__}")
 
     async def _execute_remotely(
         self,

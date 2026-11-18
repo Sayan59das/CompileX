@@ -1031,6 +1031,7 @@ async def _lobby_audience(db: AsyncSession, current_user: User, lobby_id: Option
 
 async def _issue_question(db: AsyncSession, user_id: int, data: dict) -> dict:
     """Keep a generated question whole on the server and return the browser's public copy of it (hidden tests blanked)."""
+    code_executor.wake_judge()       # the player will probably press Run soon; a sleeping judge needs about a minute to start
     now = time.time()
     await db.execute(delete(IssuedQuestion).where(IssuedQuestion.issued_at < now - hidden_tests.TTL_SECONDS))
     ref = secrets.token_urlsafe(16)

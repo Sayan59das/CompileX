@@ -210,6 +210,48 @@ def test_an_unsupported_language_never_reaches_the_judge(remote):
     assert remote["requests"] == [] and result.passed_tests == 0
 
 
+# ── waking a sleeping judge ─────────────────────────────────────────────────
+
+
+def wake_and_wait(n=1):
+    async def go():
+        for _ in range(n):
+            ce.code_executor.wake_judge()
+        while ce._wake_tasks:
+            await asyncio.gather(*list(ce._wake_tasks))
+
+    asyncio.run(go())
+
+
+def test_issuing_questions_wakes_the_judge_once_a_minute_with_a_health_request_and_no_token(remote, monkeypatch):
+    monkeypatch.setattr(ce, "_last_wake", -ce.WAKE_INTERVAL_SECONDS)
+    remote["handler"] = lambda req: httpx.Response(200, json={"status": "ok"})
+    wake_and_wait(n=5)
+    assert [(r.method, str(r.url)) for r in remote["requests"]] == [("GET", "https://judge.example.com/health")]
+    assert "x-judge-token" not in remote["requests"][0].headers
+
+
+def test_waking_does_nothing_without_a_judge_and_never_raises_when_the_judge_is_down(remote, monkeypatch):
+    monkeypatch.setattr(ce, "_last_wake", -ce.WAKE_INTERVAL_SECONDS)
+
+    def down(req):
+        raise httpx.ConnectError("asleep")
+
+    remote["handler"] = down
+    wake_and_wait()                                            # the failure is swallowed
+    monkeypatch.setattr(ce, "_last_wake", -ce.WAKE_INTERVAL_SECONDS)
+    monkeypatch.setattr(ce.settings, "JUDGE_URL", "")
+    before = len(remote["requests"])
+    wake_and_wait()
+    assert len(remote["requests"]) == before
+
+
+def test_every_question_issued_wakes_the_judge():
+    text = open(os.path.join(ROOT, "backend", "app", "api", "v1", "routes.py"), encoding="utf-8").read()
+    body = text.split("async def _issue_question", 1)[1].split("\nasync def ", 1)[0].split("\n@router", 1)[0]
+    assert "code_executor.wake_judge()" in body
+
+
 # ── the deployment file ─────────────────────────────────────────────────────
 
 COMPOSE = yaml.safe_load(open(os.path.join(ROOT, "docker-compose.yml"), encoding="utf-8"))
