@@ -22,7 +22,12 @@
          Timeline: the closed brackets fade in (0 to 0.6 s), open (0.6 to 1.7 s), and the name rises (1.25 to 2.05 s); main.jsx then
          holds the finished mark and fades it all out. */
       .cx-loader { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #000; }
-      #cx-splash { position: fixed; inset: 0; z-index: 9999; transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1); }
+      #cx-splash { position: fixed; inset: 0; z-index: 9999; background: transparent; transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1); }
+      /* the black is its own layer, so it can fade on its own while the mark flies to its place in the top bar (main.jsx); it lifts
+         mostly in the second half of the flight, so the name crosses a dark page and the page appears as the mark lands */
+      #cx-splash::before { content: ""; position: absolute; inset: 0; background: #000; transition: opacity 0.85s cubic-bezier(0.5, 0, 0.75, 0) 0.1s; }
+      #cx-splash.cx-flying::before { opacity: 0; }
+      #cx-splash.cx-flying { pointer-events: none; }
       #cx-splash.cx-gone { opacity: 0; pointer-events: none; }
       #cx-splash.cx-gone .cx-open { transform: scale(1.03); }
       .cx-open { --b: 28px; position: relative; display: inline-flex; align-items: center; padding: 0 calc(var(--b) + 8px); font: 700 36px/1 "CX Splash", "Segoe UI", system-ui, sans-serif;
@@ -34,7 +39,7 @@
       .cx-half svg { display: block; width: var(--b); height: calc(var(--b) * 1.69); overflow: visible; }
       .cx-open path { fill: none; stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round; }
       /* the name waits until the brackets have nearly cleared it, then rises, so they never slide across visible letters */
-      .cx-word { letter-spacing: -0.01em; color: #fff; white-space: nowrap; animation: cx-word 0.8s 1.25s cubic-bezier(0.33, 1, 0.68, 1) backwards; }
+      .cx-word { letter-spacing: -0.04em; color: #fff; white-space: nowrap; animation: cx-word 0.8s 1.25s cubic-bezier(0.33, 1, 0.68, 1) backwards; }
       .cx-x { color: #3DE0FF; }
       .cx-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
       @keyframes cx-arrive { from { opacity: 0; transform: scale(0.92); } }
