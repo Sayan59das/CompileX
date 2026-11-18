@@ -54,7 +54,7 @@ jobs:
         working-directory: backend
         run: |
           pip install pytest
-          pytest tests/test_scaling_phase0.py tests/test_judge.py tests/test_sandbox_hardening.py -q
+          pytest tests/test_scaling_phase0.py tests/test_judge.py tests/test_sandbox_hardening.py tests/test_function_harness.py -q
       - name: Shared state (lobbies, limits, locks)
         # Every scenario runs against the in-process stand-in and against the real Redis above, so the two cannot drift apart.
         working-directory: backend

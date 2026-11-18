@@ -345,12 +345,15 @@ int main() {{
             param_type = param.get("type", "int")
             
             if _is_collection_type(param_type):
-                harness += f"""    string line;
-    getline(cin, line);
-    istringstream iss(line);
-    vector<int> {param_name};
-    int num;
-    while(iss >> num) {param_name}.push_back(num);
+                skip = "    cin >> ws;\n" if i > 0 else ""
+                harness += f"""{skip}    vector<int> {param_name};
+    {{
+        string line_{i};
+        getline(cin, line_{i});
+        istringstream iss_{i}(line_{i});
+        int num_{i};
+        while(iss_{i} >> num_{i}) {param_name}.push_back(num_{i});
+    }}
 """
             elif "float" in param_type.lower() or "double" in param_type.lower():
                 harness += f"    double {param_name};\n    cin >> {param_name};\n"
@@ -428,7 +431,9 @@ let lineIdx = 0;
             param_name = param.get("name", f"arg{i}")
             param_type = param.get("type", "int")
             
-            if "int" in param_type.lower() or "number" in param_type.lower():
+            if _is_collection_type(param_type):
+                harness += f"const {param_name} = lines[lineIdx++].split(' ').filter(Boolean).map(Number);\n"
+            elif "int" in param_type.lower() or "number" in param_type.lower():
                 harness += f"const {param_name} = parseInt(lines[lineIdx++]);\n"
             elif "float" in param_type.lower() or "double" in param_type.lower():
                 harness += f"const {param_name} = parseFloat(lines[lineIdx++]);\n"
@@ -606,6 +611,8 @@ class CodeExecutor:
         if not has_own_io and function_signature and function_signature.get("parameters"):
             print(f"[Executor] Using function-based harness with {len(function_signature['parameters'])} parameters")
             code_with_harness = generate_test_harness(code_with_imports, lang, function_signature)
+            if lang == "java":
+                config = {**config, "classname": "Main"}   # the harness's `class Main` has the main method
         else:
             print(f"[Executor] Using stdin/stdout execution (code has own I/O)")
             code_with_harness = code_with_imports
@@ -812,6 +819,8 @@ class CodeExecutor:
         if not has_own_io and function_signature and function_signature.get("parameters"):
             print(f"[Executor] Using function-based harness with {len(function_signature['parameters'])} parameters")
             code_with_harness = generate_test_harness(code_with_imports, lang, function_signature)
+            if lang == "java":
+                config = {**config, "classname": "Main"}   # the harness's `class Main` has the main method
         else:
             print(f"[Executor] Using stdin/stdout execution (code has own I/O)")
             code_with_harness = code_with_imports
