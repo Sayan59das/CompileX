@@ -25,9 +25,12 @@
       #cx-splash { position: fixed; inset: 0; z-index: 9999; background: transparent; transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1); }
       /* the black is its own layer, so it can fade on its own while the mark flies to its place in the top bar (main.jsx); it lifts
          mostly in the second half of the flight, so the name crosses a dark page and the page appears as the mark lands */
-      #cx-splash::before { content: ""; position: absolute; inset: 0; background: #000; transition: opacity 0.85s cubic-bezier(0.5, 0, 0.75, 0) 0.1s; }
+      #cx-splash::before { content: ""; position: absolute; inset: 0; background: #000; transition: opacity 1.2s cubic-bezier(0.5, 0, 0.75, 0) 0.15s; }
       #cx-splash.cx-flying::before { opacity: 0; }
       #cx-splash.cx-flying { pointer-events: none; }
+      /* set a frame before the flight: each moving piece gets its own compositor layer, so the browser moves it without repainting */
+      #cx-splash.cx-prep .cx-word, #cx-splash.cx-prep .cx-half svg { will-change: transform; backface-visibility: hidden; }
+      #cx-splash.cx-prep::before { will-change: opacity; }
       #cx-splash.cx-gone { opacity: 0; pointer-events: none; }
       #cx-splash.cx-gone .cx-open { transform: scale(1.03); }
       .cx-open { --b: 28px; position: relative; display: inline-flex; align-items: center; padding: 0 calc(var(--b) + 8px); font: 700 36px/1 "CX Splash", "Segoe UI", system-ui, sans-serif;

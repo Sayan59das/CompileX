@@ -13,7 +13,7 @@ import './index.css'
 // brackets onto the brackets of its logo, and the real logo takes over where they land. Where there is no logo in view, or with
 // reduced motion, the splash simply fades. If the app never gets that far, it goes after 8 s anyway, so it never hides the page.
 const SPLASH_MIN_MS = 2600
-const FLY_MS = 950
+const FLY_MS = 1400
 let splashGone = false
 
 // The site's own logo and name near the top of the screen (components/Logo.jsx marks them), or null.
@@ -56,13 +56,14 @@ function flyHome(splash) {
   }
   // keyframes along the path (a straight line, or an arc for a piece that lifts), all measured before anything moves
   const frames = ({ dx, dy, s, lift }) => {
-    const steps = lift ? 12 : 1
+    const steps = lift ? 48 : 1                                   // enough points that the arc is a curve, not a polyline
     return Array.from({ length: steps + 1 }, (_, i) => {
       const t = i / steps
       return { offset: t, transform: `translate(${dx * t}px, ${dy * t - lift * Math.sin(Math.PI * t)}px) scale(${1 + (s - 1) * t})` }
     })
   }
-  const ease = { duration: FLY_MS, easing: 'cubic-bezier(0.65, 0, 0.35, 1)', fill: 'forwards' }
+  // a soft start, a long gentle settle (the pieces slow into place rather than stopping short)
+  const ease = { duration: FLY_MS, easing: 'cubic-bezier(0.45, 0, 0.1, 1)', fill: 'forwards' }
   const paths = flights.map((f) => [f.el, frames(f)])
 
   target.brand.style.opacity = '0'                                // the real mark waits, hidden, under the flying one
@@ -73,12 +74,13 @@ function flyHome(splash) {
   }
   if (!target.word) word.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FLY_MS * 0.6, fill: 'forwards' })
 
-  // landed: the real logo (with its square) fades in over the flown pieces, which fade out on top of it, then the splash goes
+  // landed: the real logo (with its square) fades in while the flown pieces fade out over it, so the hand-off is a cross-fade, then
+  // the splash goes
   setTimeout(() => {
-    target.brand.style.transition = 'opacity 0.3s ease'
+    target.brand.style.transition = 'opacity 0.45s ease'
     target.brand.style.opacity = ''
-    splash.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' })
-    setTimeout(() => { splash.remove(); target.brand.style.transition = '' }, 340)
+    splash.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, easing: 'ease', fill: 'forwards' })
+    setTimeout(() => { splash.remove(); target.brand.style.transition = '' }, 500)
   }, FLY_MS)
   return true
 }
@@ -88,12 +90,17 @@ window.__cxPageReady = () => {
   if (!splash || splashGone) return
   splashGone = true
   setTimeout(() => {
-    let flew = false
-    try { flew = flyHome(splash) } catch { flew = false }
-    if (!flew) {
-      splash.classList.add('cx-gone')
-      setTimeout(() => splash.remove(), 900)
-    }
+    // Give the pieces their own layers one frame before they move, and start on a quiet frame: the page has just mounted and is
+    // busy (the 3D scene, fonts), and starting in the middle of that is what makes the first moment of a flight stutter.
+    splash.classList.add('cx-prep')
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      let flew = false
+      try { flew = flyHome(splash) } catch { flew = false }
+      if (!flew) {
+        splash.classList.add('cx-gone')
+        setTimeout(() => splash.remove(), 900)
+      }
+    }))
   }, Math.max(0, SPLASH_MIN_MS - performance.now()))
 }
 setTimeout(() => window.__cxPageReady(), 8000)
