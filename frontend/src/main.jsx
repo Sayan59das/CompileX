@@ -33,10 +33,12 @@ function flyHome(splash) {
   const word = splash.querySelector('.cx-word')
   const left = splash.querySelector('.cx-l svg')
   const right = splash.querySelector('.cx-r svg')
-  if (!target || !word || !left || !right || !word.animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false
+  const slash = splash.querySelector('.cx-slash')               // the wrapper: it carries the fade-out the flight overrides
+  if (!target || !word || !left || !right || !slash || !word.animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false
 
   // where each piece lands: the name on the top bar's name (scaled by font size), and each bracket on the matching bracket of the
-  // logo, whose drawing (viewBox 0 0 40 40) holds the left bracket in x 6..19, y 9..31 and the right one in x 21..34
+  // logo, whose drawing (viewBox 0 0 40 40) holds the left bracket in x 4..16, y 10..30, the slash in x 16..24, y 8..32 and the
+  // right bracket in x 24..36 (the same boxes the loading screen's pieces are drawn in)
   const L = target.logo.getBoundingClientRect()
   // a flight: from where the piece is to a box (left, top, width), as a shift and a scale about the piece's top-left corner
   const toBox = (el, box) => {
@@ -46,16 +48,19 @@ function flyHome(splash) {
   const inLogo = (x, y, w) => ({ left: L.left + (x / 40) * L.width, top: L.top + (y / 40) * L.height, width: (w / 40) * L.width })
   const wordHeight = word.getBoundingClientRect().height
   const flights = [
-    toBox(left, inLogo(6, 9, 13)),
+    toBox(left, inLogo(4, 10, 12)),
     // the right bracket's home is left of the name, so it hops up and over the name instead of sliding through its letters
-    { ...toBox(right, inLogo(21, 9, 13)), lift: wordHeight * 1.5 },
+    { ...toBox(right, inLogo(24, 10, 12)), lift: wordHeight * 1.5 },
+    // the slash has faded by now; it reappears on its way, in the second half of the flight, as the mark takes shape
+    { ...toBox(slash, inLogo(16, 8, 8)), fade: true },
   ]
   if (target.word) {
     const T = target.word.getBoundingClientRect()
     flights.push(toBox(word, { left: T.left, top: T.top, width: (T.height / wordHeight) * word.getBoundingClientRect().width }))
   }
   // keyframes along the path (a straight line, or an arc for a piece that lifts), all measured before anything moves
-  const frames = ({ dx, dy, s, lift }) => {
+  const frames = ({ dx, dy, s, lift, fade }) => {
+    if (fade) return [{ offset: 0, transform: 'none', opacity: 0 }, { offset: 0.45, opacity: 0 }, { offset: 1, transform: `translate(${dx}px, ${dy}px) scale(${s})`, opacity: 1 }]
     const steps = lift ? 48 : 1                                   // enough points that the arc is a curve, not a polyline
     return Array.from({ length: steps + 1 }, (_, i) => {
       const t = i / steps
